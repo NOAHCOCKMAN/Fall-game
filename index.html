@@ -1521,7 +1521,7 @@ function buildApartment(scene, ctx) {
   wall(0, 3.4, 2.9, 3.4, [doorOp(0.95, 1.7)]); // bedroom ↔ bathroom door
   wall(2.9, 4.4, 4.1, 4.4, [doorOp(3.15, 3.95)]); // bedroom door, sunk into the alcove
   wall(2.9, 3.4, 2.9, 6.5, [doorOp(5.55, 6.33)]); // bathroom door right beside the fridge
-  wall(0, 6.5, 2.9, 6.5, [doorOp(0.95, 1.7)]);
+  wall(0, 6.5, 2.9, 6.5, [doorOp(0.62, 1.37)]); // closet door, centred on the closet
   wall(1.85, 6.5, 1.85, 10, [], { noOutlet: true });
   // laundry & mechanical closets
   wall(5.55, 8.9, 5.55, 10); wall(6.4, 8.9, 6.4, 10); wall(5.55, 8.9, 6.4, 8.9, [doorOp(5.62, 6.33)]); wall(6.4, 8.9, 7.6, 8.9, [doorOp(6.6, 7.35)]);
@@ -1607,7 +1607,7 @@ function buildApartment(scene, ctx) {
   makeDoor({ id: 'bedroom', x: 3.15, z: 4.4, axis: 'x', len: 0.8, hingeEnd: false, open: -1, label: 'bedroom door' });
   makeDoor({ id: 'bathK', x: 2.9, z: 5.55, axis: 'z', len: 0.78, hingeEnd: false, open: -1, label: 'bathroom door' });
   makeDoor({ id: 'bathB', x: 0.95, z: 3.4, axis: 'x', len: 0.75, hingeEnd: false, open: 1, label: 'bathroom door' });
-  makeDoor({ x: 0.95, z: 6.5, axis: 'x', len: 0.75, hingeEnd: false, open: 1, label: 'closet door' });
+  makeDoor({ x: 0.62, z: 6.5, axis: 'x', len: 0.75, hingeEnd: true, open: 1, label: 'closet door' }); // hinged on the left jamb as you face it from the bathroom
   makeDoor({ x: 5.62, z: 8.9, axis: 'x', len: 0.71, hingeEnd: false, open: -1, label: 'laundry closet' });
   makeDoor({ x: 6.6, z: 8.9, axis: 'x', len: 0.75, hingeEnd: true, open: 1, label: 'mechanical closet' });
   makeDoor({ x: 5.0, z: 1.45, axis: 'x', len: 0.7, hingeEnd: false, open: -1, label: 'balcony door', glass: true, exterior: true });
@@ -1674,7 +1674,7 @@ function buildApartment(scene, ctx) {
   sw(2.965, 4.55, Math.PI / 2, ['hall'], '');
   sw(4.035, 4.0, -Math.PI / 2, ['bedroom', 'bedroom:fan'], '');
   sw(2.45, 6.435, Math.PI, ['bath'], ''); sw(0.8, 3.465, 0, ['bath'], '');
-  sw(0.75, 6.565, 0, ['closet'], '');
+  sw(0.555, 6.565, 0, ['closet'], '');
   sw(6.335, 9.1, -Math.PI / 2, ['laundry'], '');
   sw(6.465, 9.1, Math.PI / 2, ['mech'], '');
   sw(7.665, 6.8, Math.PI / 2, ['corridor'], '');
@@ -1945,9 +1945,7 @@ function buildApartment(scene, ctx) {
   ctx.tick(TL, (dt, t) => { if (fl.t > 0) { fl.t -= dt; waterT.rotation.y += dt * 8; waterT.scale.x = 0.7 + Math.sin(t * 20) * 0.1; } else waterT.scale.x = 1; });
   col(0.06, 0, 5.74, 0.85, 0.8, 6.26);
   // towel bar on the south wall, toilet paper
-  const towelTex = canvasTex(128, 256, (g) => { g.fillStyle = '#eef3f6'; g.fillRect(0, 0, 128, 256); for (let i = 0; i < 70; i++) { g.fillStyle = ['#2f6aa1', '#5d8fbf', '#9cc0dd'][i % 3]; g.beginPath(); g.ellipse(Math.random() * 128, Math.random() * 256, 8, 4, Math.random() * 3, 0, TAU); g.fill(); } });
-  B(BA, 0.6, 0.02, 0.02, nickel, 1.55, 1.4, 6.41); B(BA, 0.42, 0.75, 0.04, M(0xffffff, 1, 0, { map: towelTex }), 1.55, 0.7, 6.4); B(BA, 0.2, 0.45, 0.045, M(0xffffff, 1), 1.75, 0.95, 6.38);
-  const tp = C(BA, 0.05, 0.05, 0.1, M(0xffffff, 1), 0.85, 0.62, 6.39, 12); tp.rotation.z = Math.PI / 2;
+  const tp = C(BA, 0.05, 0.05, 0.1, M(0xffffff, 1), 0.11, 0.62, 5.64, 12); tp.rotation.x = Math.PI / 2; tp.position.set(0.11, 0.62, 5.64); // beside the toilet
   // walk-in shower along the hall-side wall: runs from the back (north) wall to the bathroom door,
   // glass front faces the vanity mirrors, shower head toward the right (south) end as you face it
   const SH = G(BA); const sx0 = 1.95, sx1 = 2.84, sz0 = 3.46, sz1 = 5.5; const scx = (sx0 + sx1) / 2, scz = (sz0 + sz1) / 2;
@@ -1985,23 +1983,23 @@ function buildApartment(scene, ctx) {
 
   // ---------- walk-in closet (behind the bathroom) ----------
   const CL = G(W);
-  B(CL, 0.02, 0.02, 3.2, nickel, 0.38, 1.75, 8.3); B(CL, 0.4, 0.02, 3.4, white, 0.26, 1.9, 8.25);
-  B(CL, 0.02, 0.02, 2.4, nickel, 1.5, 1.75, 8.7); B(CL, 0.4, 0.02, 2.5, white, 1.6, 1.9, 8.7);
+  // two matching racks, one each side of the doorway (left x 0.06–0.5, right x 1.37–1.79), aisle down the middle
+  const rackL = 0.28, rackR = 1.58, rz0 = 6.65, rz1 = 9.9;
+  for (const rx of [rackL, rackR]) { B(CL, 0.02, 0.02, rz1 - rz0, nickel, rx, 1.75, (rz0 + rz1) / 2); B(CL, 0.42, 0.02, rz1 - rz0 + 0.1, white, rx, 1.9, (rz0 + rz1) / 2); }
   const garmentCount = 96; const gGeo = new THREE.BoxGeometry(0.02, 1, 0.42); gGeo.translate(0, -0.5, 0);
   const inst = new THREE.InstancedMesh(gGeo, M(0xffffff, 0.95), garmentCount); const dummy = new THREE.Object3D(); const gc = new THREE.Color();
   const palette = [0xe3b8b8, 0x2e3a46, 0xf1ece2, 0x7c8f6a, 0x1f1f22, 0x9c3b3b, 0xb33a3a, 0xd9c7a0, 0x6c5b8f, 0xf2f2f2, 0x4a7fb5, 0xe8a5b5];
   for (let i = 0; i < garmentCount; i++) {
-    if (i < 60) dummy.position.set(0.38, 1.74, 6.75 + i * 0.052); else dummy.position.set(1.5, 1.74, 7.55 + (i - 60) * 0.065);
+    const side = i % 2, k = i >> 1; dummy.position.set(side ? rackR : rackL, 1.74, rz0 + 0.12 + k * ((rz1 - rz0 - 0.5) / 48));
     dummy.rotation.set(0, Math.PI / 2 + rand(-0.15, 0.15), 0);
     dummy.scale.set(1, rand(0.55, 1.05), 1); dummy.updateMatrix(); inst.setMatrixAt(i, dummy.matrix); inst.setColorAt(i, gc.set(palette[(Math.random() * palette.length) | 0]));
   }
   CL.add(inst);
-  for (let i = 0; i < 10; i++) B(CL, 0.3, rand(0.15, 0.25), rand(0.2, 0.3), M(palette[i % palette.length], 0.9), 0.25, 1.92, 6.8 + i * 0.3);
-  [0x2e3a46, 0x6b4a35, 0x9c3b3b].forEach((c, i) => { const coat = B(CL, 0.45, 1.05, 0.09, M(c, 0.95), 1.5, 0.7, 7.62 + i * 0.12); coat.rotation.y = rand(-0.1, 0.1); });
-  B(CL, 0.6, 0.3, 0.4, M(0xf2c418, 0.6), 0.9, 0, 9.65); S(CL, 0.25, M(0x2e3a46, 1), 1.0, 0.1, 8.9, 10, 8).scale.y = 0.4;
-  for (let i = 0; i < 6; i++) B(CL, 0.1, 0.12, 0.26, M([0x1f1f22, 0xe8e2d6, 0x6b4a35][i % 3], 0.7), 0.22, 0.02, 7.0 + i * 0.3);
+  for (let i = 0; i < 20; i++) B(CL, 0.3, rand(0.15, 0.25), rand(0.2, 0.3), M(palette[i % palette.length], 0.9), i % 2 ? rackR : rackL, 1.92, rz0 + 0.15 + (i >> 1) * 0.31);
+  B(CL, 0.6, 0.3, 0.4, M(0xf2c418, 0.6), 0.93, 0, 9.65);
+  for (let i = 0; i < 12; i++) B(CL, 0.1, 0.12, 0.26, M([0x1f1f22, 0xe8e2d6, 0x6b4a35][i % 3], 0.7), i % 2 ? rackR : rackL, 0.02, 7.0 + (i >> 1) * 0.42);
   ctx.interact(inst, { label: 'Pick an outfit 👗', action: () => { const o = ['a cozy cable-knit sweater', 'jeans and a flannel', 'a black dress', 'joggers and a hoodie', 'a corduroy jacket', 'your warm winter coat']; ctx.msg('You change into ' + o[(Math.random() * o.length) | 0] + '.'); ctx.task('outfit'); Sfx.noise(0.6, 0.1, 900, 1); } });
-  col(0.06, 0, 6.56, 0.62, 2.2, 9.94); col(1.26, 0, 7.4, 1.79, 2.2, 9.94);
+  col(0.06, 0, rz0, rackL + 0.2, 2.2, 9.94); col(rackR - 0.2, 0, rz0, 1.79, 2.2, 9.94);
 
   // ---------- thermostat (living room, by the hall) ----------
   const thermTex = canvasTex(128, 96, () => { }); const therm = G(W, 4.165, 1.45, 5.0, Math.PI / 2); B(therm, 0.12, 0.12, 0.025, white, 0, -0.06, 0.012); plane(therm, 0.09, 0.065, new THREE.MeshBasicMaterial({ map: thermTex }), 0, 0, 0.026);
@@ -2360,13 +2358,13 @@ const DEFAULT_LAYOUT = {
     // bedroom
     ['bed', 1.14, 0, 1.41, HP], ['nightstand', 0.27, 0, 0.31, HP], ['nightstand', 0.27, 0, 2.51, HP], ['lamp_table', 0.27, 0.63, 0.31, 0, null, { on: true }], ['lamp_table', 0.27, 0.63, 2.51, 0],
     ['desk', 2.3, 0, 3.065, PI], ['monitor', 2.3, 0.76, 3.0, PI], ['plant_small', 2.75, 0.76, 3.2, 0], ['office_chair', 2.3, 0, 2.97, 0],
-    ['art_monet', 0.06, 1.75, 1.41, HP], ['arched_cabinet', 2.78, 0, 0.27, 0], ['dresser', 3.8, 0, 2.3, -HP],
-    ['art_photo', 4.04, 1.45, 1.85, -HP, null, { seed: 21 }], ['art_photo', 4.04, 1.45, 2.3, -HP, null, { seed: 22 }], ['art_photo', 4.04, 1.45, 2.75, -HP, null, { seed: 23 }],
-    ['art_photo', 4.04, 1.9, 1.85, -HP, null, { seed: 24 }], ['art_photo', 4.04, 1.9, 2.3, -HP, null, { seed: 25 }], ['art_photo', 4.04, 1.9, 2.75, -HP, null, { seed: 26 }],
-    ['vase', 3.8, 0.83, 1.85, 0], ['books', 3.8, 0.83, 2.8, 0.2], ['ironing', 3.6, 0, 0.98, 0],
-    ['clothes_pile', 3.0, 0, 1.6, 0.4], ['clothes_pile', 3.35, 0, 2.7, 1.2],
+    ['art_monet', 0.06, 1.75, 1.41, HP], ['arched_cabinet', 2.78, 0, 0.27, 0], ['dresser', 3.8, 0, 1.7, -HP],
+    ['art_photo', 4.04, 1.45, 1.25, -HP, null, { seed: 21 }], ['art_photo', 4.04, 1.45, 1.7, -HP, null, { seed: 22 }], ['art_photo', 4.04, 1.45, 2.15, -HP, null, { seed: 23 }],
+    ['art_photo', 4.04, 1.9, 1.25, -HP, null, { seed: 24 }], ['art_photo', 4.04, 1.9, 1.7, -HP, null, { seed: 25 }], ['art_photo', 4.04, 1.9, 2.15, -HP, null, { seed: 26 }],
+    ['vase', 3.8, 0.83, 1.25, 0], ['books', 3.8, 0.83, 2.2, 0.2], ['ironing', 2.88, 0, 1.6, 0],
+    ['clothes_pile', 3.3, 0, 0.8, 0.4], ['clothes_pile', 3.35, 0, 2.7, 1.2],
     // bath, closet, balcony, corridor
-    ['hair_dryer', 0.35, 0.9, 4.1, HP], ['candle', 0.32, 0.9, 5.3, 0], ['hamper', 1.45, 0, 6.95, 0],
+    ['hair_dryer', 0.35, 0.9, 4.1, HP], ['candle', 0.32, 0.9, 5.3, 0], ['hamper', 0.93, 0, 9.05, 0],
     ['storage_bin', 4.6, 0, 0.45, 0], ['pumpkin', 7.2, 0, 0.6, 0], ['pumpkin', 7.85, 0, 6.9, 0.5],
   ].map(([t, x, y, z, r, c, d]) => { const o = { t, x, y, z, r }; if (c) o.c = c; if (d) o.d = d; return o; }),
   rooms: {}

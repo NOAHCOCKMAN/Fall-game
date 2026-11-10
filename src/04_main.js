@@ -138,13 +138,13 @@ const DEFAULT_LAYOUT = {
     // bedroom
     ['bed', 1.14, 0, 1.41, HP], ['nightstand', 0.27, 0, 0.31, HP], ['nightstand', 0.27, 0, 2.51, HP], ['lamp_table', 0.27, 0.63, 0.31, 0, null, { on: true }], ['lamp_table', 0.27, 0.63, 2.51, 0],
     ['desk', 2.3, 0, 3.065, PI], ['monitor', 2.3, 0.76, 3.0, PI], ['plant_small', 2.75, 0.76, 3.2, 0], ['office_chair', 2.3, 0, 2.97, 0],
-    ['art_monet', 0.06, 1.75, 1.41, HP], ['arched_cabinet', 2.78, 0, 0.27, 0], ['dresser', 3.8, 0, 2.3, -HP],
-    ['art_photo', 4.04, 1.45, 1.85, -HP, null, { seed: 21 }], ['art_photo', 4.04, 1.45, 2.3, -HP, null, { seed: 22 }], ['art_photo', 4.04, 1.45, 2.75, -HP, null, { seed: 23 }],
-    ['art_photo', 4.04, 1.9, 1.85, -HP, null, { seed: 24 }], ['art_photo', 4.04, 1.9, 2.3, -HP, null, { seed: 25 }], ['art_photo', 4.04, 1.9, 2.75, -HP, null, { seed: 26 }],
-    ['vase', 3.8, 0.83, 1.85, 0], ['books', 3.8, 0.83, 2.8, 0.2], ['ironing', 3.6, 0, 0.98, 0],
-    ['clothes_pile', 3.0, 0, 1.6, 0.4], ['clothes_pile', 3.35, 0, 2.7, 1.2],
+    ['art_monet', 0.06, 1.75, 1.41, HP], ['arched_cabinet', 2.78, 0, 0.27, 0], ['dresser', 3.8, 0, 1.7, -HP],
+    ['art_photo', 4.04, 1.45, 1.25, -HP, null, { seed: 21 }], ['art_photo', 4.04, 1.45, 1.7, -HP, null, { seed: 22 }], ['art_photo', 4.04, 1.45, 2.15, -HP, null, { seed: 23 }],
+    ['art_photo', 4.04, 1.9, 1.25, -HP, null, { seed: 24 }], ['art_photo', 4.04, 1.9, 1.7, -HP, null, { seed: 25 }], ['art_photo', 4.04, 1.9, 2.15, -HP, null, { seed: 26 }],
+    ['vase', 3.8, 0.83, 1.25, 0], ['books', 3.8, 0.83, 2.2, 0.2], ['ironing', 2.88, 0, 1.6, 0],
+    ['clothes_pile', 3.3, 0, 0.8, 0.4], ['clothes_pile', 3.35, 0, 2.7, 1.2],
     // bath, closet, balcony, corridor
-    ['hair_dryer', 0.35, 0.9, 4.1, HP], ['candle', 0.32, 0.9, 5.3, 0], ['hamper', 1.45, 0, 6.95, 0],
+    ['hair_dryer', 0.35, 0.9, 4.1, HP], ['candle', 0.32, 0.9, 5.3, 0], ['hamper', 0.93, 0, 9.05, 0],
     ['storage_bin', 4.6, 0, 0.45, 0], ['pumpkin', 7.2, 0, 0.6, 0], ['pumpkin', 7.85, 0, 6.9, 0.5],
   ].map(([t, x, y, z, r, c, d]) => { const o = { t, x, y, z, r }; if (c) o.c = c; if (d) o.d = d; return o; }),
   rooms: {}
