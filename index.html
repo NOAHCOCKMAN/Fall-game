@@ -198,14 +198,14 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
 <div id="start" class="overlay">
   <div class="card-big glass">
     <h1>Fall <em>Apartment</em></h1>
-    <p class="lede">Your apartment, room by room. Live a day in it: keep yourself fed, rested and clean, cook and brew coffee, do the laundry, order delivery to your door, open packages, and look after Maple the cat. Time passes, the sun sets over the fall trees, and there are 31 things to do.</p>
+    <p class="lede">Your apartment, room by room. Live a day in it: keep yourself fed, rested and clean, cook and brew coffee, do the laundry, order delivery to your door, and open packages. Time passes, the sun sets over the fall trees, and there are 31 things to do.</p>
     <ul class="keys touchonly"><li><kbd>Stick</kbd>walk</li><li><kbd>Drag</kbd>look around</li><li><kbd>Use</kbd>or tap things</li><li><kbd>Grab</kbd>carry small items</li><li><kbd>Phone</kbd>order food &amp; more</li><li><kbd>Eat/Drink</kbd>what you hold</li></ul>
     <ul class="keys deskonly">
       <li><kbd>WASD</kbd>walk · <kbd>Shift</kbd>run</li>
       <li><kbd>Mouse</kbd>look around</li>
       <li><kbd>E</kbd>/click use things</li>
       <li><kbd>G</kbd>pick up · <kbd>Q</kbd>drop</li>
-      <li><kbd>F</kbd>eat, drink or throw</li>
+      <li><kbd>F</kbd>eat or drink</li>
       <li><kbd>Tab</kbd>your phone</li>
       <li><kbd>T</kbd>to-do list</li>
       <li><kbd>L</kbd>room lights</li>
@@ -240,7 +240,7 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
       <h2>Controls</h2>
       <ul class="keys">
         <li><kbd>WASD</kbd>walk</li><li><kbd>Shift</kbd>run</li><li><kbd>Space</kbd>jump</li><li><kbd>C</kbd>crouch</li>
-        <li><kbd>E</kbd>use / open / sit</li><li><kbd>G</kbd>pick up small things</li><li><kbd>F</kbd>eat, drink, throw</li><li><kbd>Q</kbd>drop · <kbd>R</kbd>turn</li>
+        <li><kbd>E</kbd>use / open / sit</li><li><kbd>G</kbd>pick up small things</li><li><kbd>F</kbd>eat or drink</li><li><kbd>Q</kbd>drop · <kbd>R</kbd>turn</li>
         <li><kbd>Tab</kbd>phone</li><li><kbd>T</kbd>to-do list</li><li><kbd>L</kbd>room lights</li><li><kbd>M</kbd>mute</li>
       </ul>
       <p class="lede" style="font-size:14px">If the mouse won't lock in your browser, click-and-drag to look and click on things to use them.</p>
@@ -1354,9 +1354,6 @@ def('watering_can', 'Watering can', 'Fun', { mount: 'surface', solid: false, sma
   const g = new THREE.Group(), m = M(it.c || '#7c8f6a', 0.4, 0.3); C(g, 0.08, 0.09, 0.18, m, 0, 0, 0, 16); const sp = C(g, 0.01, 0.015, 0.2, m, 0.1, 0.1, 0, 8); sp.rotation.z = -0.9; T(g, 0.06, 0.01, m, -0.02, 0.2, 0, Math.PI);
   it.use = () => { ctx.waterAhead(); return 'keep'; }; return g;
 });
-def('dog_bed', 'Pet bed', 'Fun', { solid: false, color: '#b9bcbc', colorable: true }, (ctx, it) => {
-  const g = new THREE.Group(); const t = T(g, 0.32, 0.1, M(it.c || '#b9bcbc', 1), 0, 0.1, 0); t.rotation.x = Math.PI / 2; C(g, 0.32, 0.32, 0.08, M(0xe9e3d6, 1), 0, 0, 0, 24); return g;
-});
 def('yoga_mat', 'Yoga mat', 'Fun', { solid: false, flat: true, color: '#6c5b8f', colorable: true }, (ctx, it) => {
   const g = new THREE.Group(); const m = B(g, 0.6, 0.008, 1.8, M(it.c || '#6c5b8f', 0.9), 0, 0, 0);
   ctx.interact(g, { label: 'Do some yoga 🧘', action: () => { ctx.msg('Deep breath in… and out. Namaste.'); ctx.task('yoga'); ctx.stretch(); } }); return g;
@@ -1374,7 +1371,7 @@ def('hair_dryer', 'Hair dryer', 'Fun', { mount: 'surface', solid: false, small: 
   ctx.interact(g, { label: 'Use hair dryer', action: () => { Sfx.noise(2, 0.15, 1500, 0.5); ctx.msg('Fwoooosh. Great hair day.'); } }); return g;
 });
 
-// ================= LIFE: food delivery, packages, pet things =================
+// ================= LIFE: food delivery, packages =================
 def('pizza', 'Pizza box', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
   const g = new THREE.Group(), card = M(0xd8b98a, 0.9); B(g, 0.38, 0.03, 0.38, card, 0, 0, 0);
   const lid = G(g, 0, 0.045, -0.19); B(lid, 0.38, 0.012, 0.38, card, 0, 0, 0.19); B(lid, 0.18, 0.002, 0.08, M(0xb3141f), 0, 0.012, 0.19);
@@ -1398,26 +1395,10 @@ def('package', 'Package', 'Fun', { mount: 'surface', solid: false, small: true, 
   const tape = B(g, 0.06, 0.002, 0.36, M(0xd9c79a, 0.4), 0, 0.3, 0);
   const flaps = []; for (const s of [-1, 1]) { const f = G(g, s * 0.225, 0.3, 0); B(f, 0.225, 0.01, 0.35, card, -s * 0.1125, 0, 0); flaps.push([f, s]); }
   const d = it.d || (it.d = {});
-  const gifts = ['a cozy throw blanket', 'new candles for the living room', 'a cat toy (Maple will love it)', 'a cookbook', 'string lights', 'fuzzy socks', 'a fall wreath', 'a coffee sampler'];
+  const gifts = ['a cozy throw blanket', 'new candles for the living room', 'a cookbook', 'string lights', 'fuzzy socks', 'a fall wreath', 'a coffee sampler'];
   ctx.interact(g, { label: () => d.opened ? 'Break down the box ♻️' : 'Open package 📦', action: () => { if (!d.opened) { d.opened = true; d.what = gifts[(Math.random() * gifts.length) | 0]; Sfx.noise(0.5, 0.25, 2500, 0.8, 'bandpass', -1500); ctx.msg('📦 It\'s ' + d.what + '!'); ctx.need('fun', 0.15); ctx.task('package'); } else { Sfx.noise(0.3, 0.2, 500, 1); ctx.removeItem(g); } } });
   ctx.tick(g, dt => { tape.visible = !d.opened; flaps.forEach(([f, s]) => f.rotation.z = lerp(f.rotation.z, d.opened ? s * 2.2 : 0, dt * 6)); });
   return g;
-});
-def('cat_bowl', 'Pet food bowl', 'Fun', { solid: false, small: false }, (ctx, it) => {
-  const g = new THREE.Group(); C(g, 0.11, 0.13, 0.05, M(0xf1ece2, 0.3), 0, 0, 0, 20); C(g, 0.09, 0.09, 0.005, M(0x9aa0a6), 0, 0.046, 0, 20);
-  const kib = []; for (let i = 0; i < 18; i++) kib.push(S(g, 0.012, M(0x8a5a32, 0.8), rand(-0.06, 0.06), 0.055, rand(-0.06, 0.06), 5, 4));
-  B(g, 0.14, 0.24, 0.07, M(0x3f7d6f, 0.7), 0.24, 0, -0.04); B(g, 0.1, 0.06, 0.005, M(0xf2c418), 0.24, 0.14, -0.004);
-  const st = it.d || (it.d = {}); if (st.food == null) st.food = 0.6;
-  ctx.catBowl = { g, st };
-  ctx.interact(g, { label: () => st.food > 0.15 ? 'Bowl has food (' + Math.round(st.food * 100) + '%)' : 'Fill Maple\'s bowl 🐟', action: () => { if (st.food <= 0.95) { st.food = 1; Sfx.noise(0.6, 0.25, 3000, 1); ctx.msg('Kibble time! Maple heard that…'); ctx.task('feedcat'); ctx.cat && ctx.cat.call(); } } });
-  ctx.tick(g, () => kib.forEach((k, i) => k.visible = i / kib.length < st.food));
-  return g;
-});
-def('cat_toy', 'Toy mouse', 'Fun', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
-  const g = new THREE.Group(); const b = S(g, 0.035, M(0x9a9a9a, 1), 0, 0.03, 0, 10, 8); b.scale.set(0.8, 0.7, 1.4);
-  S(g, 0.015, M(0xe3b8b8), 0.02, 0.06, 0.03, 6, 4); S(g, 0.015, M(0xe3b8b8), -0.02, 0.06, 0.03, 6, 4);
-  const t = C(g, 0.003, 0.003, 0.12, M(0xd94f70), 0, 0.03, -0.1, 4); t.rotation.x = Math.PI / 2;
-  it.use = () => 'throw'; it.useLabel = 'throw it for Maple'; return g;
 });
 
 // ---------- the apartment: walls, rooms, built-ins, appliances, outdoors ----------
@@ -2099,134 +2080,6 @@ function tree(p, x, y, z, s, seed) {
   for (let i = 0; i < 3; i++) { const b = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55 * s, 1), M(cols[i % 3], 0.9)); b.position.set(x + rand(-0.4, 0.4) * s, y + (1.5 + Math.random() * 0.6) * s, z + rand(-0.4, 0.4) * s); p.add(b); }
 }
 
-// ---------- Maple the cat: wanders the apartment, naps, eats, purrs, chases toys ----------
-function buildCat(A, ctx) {
-  // walkable waypoint graph (x, z, y) — perches have y > 0
-  const N = {
-    L1: [5.6, 2.45], L2: [6.6, 4.6], L3: [5.3, 4.95], K1: [4.0, 5.6], P1: [3.5, 4.95], A1: [3.5, 3.85], B1: [3.4, 2.95], B2: [3.0, 1.45],
-    BB: [1.35, 2.98], BA: [2.25, 5.0], BA2: [1.3, 4.7], D1: [3.35, 6.0], K2a: [3.3, 6.55], K2: [3.2, 8.55], K3: [5.0, 8.45], E1: [6.7, 7.6], BW: [6.95, 4.85],
-    SOFA: [4.8, 3.2, 0.45], BED: [1.5, 1.5, 0.62], RUG: [6.55, 3.6],
-  };
-  const EDGES = [['L1', 'L2'], ['L1', 'L3'], ['L2', 'L3'], ['L3', 'K1'], ['K1', 'P1'], ['P1', 'A1', 'bedroom'], ['A1', 'B1'], ['B1', 'B2'], ['B2', 'BED'], ['B1', 'BB'], ['BB', 'BA2', 'bathB'], ['BA2', 'BA'],
-    ['K1', 'D1'], ['D1', 'BA', 'bathK'], ['K1', 'K2a'], ['K2a', 'D1'], ['K2a', 'K2'], ['K2', 'K3'], ['K3', 'E1'], ['E1', 'L2'], ['L2', 'BW'], ['L3', 'SOFA'], ['L1', 'SOFA'], ['L1', 'RUG'], ['L2', 'RUG']];
-  const nodePos = (k) => V3(N[k][0], N[k][2] || 0, N[k][1]);
-  const doorOpen = (id) => !id || (A.doorById[id] && A.doorById[id].v > 0.75);
-  function neighbors(k) { const out = []; for (const [a, b, d] of EDGES) { if (!doorOpen(d)) continue; if (a === k) out.push(b); else if (b === k) out.push(a); } return out; }
-  function route(from, to) {
-    const prev = { [from]: null }, q = [from];
-    while (q.length) { const k = q.shift(); if (k === to) break; for (const n of neighbors(k)) if (!(n in prev)) { prev[n] = k; q.push(n); } }
-    if (!(to in prev)) return null; const path = []; for (let k = to; k !== from; k = prev[k]) path.unshift(k); return path;
-  }
-  function nearest(p, groundOnly) { let best = null, bd = 1e9; for (const k in N) { if (groundOnly && N[k][2]) continue; const d = Math.hypot(N[k][0] - p.x, N[k][1] - p.z); if (d < bd) { bd = d; best = k; } } return best; }
-
-  // ---- model ----
-  const fur = canvasTex(128, 128, (g) => { g.fillStyle = '#d4883e'; g.fillRect(0, 0, 128, 128); for (let i = 0; i < 9; i++) { g.fillStyle = 'rgba(140,70,20,.55)'; g.fillRect(0, i * 14 + 3, 128, 6); } });
-  const furM = M(0xffffff, 0.95, 0, { map: fur }), light = M(0xf3e6d2, 0.95), pink = M(0xe89aa0, 0.6), eyeM = M(0x2b3a1e, 0.2, 0, { emissive: 0x9fe060, emissiveIntensity: 0 });
-  const root = new THREE.Group(); A.world.add(root);
-  const bodyG = G(root, 0, 0, 0);
-  const body = S(bodyG, 0.1, furM, 0, 0.2, 0, 16, 12); body.scale.set(1.15, 1, 2.3);
-  S(bodyG, 0.075, light, 0, 0.17, 0.12, 10, 8).scale.set(1.2, 1, 1.6);
-  const headG = G(bodyG, 0, 0.3, 0.23);
-  S(headG, 0.085, furM, 0, 0, 0, 16, 12).scale.set(1.1, 0.95, 1);
-  S(headG, 0.045, light, 0, -0.03, 0.06, 10, 8).scale.set(1.2, 0.8, 0.8);
-  for (const s of [-1, 1]) { const ear = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.06, 4), furM); ear.position.set(s * 0.05, 0.08, -0.01); ear.rotation.z = -s * 0.25; headG.add(ear); }
-  const eyes = [-1, 1].map(s => { const e = S(headG, 0.014, eyeM, s * 0.035, 0.015, 0.075, 8, 6); return e; });
-  S(headG, 0.01, pink, 0, -0.012, 0.09, 6, 4);
-  const legs = []; for (const [x, z] of [[-0.06, 0.15], [0.06, 0.15], [-0.06, -0.15], [0.06, -0.15]]) { const p = G(bodyG, x, 0.17, z); const l = C(p, 0.022, 0.02, 0.17, furM, 0, -0.17, 0, 8); S(p, 0.024, light, 0, -0.165, 0.01, 8, 6); legs.push(p); }
-  const tail = []; let parent = G(bodyG, 0, 0.24, -0.22); for (let i = 0; i < 6; i++) { const seg = G(parent, 0, 0, i ? -0.05 : 0); C(seg, 0.02 - i * 0.002, 0.022 - i * 0.002, 0.055, furM, 0, 0, 0, 6).rotation.x = Math.PI / 2; seg.children[0].position.set(0, 0, -0.027); tail.push(seg); parent = seg; }
-  const zTex = canvasTex(64, 64, (g) => { g.fillStyle = '#ffffff'; g.font = 'bold 44px sans-serif'; g.fillText('z', 18, 46); });
-  const zs = [0, 1, 2].map(() => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: zTex, transparent: true, depthWrite: false })); s.scale.setScalar(0.08); root.add(s); s.visible = false; return s; });
-  const heartTex = canvasTex(64, 64, (g) => { g.fillStyle = '#ff5a7a'; g.beginPath(); g.moveTo(32, 54); g.bezierCurveTo(4, 34, 8, 8, 32, 22); g.bezierCurveTo(56, 8, 60, 34, 32, 54); g.fill(); });
-  const hearts = [0, 1, 2].map(() => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: heartTex, transparent: true, depthWrite: false })); s.scale.setScalar(0.08); root.add(s); s.visible = false; return s; });
-
-  // ---- state ----
-  const cat = { root, pos: nodePos('RUG'), node: 'RUG', yaw: 0, path: [], seg: null, pose: 'loaf', idle: 4, hunger: 0.7, purr: 0, eat: 0, chaseTo: null, speed: 0, phase: 0, heartT: 0, meowT: 5, poseK: { sit: 0, loaf: 1 }, affection: 0 };
-  root.position.copy(cat.pos);
-  const playerPos = () => ctx.playerPos();
-  function goTo(key, run) { const p = route(cat.node, key); if (!p) return false; cat.path = p; cat.run = !!run; cat.pose = 'stand'; return true; }
-  function pickBehavior() {
-    const hour = ctx.hour();
-    const night = hour >= 22 || hour < 6;
-    if (cat.hunger < 0.35 && ctx.catBowl) { if (cat.node !== 'BW') { goTo('BW'); return; } }
-    const r = Math.random();
-    if (night && r < 0.6) { goTo(Math.random() < 0.6 ? 'BED' : 'SOFA'); cat.after = 'sleep'; return; }
-    if (r < 0.25) { goTo('SOFA'); cat.after = Math.random() < 0.5 ? 'sleep' : 'loaf'; }
-    else if (r < 0.4) { goTo('RUG'); cat.after = 'loaf'; }
-    else if (r < 0.5) { goTo('BED'); cat.after = 'sleep'; }
-    else if (r < 0.65) { const pn = nearest(playerPos(), true); goTo(pn); cat.after = 'sit'; } // come say hi
-    else { const ks = Object.keys(N).filter(k => !N[k][2]); goTo(ks[(Math.random() * ks.length) | 0]); cat.after = Math.random() < 0.5 ? 'sit' : 'stand'; }
-  }
-  cat.call = () => { if (ctx.catBowl && cat.node !== 'BW') { goTo('BW', true); } Sfx.meow(); };
-  cat.chase = (p) => { const n = nearest(p, true); if (goTo(n, true) || n === cat.node) { cat.chaseTo = p.clone(); cat.chaseTo.y = 0; } };
-  cat.pet = () => {
-    cat.path = []; cat.seg = null; cat.purr = 4; cat.pose = cat.pose === 'sleep' ? 'loaf' : (cat.pose === 'stand' ? 'sit' : cat.pose); cat.heartT = 0; cat.affection++;
-    if (!cat.purrSnd) cat.purrSnd = Sfx.loop('purr', () => root.position, 0.25);
-    ctx.need('fun', 0.12); ctx.task('pet'); if (Math.random() < 0.4) Sfx.meow();
-    ctx.msg(['Maple leans into the scritches. 🐱', 'Purrrrrr…', 'Maple headbutts your hand. ❤️', 'Maple flops over for belly rubs. (It\'s a trap.)'][(cat.affection - 1) % 4]);
-  };
-  ctx.interact(root, {
-    label: () => cat.eat > 0 ? 'Maple is eating…' : cat.pose === 'sleep' ? 'Gently pet sleeping Maple 💤' : cat.hunger < 0.35 ? 'Pet Maple (she looks hungry)' : 'Pet Maple 🐱',
-    action: () => { if (cat.eat > 0) return ctx.msg('Let her eat in peace. 🐟'); cat.pet(); }
-  });
-
-  // ---- update ----
-  ctx.tick(root, (dt, t) => {
-    cat.hunger = Math.max(0, cat.hunger - dt / 420);
-    let moving = false;
-    if (cat.purr > 0) {
-      cat.purr -= dt; const pp = playerPos(); const want = Math.atan2(pp.x - cat.pos.x, pp.z - cat.pos.z); cat.yaw += Math.atan2(Math.sin(want - cat.yaw), Math.cos(want - cat.yaw)) * Math.min(1, dt * 4);
-      cat.heartT += dt; hearts.forEach((h, i) => { const k = (cat.heartT * 0.7 + i / 3) % 1; h.visible = cat.purr > 0.3; h.position.set(Math.sin(i * 2 + t) * 0.06, 0.45 + k * 0.35, 0.1); h.material.opacity = 1 - k; });
-      if (cat.purr <= 0) { hearts.forEach(h => h.visible = false); cat.purrSnd && cat.purrSnd.stop(); cat.purrSnd = null; cat.idle = 3; }
-    } else if (cat.eat > 0) {
-      cat.eat -= dt; cat.pose = 'eat'; if (Math.random() < dt * 3) Sfx.crunch();
-      if (ctx.catBowl) ctx.catBowl.st.food = Math.max(0, ctx.catBowl.st.food - dt / 7);
-      cat.hunger = Math.min(1, cat.hunger + dt / 6);
-      if (cat.eat <= 0 || !ctx.catBowl || ctx.catBowl.st.food <= 0) { cat.eat = 0; cat.idle = 4; cat.pose = 'sit'; }
-    } else if (cat.path.length || cat.chaseTo) {
-      // walk along the route, hopping onto perches
-      let target, tkey = cat.path[0];
-      if (tkey) target = nodePos(tkey); else target = cat.chaseTo;
-      if (!cat.seg) cat.seg = { from: cat.pos.clone(), to: target.clone(), k: 0, len: Math.max(0.01, Math.hypot(target.x - cat.pos.x, target.z - cat.pos.z)) };
-      const sp = cat.run ? 2.0 : 0.65; cat.seg.k = Math.min(1, cat.seg.k + dt * sp / cat.seg.len);
-      const s = cat.seg, k = s.k; cat.pos.lerpVectors(s.from, s.to, k);
-      if (Math.abs(s.to.y - s.from.y) > 0.05) cat.pos.y = lerp(s.from.y, s.to.y, k) + Math.sin(k * Math.PI) * 0.35;
-      const want = Math.atan2(s.to.x - s.from.x, s.to.z - s.from.z); cat.yaw += Math.atan2(Math.sin(want - cat.yaw), Math.cos(want - cat.yaw)) * Math.min(1, dt * 8);
-      moving = true; cat.pose = 'stand';
-      if (k >= 1) {
-        cat.seg = null;
-        if (tkey) { cat.node = tkey; cat.path.shift(); }
-        else { cat.chaseTo = null; cat.idle = 5; cat.pose = 'sit'; Sfx.meow(); ctx.need('fun', 0.1); ctx.task('playcat'); ctx.msg('Maple pounces on the toy mouse! 🐭'); }
-        if (!cat.path.length && !cat.chaseTo) {
-          cat.run = false;
-          if (cat.node === 'BW' && ctx.catBowl && ctx.catBowl.st.food > 0.05 && cat.hunger < 0.8) { cat.eat = 7; cat.yaw = Math.PI / 2; }
-          else { cat.pose = cat.after || 'sit'; cat.after = null; cat.idle = cat.pose === 'sleep' ? rand(25, 50) : rand(6, 16); }
-        }
-      }
-    } else {
-      cat.idle -= dt;
-      if (cat.node === 'BW' && cat.hunger < 0.35 && (!ctx.catBowl || ctx.catBowl.st.food <= 0.05)) { if ((cat.meowT -= dt) < 0) { cat.meowT = 9; Sfx.meow(); if (Math.random() < 0.5) ctx.msg('🐱 Maple is meowing at her empty bowl.'); } cat.pose = 'sit'; }
-      else if (cat.node === 'BW' && ctx.catBowl && ctx.catBowl.st.food > 0.05 && cat.hunger < 0.8) { cat.eat = 7; }
-      else if (cat.idle <= 0) pickBehavior();
-    }
-    cat.speed = lerp(cat.speed, moving ? (cat.run ? 2 : 0.65) : 0, dt * 6);
-    // ---- pose & animation ----
-    root.position.copy(cat.pos); root.rotation.y = cat.yaw;
-    const pose = cat.pose; const sit = pose === 'sit' || pose === 'eat' ? 1 : 0, loaf = pose === 'loaf' || pose === 'sleep' ? 1 : 0;
-    cat.poseK.sit = lerp(cat.poseK.sit, sit, dt * 5); cat.poseK.loaf = lerp(cat.poseK.loaf, loaf, dt * 4);
-    const ps = cat.poseK.sit, pl = cat.poseK.loaf;
-    bodyG.rotation.x = -0.55 * ps; bodyG.position.y = -0.03 * ps - 0.1 * pl; bodyG.position.z = -0.06 * ps;
-    cat.phase += dt * cat.speed * 9;
-    legs.forEach((l, i) => { const sw = Math.sin(cat.phase + (i === 0 || i === 3 ? 0 : Math.PI)) * 0.6 * Math.min(1, cat.speed); l.rotation.x = sw + (i >= 2 ? 1.2 * ps : -0.2 * ps) ; l.scale.y = 1 - 0.75 * pl; });
-    headG.rotation.x = pose === 'eat' ? 0.9 + Math.sin(t * 8) * 0.08 : pose === 'sleep' ? 0.5 : 0.45 * ps - 0.1 * pl + Math.sin(t * 0.7) * 0.05;
-    headG.rotation.y = pose === 'sleep' ? 0.6 : Math.sin(t * 0.4) * 0.3 * (1 - pl);
-    tail.forEach((s, i) => { s.rotation.y = Math.sin(t * (moving ? 6 : 1.5) + i * 0.6) * (pose === 'sleep' ? 0.05 : 0.25); s.rotation.x = moving ? -0.25 : (pl > 0.5 ? 0.05 : -0.12 + i * 0.04); });
-    const closed = pose === 'sleep' || cat.purr > 0; eyes.forEach(e => e.scale.y = closed ? 0.15 : 1 - (Math.sin(t * 0.9) > 0.985 ? 0.85 : 0));
-    eyeM.emissiveIntensity = ctx.isNight() && !closed ? 0.6 : 0;
-    zs.forEach((z, i) => { z.visible = pose === 'sleep' && cat.purr <= 0; const k = (t * 0.35 + i / 3) % 1; z.position.set(0.05 + k * 0.1, 0.35 + k * 0.4, 0.2); z.material.opacity = 1 - k; });
-  });
-  return cat;
-}
-
 // ---------- engine: renderer, player, needs, clock, actions, phone, events, UI ----------
 const $ = (s) => document.querySelector(s);
 const store = {
@@ -2319,7 +2172,7 @@ const ctx = {
 };
 const uid = () => Math.random().toString(36).slice(2, 9);
 
-// ---- build apartment, items, cat ----
+// ---- build apartment and items ----
 const A = buildApartment(scene, ctx);
 lightCount = Object.values(A.lights).reduce((s, L) => s + L.lights.length, 0);
 A.world.add(itemsGroup);
@@ -2376,9 +2229,7 @@ const DEFAULT_LAYOUT = {
   rooms: {}
 };
 
-DEFAULT_LAYOUT.items.push({ t: 'cat_bowl', x: 7.25, y: 0, z: 4.85, r: -HP }, { t: 'cat_toy', x: 6.1, y: 0, z: 2.6, r: 0.5 });
 DEFAULT_LAYOUT.items.forEach(i => spawnItem({ id: uid(), ...i, d: i.d ? JSON.parse(JSON.stringify(i.d)) : {} }));
-const cat = buildCat(A, ctx); ctx.cat = cat;
 
 // ---- clock & day/night ----
 function advanceTime(mins, skip) {
@@ -2390,7 +2241,7 @@ function dayFactor() { const h = hour(); return clamp(Math.min((h - 6.3) / 1.2, 
 
 // ---- needs ----
 const RATES = { hunger: 1 / 700, energy: 1 / 1000, hygiene: 1 / 1100, bladder: 1 / 520, fun: 1 / 650 }; // per game minute
-const NEED_INFO = { hunger: ['🍽', 'Hunger', 'Your stomach growls. Time to eat something.'], energy: ['⚡', 'Energy', 'You\'re exhausted. Coffee or a nap would help.'], hygiene: ['🧼', 'Hygiene', 'You could really use a shower.'], bladder: ['🚽', 'Bladder', 'You need the bathroom!'], fun: ['🎉', 'Fun', 'You\'re bored. Watch TV, play music or play with Maple.'] };
+const NEED_INFO = { hunger: ['🍽', 'Hunger', 'Your stomach growls. Time to eat something.'], energy: ['⚡', 'Energy', 'You\'re exhausted. Coffee or a nap would help.'], hygiene: ['🧼', 'Hygiene', 'You could really use a shower.'], bladder: ['🚽', 'Bladder', 'You need the bathroom!'], fun: ['🎉', 'Fun', 'You\'re bored. Watch TV, play some music or open a present.'] };
 const warnAt = {};
 function updateNeeds(dt, gameMin) {
   for (const k of NEEDS) P.needs[k] = clamp(P.needs[k] - gameMin * RATES[k] * (k === 'energy' && P.caffeine > 0 ? 0.3 : 1), 0, 1);
@@ -2580,14 +2431,6 @@ function releaseTo(pos) {
 }
 function placeHeld() { if (!held) return; if (!placeTarget) return toast('Aim at a table, counter or the floor to set it down.'); releaseTo(placeTarget); Sfx.noise(0.12, 0.25, 400, 1, 'lowpass'); }
 function dropHeld() { if (!held) return; const p = P.pos.clone(); p.x -= Math.sin(P.yaw) * 0.5; p.z -= Math.cos(P.yaw) * 0.5; p.y = 0; releaseTo(p); Sfx.noise(0.12, 0.3, 300, 1, 'lowpass'); }
-function throwHeld() {
-  const dir = V3(-Math.sin(P.yaw), 0, -Math.cos(P.yaw)); let dist = 3;
-  const h = firstHit(4); if (h) dist = Math.max(0.6, Math.min(3, h.distance - 0.4));
-  camera.updateMatrixWorld(); const start = camera.localToWorld(HAND.clone()); const end = P.pos.clone().addScaledVector(dir, dist); end.y = 0;
-  const g = releaseTo(start); const t0 = performance.now();
-  TWEENS.push((now) => { const k = Math.min(1, (now - t0) / 550); g.position.lerpVectors(start, end, k); g.position.y = lerp(start.y, 0, k) + Math.sin(k * Math.PI) * 0.6; g.rotation.y += 0.3; if (k >= 1) { g.position.copy(end); Object.assign(g.userData.item, { x: end.x, y: 0, z: end.z }); Sfx.noise(0.08, 0.2, 500, 1, 'lowpass'); cat.chase(end); return true; } });
-  toast('You toss the toy mouse. Maple\'s ears perk up! 🐭');
-}
 function primary() {
   Sfx.init();
   if (P.action || P.anim) return;
@@ -2604,7 +2447,6 @@ function grab() {
 function useHeld() {
   if (!held || P.anim || P.action) return;
   const inst = held.userData.item; if (!inst.use) return toast('Nothing to do with this. Click to set it down, Q to drop.');
-  if (inst.t === 'cat_toy') return throwHeld();
   const kind = inst.t === 'mug' ? 'drink' : 'eat';
   if (kind === 'drink' && !(inst.d && inst.d.fill)) return inst.use();
   if (kind === 'drink') Sfx.sip();
@@ -2615,7 +2457,7 @@ function useHeld() {
 const TASKS = [
   ['coffee', 'Brew an espresso at the coffee bar'], ['cook', 'Cook something on the stove'], ['bake', 'Bake cookies in the oven'], ['tea', 'Boil the kettle for tea'], ['microwave', 'Heat leftovers in the microwave'],
   ['eat', 'Eat something'], ['order', 'Order food delivery on your phone'], ['dishes', 'Do the dishes'], ['tidy', 'Pick up a pile of clothes'], ['laundry', 'Wash, dry & fold laundry'], ['iron', 'Iron a shirt'],
-  ['pet', 'Pet Maple'], ['feedcat', 'Fill Maple\'s food bowl'], ['playcat', 'Throw the toy mouse for Maple'], ['package', 'Open a package'],
+  ['package', 'Open a package'],
   ['tv', 'Watch TV from the couch'], ['music', 'Put on some music'], ['tree', 'Switch the tree lights'], ['gift', 'Open a present'], ['plants', 'Water a plant'],
   ['outside', 'Step out onto the balcony'], ['shower', 'Take a shower'], ['teeth', 'Brush your teeth'], ['toilet', 'Use the toilet'], ['hands', 'Wash your hands'], ['outfit', 'Pick an outfit in the closet'],
   ['sleep', 'Sleep in your bed'], ['lights', 'Flip a light switch'], ['breaker', 'Flip the main breaker'], ['computer', 'Use the computer'], ['read', 'Look through the wedding album'],
@@ -2639,7 +2481,7 @@ function phoneApp(app) {
   const scr = $('#phoneScreen'); $('#phoneTime').textContent = fmtTime(P.minutes);
   if (app === 'home') {
     scr.innerHTML = `<div class="weather"><strong>${ctx.isNight() ? '🌙' : '☀️'} ${ctx.isNight() ? 49 : 61}°F</strong><span>Lake Norman · ${ctx.isNight() ? 'Clear night' : 'Crisp and sunny'}</span></div>
-      <div class="apps"><button data-app="food"><i>🛵</i>Food</button><button data-app="music"><i>🎧</i>Music</button><button data-app="home2"><i>🏠</i>Home</button><button data-app="msgs"><i>💬</i>Messages</button><button data-app="todo"><i>✅</i>To-dos</button><button data-app="maple"><i>🐱</i>Maple cam</button></div>
+      <div class="apps"><button data-app="food"><i>🛵</i>Food</button><button data-app="music"><i>🎧</i>Music</button><button data-app="home2"><i>🏠</i>Home</button><button data-app="msgs"><i>💬</i>Messages</button><button data-app="todo"><i>✅</i>To-dos</button></div>
       ${orders.length ? `<div class="pill2">🛵 ${orders.map(o => o.name + ' arriving ' + fmtTime(o.eta)).join('<br>')}</div>` : ''}`;
   } else if (app === 'food') {
     scr.innerHTML = `<h3>Order delivery</h3><p class="sub">Left at your front door.</p>` + FOOD.map((f, i) => `<button class="row" data-order="${i}"><i>${f[0]}</i><span><b>${f[1]}</b><small>About ${f[4]} min</small></span></button>`).join('') + back();
@@ -2655,9 +2497,6 @@ function phoneApp(app) {
     scr.innerHTML = `<h3>Messages</h3>` + (texts.length ? texts.map(t => `<div class="msg"><b>${t.from}</b><small>${t.time}</small><p>${t.body}</p></div>`).join('') : '<p class="sub">No messages yet.</p>') + back();
   } else if (app === 'todo') {
     scr.innerHTML = `<h3>To-dos · ${done.size}/${TASKS.length}</h3>` + TASKS.filter(t => !done.has(t[0])).slice(0, 8).map(t => `<div class="msg"><p>☐ ${t[1]}</p></div>`).join('') + back();
-  } else if (app === 'maple') {
-    const where = roomAt(cat.pos.x, cat.pos.z); const doing = cat.eat > 0 ? 'eating' : cat.pose === 'sleep' ? 'napping' : cat.path.length ? 'wandering' : cat.pose === 'loaf' ? 'loafing' : 'sitting';
-    scr.innerHTML = `<h3>Maple cam 🐱</h3><div class="msg"><p>Maple is <b>${doing}</b> in the ${(ROOMS[where] || { name: 'apartment' }).name.toLowerCase()}.</p><p>Food bowl: ${ctx.catBowl ? Math.round(ctx.catBowl.st.food * 100) : 0}% · Tummy: ${Math.round(cat.hunger * 100)}%</p></div>` + back();
   }
   scr.querySelectorAll('[data-app]').forEach(b => b.onclick = () => { Sfx.click(); phoneApp(b.dataset.app); });
   scr.querySelectorAll('[data-order]').forEach(b => b.onclick = () => { const f = FOOD[+b.dataset.order]; orders.push({ name: f[1], type: f[2], label: f[3], eta: (P.minutes + f[4]) % 1440, left: f[4] }); toast('🛵 ' + f[1] + ' ordered! Arrives in about ' + f[4] + ' minutes.'); completeTask('order'); Sfx.chime(); phoneApp('home'); });
@@ -2683,7 +2522,7 @@ function updateEvents(gameMin) {
   nextPackage -= gameMin;
   if (nextPackage <= 0) { nextPackage = 60 * (5 + Math.random() * 6); if (hour() > 8 && hour() < 20) { spawnAtDoor('package', {}); Sfx.knock(); toast('📦 *knock knock* A package was left at your door.'); addText('Amazon', 'Delivered: your package is at the front door.'); } }
   nextText -= gameMin;
-  if (nextText <= 0) { nextText = 60 * (2 + Math.random() * 4); const m = [['Mom', 'How\'s the new place? Send pics of the tree! 🎄'], ['Leah', 'Did you feed Maple? 🐱'], ['Leah', 'Want to order Thai tonight?'], ['Jake', 'Game night this weekend?'], ['Avalon Lake Norman', 'Reminder: the fitness center is open 24/7.'], ['Leah', 'Can you start the laundry? 🧺']][(Math.random() * 6) | 0]; addText(m[0], m[1]); toast('💬 New message from ' + m[0] + ' (Tab opens your phone)'); }
+  if (nextText <= 0) { nextText = 60 * (2 + Math.random() * 4); const m = [['Mom', 'How\'s the new place? Send pics of the tree! 🎄'], ['Leah', 'Did you remember to water the plants? 🪴'], ['Leah', 'Want to order Thai tonight?'], ['Jake', 'Game night this weekend?'], ['Avalon Lake Norman', 'Reminder: the fitness center is open 24/7.'], ['Leah', 'Can you start the laundry? 🧺']][(Math.random() * 6) | 0]; addText(m[0], m[1]); toast('💬 New message from ' + m[0] + ' (Tab opens your phone)'); }
 }
 
 // ---- toast / fade ----
@@ -2711,7 +2550,7 @@ $('#resetTasks').onclick = () => { done.clear(); store.set('tasks', []); P.needs
 $('#enter').onclick = () => {
   Sfx.init(); Sfx.setMuted(settings.muted); $('#start').hidden = true; tryLock();
   toast(isTouch ? 'Drag to look, joystick to walk, tap Use on things.' : 'WASD to walk · mouse to look · E to use · Tab for your phone');
-  setTimeout(() => { Sfx.meow(); toast('🐱 Maple says good morning. She might want breakfast…'); }, 6000);
+  setTimeout(() => toast('☕ Good morning! How about an espresso at the coffee bar?'), 6000);
 };
 
 // ---- touch controls ----
@@ -2795,7 +2634,7 @@ function frame(now) {
 P.pos.set(A.spawn.x, 0, A.spawn.z); P.yaw = A.spawn.yaw; P.day = P.dayTarget = dayFactor();
 updateHud(); renderTasks();
 requestAnimationFrame(frame);
-window.__game = { probe() { camera.updateMatrixWorld(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, cat, openPhone, advanceTime };
+window.__game = { probe() { camera.updateMatrixWorld(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
 
 </script>
 

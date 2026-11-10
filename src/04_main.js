@@ -90,7 +90,7 @@ const ctx = {
 };
 const uid = () => Math.random().toString(36).slice(2, 9);
 
-// ---- build apartment, items, cat ----
+// ---- build apartment and items ----
 const A = buildApartment(scene, ctx);
 lightCount = Object.values(A.lights).reduce((s, L) => s + L.lights.length, 0);
 A.world.add(itemsGroup);
@@ -147,9 +147,7 @@ const DEFAULT_LAYOUT = {
   rooms: {}
 };
 
-DEFAULT_LAYOUT.items.push({ t: 'cat_bowl', x: 7.25, y: 0, z: 4.85, r: -HP }, { t: 'cat_toy', x: 6.1, y: 0, z: 2.6, r: 0.5 });
 DEFAULT_LAYOUT.items.forEach(i => spawnItem({ id: uid(), ...i, d: i.d ? JSON.parse(JSON.stringify(i.d)) : {} }));
-const cat = buildCat(A, ctx); ctx.cat = cat;
 
 // ---- clock & day/night ----
 function advanceTime(mins, skip) {
@@ -161,7 +159,7 @@ function dayFactor() { const h = hour(); return clamp(Math.min((h - 6.3) / 1.2, 
 
 // ---- needs ----
 const RATES = { hunger: 1 / 700, energy: 1 / 1000, hygiene: 1 / 1100, bladder: 1 / 520, fun: 1 / 650 }; // per game minute
-const NEED_INFO = { hunger: ['🍽', 'Hunger', 'Your stomach growls. Time to eat something.'], energy: ['⚡', 'Energy', 'You\'re exhausted. Coffee or a nap would help.'], hygiene: ['🧼', 'Hygiene', 'You could really use a shower.'], bladder: ['🚽', 'Bladder', 'You need the bathroom!'], fun: ['🎉', 'Fun', 'You\'re bored. Watch TV, play music or play with Maple.'] };
+const NEED_INFO = { hunger: ['🍽', 'Hunger', 'Your stomach growls. Time to eat something.'], energy: ['⚡', 'Energy', 'You\'re exhausted. Coffee or a nap would help.'], hygiene: ['🧼', 'Hygiene', 'You could really use a shower.'], bladder: ['🚽', 'Bladder', 'You need the bathroom!'], fun: ['🎉', 'Fun', 'You\'re bored. Watch TV, play some music or open a present.'] };
 const warnAt = {};
 function updateNeeds(dt, gameMin) {
   for (const k of NEEDS) P.needs[k] = clamp(P.needs[k] - gameMin * RATES[k] * (k === 'energy' && P.caffeine > 0 ? 0.3 : 1), 0, 1);
@@ -351,14 +349,6 @@ function releaseTo(pos) {
 }
 function placeHeld() { if (!held) return; if (!placeTarget) return toast('Aim at a table, counter or the floor to set it down.'); releaseTo(placeTarget); Sfx.noise(0.12, 0.25, 400, 1, 'lowpass'); }
 function dropHeld() { if (!held) return; const p = P.pos.clone(); p.x -= Math.sin(P.yaw) * 0.5; p.z -= Math.cos(P.yaw) * 0.5; p.y = 0; releaseTo(p); Sfx.noise(0.12, 0.3, 300, 1, 'lowpass'); }
-function throwHeld() {
-  const dir = V3(-Math.sin(P.yaw), 0, -Math.cos(P.yaw)); let dist = 3;
-  const h = firstHit(4); if (h) dist = Math.max(0.6, Math.min(3, h.distance - 0.4));
-  camera.updateMatrixWorld(); const start = camera.localToWorld(HAND.clone()); const end = P.pos.clone().addScaledVector(dir, dist); end.y = 0;
-  const g = releaseTo(start); const t0 = performance.now();
-  TWEENS.push((now) => { const k = Math.min(1, (now - t0) / 550); g.position.lerpVectors(start, end, k); g.position.y = lerp(start.y, 0, k) + Math.sin(k * Math.PI) * 0.6; g.rotation.y += 0.3; if (k >= 1) { g.position.copy(end); Object.assign(g.userData.item, { x: end.x, y: 0, z: end.z }); Sfx.noise(0.08, 0.2, 500, 1, 'lowpass'); cat.chase(end); return true; } });
-  toast('You toss the toy mouse. Maple\'s ears perk up! 🐭');
-}
 function primary() {
   Sfx.init();
   if (P.action || P.anim) return;
@@ -375,7 +365,6 @@ function grab() {
 function useHeld() {
   if (!held || P.anim || P.action) return;
   const inst = held.userData.item; if (!inst.use) return toast('Nothing to do with this. Click to set it down, Q to drop.');
-  if (inst.t === 'cat_toy') return throwHeld();
   const kind = inst.t === 'mug' ? 'drink' : 'eat';
   if (kind === 'drink' && !(inst.d && inst.d.fill)) return inst.use();
   if (kind === 'drink') Sfx.sip();
@@ -386,7 +375,7 @@ function useHeld() {
 const TASKS = [
   ['coffee', 'Brew an espresso at the coffee bar'], ['cook', 'Cook something on the stove'], ['bake', 'Bake cookies in the oven'], ['tea', 'Boil the kettle for tea'], ['microwave', 'Heat leftovers in the microwave'],
   ['eat', 'Eat something'], ['order', 'Order food delivery on your phone'], ['dishes', 'Do the dishes'], ['tidy', 'Pick up a pile of clothes'], ['laundry', 'Wash, dry & fold laundry'], ['iron', 'Iron a shirt'],
-  ['pet', 'Pet Maple'], ['feedcat', 'Fill Maple\'s food bowl'], ['playcat', 'Throw the toy mouse for Maple'], ['package', 'Open a package'],
+  ['package', 'Open a package'],
   ['tv', 'Watch TV from the couch'], ['music', 'Put on some music'], ['tree', 'Switch the tree lights'], ['gift', 'Open a present'], ['plants', 'Water a plant'],
   ['outside', 'Step out onto the balcony'], ['shower', 'Take a shower'], ['teeth', 'Brush your teeth'], ['toilet', 'Use the toilet'], ['hands', 'Wash your hands'], ['outfit', 'Pick an outfit in the closet'],
   ['sleep', 'Sleep in your bed'], ['lights', 'Flip a light switch'], ['breaker', 'Flip the main breaker'], ['computer', 'Use the computer'], ['read', 'Look through the wedding album'],
@@ -410,7 +399,7 @@ function phoneApp(app) {
   const scr = $('#phoneScreen'); $('#phoneTime').textContent = fmtTime(P.minutes);
   if (app === 'home') {
     scr.innerHTML = `<div class="weather"><strong>${ctx.isNight() ? '🌙' : '☀️'} ${ctx.isNight() ? 49 : 61}°F</strong><span>Lake Norman · ${ctx.isNight() ? 'Clear night' : 'Crisp and sunny'}</span></div>
-      <div class="apps"><button data-app="food"><i>🛵</i>Food</button><button data-app="music"><i>🎧</i>Music</button><button data-app="home2"><i>🏠</i>Home</button><button data-app="msgs"><i>💬</i>Messages</button><button data-app="todo"><i>✅</i>To-dos</button><button data-app="maple"><i>🐱</i>Maple cam</button></div>
+      <div class="apps"><button data-app="food"><i>🛵</i>Food</button><button data-app="music"><i>🎧</i>Music</button><button data-app="home2"><i>🏠</i>Home</button><button data-app="msgs"><i>💬</i>Messages</button><button data-app="todo"><i>✅</i>To-dos</button></div>
       ${orders.length ? `<div class="pill2">🛵 ${orders.map(o => o.name + ' arriving ' + fmtTime(o.eta)).join('<br>')}</div>` : ''}`;
   } else if (app === 'food') {
     scr.innerHTML = `<h3>Order delivery</h3><p class="sub">Left at your front door.</p>` + FOOD.map((f, i) => `<button class="row" data-order="${i}"><i>${f[0]}</i><span><b>${f[1]}</b><small>About ${f[4]} min</small></span></button>`).join('') + back();
@@ -426,9 +415,6 @@ function phoneApp(app) {
     scr.innerHTML = `<h3>Messages</h3>` + (texts.length ? texts.map(t => `<div class="msg"><b>${t.from}</b><small>${t.time}</small><p>${t.body}</p></div>`).join('') : '<p class="sub">No messages yet.</p>') + back();
   } else if (app === 'todo') {
     scr.innerHTML = `<h3>To-dos · ${done.size}/${TASKS.length}</h3>` + TASKS.filter(t => !done.has(t[0])).slice(0, 8).map(t => `<div class="msg"><p>☐ ${t[1]}</p></div>`).join('') + back();
-  } else if (app === 'maple') {
-    const where = roomAt(cat.pos.x, cat.pos.z); const doing = cat.eat > 0 ? 'eating' : cat.pose === 'sleep' ? 'napping' : cat.path.length ? 'wandering' : cat.pose === 'loaf' ? 'loafing' : 'sitting';
-    scr.innerHTML = `<h3>Maple cam 🐱</h3><div class="msg"><p>Maple is <b>${doing}</b> in the ${(ROOMS[where] || { name: 'apartment' }).name.toLowerCase()}.</p><p>Food bowl: ${ctx.catBowl ? Math.round(ctx.catBowl.st.food * 100) : 0}% · Tummy: ${Math.round(cat.hunger * 100)}%</p></div>` + back();
   }
   scr.querySelectorAll('[data-app]').forEach(b => b.onclick = () => { Sfx.click(); phoneApp(b.dataset.app); });
   scr.querySelectorAll('[data-order]').forEach(b => b.onclick = () => { const f = FOOD[+b.dataset.order]; orders.push({ name: f[1], type: f[2], label: f[3], eta: (P.minutes + f[4]) % 1440, left: f[4] }); toast('🛵 ' + f[1] + ' ordered! Arrives in about ' + f[4] + ' minutes.'); completeTask('order'); Sfx.chime(); phoneApp('home'); });
@@ -454,7 +440,7 @@ function updateEvents(gameMin) {
   nextPackage -= gameMin;
   if (nextPackage <= 0) { nextPackage = 60 * (5 + Math.random() * 6); if (hour() > 8 && hour() < 20) { spawnAtDoor('package', {}); Sfx.knock(); toast('📦 *knock knock* A package was left at your door.'); addText('Amazon', 'Delivered: your package is at the front door.'); } }
   nextText -= gameMin;
-  if (nextText <= 0) { nextText = 60 * (2 + Math.random() * 4); const m = [['Mom', 'How\'s the new place? Send pics of the tree! 🎄'], ['Leah', 'Did you feed Maple? 🐱'], ['Leah', 'Want to order Thai tonight?'], ['Jake', 'Game night this weekend?'], ['Avalon Lake Norman', 'Reminder: the fitness center is open 24/7.'], ['Leah', 'Can you start the laundry? 🧺']][(Math.random() * 6) | 0]; addText(m[0], m[1]); toast('💬 New message from ' + m[0] + ' (Tab opens your phone)'); }
+  if (nextText <= 0) { nextText = 60 * (2 + Math.random() * 4); const m = [['Mom', 'How\'s the new place? Send pics of the tree! 🎄'], ['Leah', 'Did you remember to water the plants? 🪴'], ['Leah', 'Want to order Thai tonight?'], ['Jake', 'Game night this weekend?'], ['Avalon Lake Norman', 'Reminder: the fitness center is open 24/7.'], ['Leah', 'Can you start the laundry? 🧺']][(Math.random() * 6) | 0]; addText(m[0], m[1]); toast('💬 New message from ' + m[0] + ' (Tab opens your phone)'); }
 }
 
 // ---- toast / fade ----
@@ -482,7 +468,7 @@ $('#resetTasks').onclick = () => { done.clear(); store.set('tasks', []); P.needs
 $('#enter').onclick = () => {
   Sfx.init(); Sfx.setMuted(settings.muted); $('#start').hidden = true; tryLock();
   toast(isTouch ? 'Drag to look, joystick to walk, tap Use on things.' : 'WASD to walk · mouse to look · E to use · Tab for your phone');
-  setTimeout(() => { Sfx.meow(); toast('🐱 Maple says good morning. She might want breakfast…'); }, 6000);
+  setTimeout(() => toast('☕ Good morning! How about an espresso at the coffee bar?'), 6000);
 };
 
 // ---- touch controls ----
@@ -566,4 +552,4 @@ function frame(now) {
 P.pos.set(A.spawn.x, 0, A.spawn.z); P.yaw = A.spawn.yaw; P.day = P.dayTarget = dayFactor();
 updateHud(); renderTasks();
 requestAnimationFrame(frame);
-window.__game = { probe() { camera.updateMatrixWorld(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, cat, openPhone, advanceTime };
+window.__game = { probe() { camera.updateMatrixWorld(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };

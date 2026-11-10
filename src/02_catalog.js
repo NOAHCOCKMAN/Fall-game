@@ -751,9 +751,6 @@ def('watering_can', 'Watering can', 'Fun', { mount: 'surface', solid: false, sma
   const g = new THREE.Group(), m = M(it.c || '#7c8f6a', 0.4, 0.3); C(g, 0.08, 0.09, 0.18, m, 0, 0, 0, 16); const sp = C(g, 0.01, 0.015, 0.2, m, 0.1, 0.1, 0, 8); sp.rotation.z = -0.9; T(g, 0.06, 0.01, m, -0.02, 0.2, 0, Math.PI);
   it.use = () => { ctx.waterAhead(); return 'keep'; }; return g;
 });
-def('dog_bed', 'Pet bed', 'Fun', { solid: false, color: '#b9bcbc', colorable: true }, (ctx, it) => {
-  const g = new THREE.Group(); const t = T(g, 0.32, 0.1, M(it.c || '#b9bcbc', 1), 0, 0.1, 0); t.rotation.x = Math.PI / 2; C(g, 0.32, 0.32, 0.08, M(0xe9e3d6, 1), 0, 0, 0, 24); return g;
-});
 def('yoga_mat', 'Yoga mat', 'Fun', { solid: false, flat: true, color: '#6c5b8f', colorable: true }, (ctx, it) => {
   const g = new THREE.Group(); const m = B(g, 0.6, 0.008, 1.8, M(it.c || '#6c5b8f', 0.9), 0, 0, 0);
   ctx.interact(g, { label: 'Do some yoga 🧘', action: () => { ctx.msg('Deep breath in… and out. Namaste.'); ctx.task('yoga'); ctx.stretch(); } }); return g;
@@ -771,7 +768,7 @@ def('hair_dryer', 'Hair dryer', 'Fun', { mount: 'surface', solid: false, small: 
   ctx.interact(g, { label: 'Use hair dryer', action: () => { Sfx.noise(2, 0.15, 1500, 0.5); ctx.msg('Fwoooosh. Great hair day.'); } }); return g;
 });
 
-// ================= LIFE: food delivery, packages, pet things =================
+// ================= LIFE: food delivery, packages =================
 def('pizza', 'Pizza box', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
   const g = new THREE.Group(), card = M(0xd8b98a, 0.9); B(g, 0.38, 0.03, 0.38, card, 0, 0, 0);
   const lid = G(g, 0, 0.045, -0.19); B(lid, 0.38, 0.012, 0.38, card, 0, 0, 0.19); B(lid, 0.18, 0.002, 0.08, M(0xb3141f), 0, 0.012, 0.19);
@@ -795,24 +792,8 @@ def('package', 'Package', 'Fun', { mount: 'surface', solid: false, small: true, 
   const tape = B(g, 0.06, 0.002, 0.36, M(0xd9c79a, 0.4), 0, 0.3, 0);
   const flaps = []; for (const s of [-1, 1]) { const f = G(g, s * 0.225, 0.3, 0); B(f, 0.225, 0.01, 0.35, card, -s * 0.1125, 0, 0); flaps.push([f, s]); }
   const d = it.d || (it.d = {});
-  const gifts = ['a cozy throw blanket', 'new candles for the living room', 'a cat toy (Maple will love it)', 'a cookbook', 'string lights', 'fuzzy socks', 'a fall wreath', 'a coffee sampler'];
+  const gifts = ['a cozy throw blanket', 'new candles for the living room', 'a cookbook', 'string lights', 'fuzzy socks', 'a fall wreath', 'a coffee sampler'];
   ctx.interact(g, { label: () => d.opened ? 'Break down the box ♻️' : 'Open package 📦', action: () => { if (!d.opened) { d.opened = true; d.what = gifts[(Math.random() * gifts.length) | 0]; Sfx.noise(0.5, 0.25, 2500, 0.8, 'bandpass', -1500); ctx.msg('📦 It\'s ' + d.what + '!'); ctx.need('fun', 0.15); ctx.task('package'); } else { Sfx.noise(0.3, 0.2, 500, 1); ctx.removeItem(g); } } });
   ctx.tick(g, dt => { tape.visible = !d.opened; flaps.forEach(([f, s]) => f.rotation.z = lerp(f.rotation.z, d.opened ? s * 2.2 : 0, dt * 6)); });
   return g;
-});
-def('cat_bowl', 'Pet food bowl', 'Fun', { solid: false, small: false }, (ctx, it) => {
-  const g = new THREE.Group(); C(g, 0.11, 0.13, 0.05, M(0xf1ece2, 0.3), 0, 0, 0, 20); C(g, 0.09, 0.09, 0.005, M(0x9aa0a6), 0, 0.046, 0, 20);
-  const kib = []; for (let i = 0; i < 18; i++) kib.push(S(g, 0.012, M(0x8a5a32, 0.8), rand(-0.06, 0.06), 0.055, rand(-0.06, 0.06), 5, 4));
-  B(g, 0.14, 0.24, 0.07, M(0x3f7d6f, 0.7), 0.24, 0, -0.04); B(g, 0.1, 0.06, 0.005, M(0xf2c418), 0.24, 0.14, -0.004);
-  const st = it.d || (it.d = {}); if (st.food == null) st.food = 0.6;
-  ctx.catBowl = { g, st };
-  ctx.interact(g, { label: () => st.food > 0.15 ? 'Bowl has food (' + Math.round(st.food * 100) + '%)' : 'Fill Maple\'s bowl 🐟', action: () => { if (st.food <= 0.95) { st.food = 1; Sfx.noise(0.6, 0.25, 3000, 1); ctx.msg('Kibble time! Maple heard that…'); ctx.task('feedcat'); ctx.cat && ctx.cat.call(); } } });
-  ctx.tick(g, () => kib.forEach((k, i) => k.visible = i / kib.length < st.food));
-  return g;
-});
-def('cat_toy', 'Toy mouse', 'Fun', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
-  const g = new THREE.Group(); const b = S(g, 0.035, M(0x9a9a9a, 1), 0, 0.03, 0, 10, 8); b.scale.set(0.8, 0.7, 1.4);
-  S(g, 0.015, M(0xe3b8b8), 0.02, 0.06, 0.03, 6, 4); S(g, 0.015, M(0xe3b8b8), -0.02, 0.06, 0.03, 6, 4);
-  const t = C(g, 0.003, 0.003, 0.12, M(0xd94f70), 0, 0.03, -0.1, 4); t.rotation.x = Math.PI / 2;
-  it.use = () => 'throw'; it.useLabel = 'throw it for Maple'; return g;
 });
