@@ -165,6 +165,15 @@ function getTex(name) {
       for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(${rand(60, 220)},${rand(60, 160)},${rand(80, 140)},.35)`; g.beginPath(); g.ellipse(rand(80, w - 80), rand(80, h - 80), rand(8, 30), rand(8, 20), Math.random() * 3, 0, TAU); g.fill(); }
       noise(g, w, h, 20000, 0.07);
     }); break;
+    case 'toile': t = canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#f1ebe0'; g.fillRect(0, 0, w, h); g.strokeStyle = '#8c2a2e'; g.fillStyle = '#8c2a2e'; g.lineWidth = 2;
+      for (let i = 0; i < 9; i++) { const x = Math.random() * w, y = Math.random() * h; g.beginPath(); g.moveTo(x, y - 26); g.lineTo(x - 10, y); g.lineTo(x + 10, y); g.closePath(); g.fill(); g.fillRect(x - 1, y, 2, 6); }
+      for (let i = 0; i < 6; i++) { const x = Math.random() * w, y = Math.random() * h; g.beginPath(); g.moveTo(x - 30, y); g.lineTo(x - 10, y - 18); g.lineTo(x + 5, y - 6); g.lineTo(x + 25, y - 22); g.lineTo(x + 40, y); g.stroke(); }
+      g.beginPath(); g.ellipse(128, 170, 26, 9, 0, 0, TAU); g.stroke(); g.fillRect(100, 150, 22, 12); g.fillRect(150, 152, 18, 8); }); break;
+    case 'velvet': t = canvasTex(64, 128, (g, w, h) => { for (let x = 0; x < w; x += 4) { const v = rand(-12, 12); g.fillStyle = `rgb(${112 + v},${88 + v},${98 + v})`; g.fillRect(x, 0, 4, h); g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(x, 0, 1, h); } }); break;
+    case 'treepillow': t = canvasTex(256, 96, (g, w, h) => { g.fillStyle = '#efeae2'; g.fillRect(0, 0, w, h); for (let i = 0; i < 3; i++) { const x = 45 + i * 83; for (let k = 0; k < 6; k++) { g.fillStyle = k % 2 ? '#2f6b3f' : '#3f7d4c'; g.beginPath(); g.moveTo(x, 10 + k * 12); g.lineTo(x - 8 - k * 4, 26 + k * 12); g.lineTo(x + 8 + k * 4, 26 + k * 12); g.fill(); } g.fillStyle = '#5a3d2a'; g.fillRect(x - 2, 86, 4, 8); } }); break;
+    case 'marble': t = canvasTex(512, 512, (g, w, h) => { g.fillStyle = '#eceae6'; g.fillRect(0, 0, w, h); for (let i = 0; i < 26; i++) { g.strokeStyle = `rgba(120,120,125,${rand(0.08, 0.3)})`; g.lineWidth = rand(0.5, 2.5); g.beginPath(); let x = Math.random() * w, y = Math.random() * h; g.moveTo(x, y); for (let k = 0; k < 8; k++) { x += rand(-60, 80); y += rand(-30, 60); g.lineTo(x, y); } g.stroke(); } noise(g, w, h, 4000, 0.03); }); break;
+    case 'treeskirt': t = canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#f2efe8'; g.fillRect(0, 0, w, h); g.fillStyle = '#1f2326'; for (let i = 0; i < 40; i++) { const x = Math.random() * w, y = Math.random() * h; g.beginPath(); g.moveTo(x, y - 14); g.lineTo(x - 7, y + 4); g.lineTo(x + 7, y + 4); g.fill(); } }); break;
+    case 'oldrug': t = canvasTex(512, 512, (g, w, h) => { g.fillStyle = '#5e4c42'; g.fillRect(0, 0, w, h); g.strokeStyle = '#3e302a'; g.lineWidth = 14; g.strokeRect(20, 20, w - 40, h - 40); g.strokeStyle = '#7d6a5c'; g.lineWidth = 4; g.strokeRect(46, 46, w - 92, h - 92); for (let i = 0; i < 60; i++) { g.fillStyle = `rgba(${rand(90, 150)},${rand(70, 120)},${rand(60, 100)},.25)`; g.beginPath(); g.ellipse(rand(60, w - 60), rand(60, h - 60), rand(8, 40), rand(6, 20), Math.random() * 3, 0, TAU); g.fill(); } noise(g, w, h, 30000, 0.09); }); break;
     case 'tvoff': t = canvasTex(64, 64, (g, w, h) => { const gr = g.createLinearGradient(0, 0, w, h); gr.addColorStop(0, '#1a1c20'); gr.addColorStop(0.5, '#0b0c0e'); gr.addColorStop(1, '#16181b'); g.fillStyle = gr; g.fillRect(0, 0, w, h); }); break;
   }
   TEX[name] = t; return t;
@@ -202,6 +211,12 @@ function artTex(kind, seed = 1) {
       const gr = g.createLinearGradient(0, h * 0.3, 0, h * 0.7); gr.addColorStop(0, '#9aa4ad'); gr.addColorStop(1, '#3d4248');
       g.fillStyle = gr; g.fillRect(w * 0.3, h * 0.28, w * 0.4, h * 0.44);
       g.fillStyle = '#20252a'; for (let i = 0; i < 6; i++) g.fillRect(w * 0.3 + srand() * w * 0.36, h * 0.5 + srand() * h * 0.18, 8, 10);
+    } else if (kind === 'wedding') {
+      const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#3d4a35'); gr.addColorStop(1, '#2a2620'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 160; i++) { g.fillStyle = ['#56693f', '#33452c', '#6f7f52', '#8a8a6a'][(srand() * 4) | 0]; g.beginPath(); g.arc(srand() * w, srand() * h * 0.6, 6 + srand() * 14, 0, TAU); g.fill(); }
+      g.fillStyle = '#6b5a4a'; g.fillRect(0, h * 0.72, w, h * 0.28);
+      const cx = w * (0.35 + srand() * 0.3); g.fillStyle = '#f4f1ea'; g.beginPath(); g.moveTo(cx - 10, h * 0.42); g.lineTo(cx - 45, h * 0.9); g.lineTo(cx + 25, h * 0.9); g.closePath(); g.fill(); g.beginPath(); g.arc(cx - 6, h * 0.36, 14, 0, TAU); g.fill();
+      g.fillStyle = '#2c2a28'; g.fillRect(cx + 20, h * 0.4, 30, h * 0.5); g.fillStyle = '#d7b79a'; g.beginPath(); g.arc(cx + 35, h * 0.34, 14, 0, TAU); g.fill();
     } else if (kind === 'abstract') {
       g.fillStyle = '#efe6da'; g.fillRect(0, 0, w, h);
       for (let i = 0; i < 6; i++) { g.fillStyle = ['#c9774f', '#2f4858', '#d9b26f', '#7a9a8a', '#b05c5c'][(srand() * 5) | 0]; g.beginPath(); g.arc(srand() * w, srand() * h, 40 + srand() * 90, 0, TAU); g.fill(); }

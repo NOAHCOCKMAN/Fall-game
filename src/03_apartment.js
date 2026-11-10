@@ -208,7 +208,7 @@ function buildApartment(scene, ctx) {
   }
   function curtains(x0, x1, z) {
     const w = x1 - x0, cx = (x0 + x1) / 2;
-    C(W, 0.012, 0.012, w + 0.2, black, cx, 2.5, z, 8).rotation.z = Math.PI / 2; W.children[W.children.length - 1].position.set(cx, 2.5, z);
+    C(W, 0.012, 0.012, w + 0.2, M(0xb08d57, 0.3, 0.8), cx, 2.5, z, 8).rotation.z = Math.PI / 2; W.children[W.children.length - 1].position.set(cx, 2.5, z);
     const cmat = M(0xf3efe6, 0.95, 0, { side: THREE.DoubleSide, transparent: true, opacity: 0.93 });
     const panels = [];
     for (const sd of [-1, 1]) {

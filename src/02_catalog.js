@@ -62,18 +62,42 @@ function frameArt(ctx, g, w, h, kind, seed, frameColor, mat = 0) {
 function screenCanvas(w, h) { const t = canvasTex(w, h, (g) => { g.fillStyle = '#000'; g.fillRect(0, 0, w, h); }); return t; }
 
 // ================= SEATING =================
-def('sofa', 'Cream sofa', 'Seating', { color: '#ece5d8', colorable: true }, (ctx, it) => {
-  const g = new THREE.Group(), c = M(it.c || '#ece5d8', 0.95), leg = M(0x3a2a1e, 0.5);
-  B(g, 2.3, 0.28, 0.95, c, 0, 0.1, 0);
-  for (const s of [-1, 1]) { B(g, 0.2, 0.62, 0.95, c, s * 1.05, 0.08, 0); }
-  B(g, 2.1, 0.5, 0.25, c, 0, 0.38, -0.35);
+def('sofa', 'Slipcovered sofa', 'Seating', { color: '#e9e2d4', colorable: true }, (ctx, it) => {
+  const g = new THREE.Group(), c = M(it.c || '#e9e2d4', 0.97);
+  B(g, 2.36, 0.4, 0.98, c, 0, 0, 0); // skirted base to the floor
+  for (const s of [-1, 1]) { const arm = B(g, 0.2, 0.66, 0.98, c, s * 1.08, 0, 0); const roll = C(g, 0.11, 0.11, 0.98, c, s * 1.08, 0.55, 0, 16); roll.rotation.x = Math.PI / 2; roll.position.y = 0.62; }
+  B(g, 2.16, 0.48, 0.26, c, 0, 0.4, -0.36);
   const seats = [];
-  for (let i = -1; i <= 1; i++) { const s = B(g, 0.66, 0.15, 0.68, c, i * 0.68, 0.38, 0.1); seats.push(s); const bk = B(g, 0.66, 0.42, 0.18, c, i * 0.68, 0.5, -0.24); bk.rotation.x = -0.12; }
-  for (const x of [-1.05, 1.05]) for (const z of [-0.4, 0.4]) C(g, 0.025, 0.02, 0.1, leg, x, 0, z, 8);
-  const pc = [0x7c6a8a, 0xe9e3d6, 0x8a6e7a, 0xdcd6ca];
-  [[-0.85, 0.2], [-0.55, -0.15], [0.6, 0.15], [0.88, -0.2]].forEach(([x, r], i) => { const p = B(g, 0.42, 0.4, 0.13, M(pc[i], 0.95), x, 0.5, -0.12); p.rotation.set(-0.25, r, 0); });
-  seats.forEach((s, i) => sitOn(ctx, s, 'Sit on sofa', 0.2, 0.25));
+  for (let i = -1; i <= 1; i += 2) { const s = B(g, 1.0, 0.16, 0.7, c, i * 0.5, 0.4, 0.1); seats.push(s); const bk = B(g, 1.0, 0.44, 0.2, c, i * 0.5, 0.5, -0.24); bk.rotation.x = -0.12; }
+  const pil = (w, h, d, mat, x, y, z, rx, ry) => { const p = B(g, w, h, d, mat, x, y, z); p.rotation.set(rx, ry, 0); return p; };
+  const velvet = M(0xffffff, 1, 0, { map: getTex('velvet') }), toile = M(0xffffff, 0.95, 0, { map: getTex('toile') }), lumbar = M(0xffffff, 0.95, 0, { map: getTex('treepillow') }), cream = M(0xece6da, 0.95);
+  pil(0.48, 0.48, 0.14, velvet, -0.88, 0.5, -0.12, -0.25, 0.15); pil(0.46, 0.46, 0.13, toile, -0.52, 0.52, -0.06, -0.3, 0.2);
+  pil(0.62, 0.26, 0.13, lumbar, -0.05, 0.56, -0.08, -0.2, 0); pil(0.46, 0.46, 0.13, toile, 0.35, 0.52, -0.08, -0.28, -0.12);
+  pil(0.46, 0.46, 0.13, velvet, 0.62, 0.55, -0.18, -0.2, -0.1); pil(0.42, 0.4, 0.13, cream, 0.88, 0.5, -0.1, -0.25, -0.2);
+  const fur = S(g, 0.32, M(0x8f8378, 1), -1.02, 0.68, -0.15, 12, 8); fur.scale.set(0.6, 0.35, 1.3);
+  seats.forEach((s) => sitOn(ctx, s, 'Sit on sofa', 0.2, 0.25));
   return g;
+});
+def('coffee_marble', 'Marble coffee table', 'Tables', { color: '#3a2620', colorable: true }, (ctx, it) => {
+  const g = new THREE.Group(), wood = M(it.c || '#3a2620', 0.45);
+  const sh = new THREE.Shape(); const N = 64;
+  for (let i = 0; i <= N; i++) { const a = i / N * TAU; const r = 1 + 0.06 * Math.cos(a * 4) - 0.05 * Math.cos(a * 2); const x = Math.cos(a) * 0.55 * r, y = Math.sin(a) * 0.36 * r; i ? sh.lineTo(x, y) : sh.moveTo(x, y); }
+  const geo = new THREE.ExtrudeGeometry(sh, { depth: 0.035, bevelEnabled: true, bevelSize: 0.008, bevelThickness: 0.008, bevelSegments: 2 }); geo.rotateX(-Math.PI / 2);
+  const tex = getTex('marble'); const top = new THREE.Mesh(geo, M(0xffffff, 0.2, 0, { map: tex })); top.position.y = 0.44; g.add(top);
+  const pa = geo.attributes.position, uv = geo.attributes.uv; for (let i = 0; i < pa.count; i++) uv.setXY(i, pa.getX(i) + 0.5, pa.getZ(i) + 0.5);
+  B(g, 0.9, 0.06, 0.55, wood, 0, 0.38, 0);
+  for (const sx of [-1, 1]) { const leg = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.025, 8, 16, Math.PI * 0.7), wood); leg.position.set(sx * 0.32, 0.2, 0); leg.rotation.set(0, sx > 0 ? 0 : Math.PI, Math.PI * 0.15); g.add(leg); for (const sz of [-1, 1]) C(g, 0.025, 0.035, 0.4, wood, sx * 0.36, 0, sz * 0.2, 8); }
+  B(g, 0.6, 0.03, 0.04, wood, 0, 0.12, 0);
+  return g;
+});
+def('tray_trees', 'Tray with paper trees', 'Holiday', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
+  const g = new THREE.Group(); C(g, 0.17, 0.16, 0.02, M(0xc9c4b8, 0.25, 0.9), 0, 0, 0, 28); T(g, 0.17, 0.01, M(0xb08d57, 0.3, 0.8), 0, 0.02, 0).rotation.x = Math.PI / 2;
+  const pm = M(0x2c4a35, 0.8); for (const [x, z, h] of [[-0.04, 0.02, 0.3], [0.07, -0.03, 0.22]]) { const c = new THREE.Mesh(new THREE.ConeGeometry(h * 0.3, h, 12), pm); c.position.set(x, 0.02 + h / 2, z); g.add(c); }
+  return g;
+});
+def('albums', 'Wedding albums', 'Decor', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
+  const g = new THREE.Group(); const a1 = B(g, 0.3, 0.025, 0.3, M(0xf6f4ef, 0.6), 0, 0, 0); a1.rotation.y = 0.25; const a2 = B(g, 0.28, 0.025, 0.28, M(0xe8d9cf, 0.8), 0.04, 0.025, 0.03); a2.rotation.y = 0.05;
+  ctx.interact(g, { label: 'Look through the wedding album 💍', action: () => { ctx.msg('Page after page of the best day. 🤍'); ctx.task('read'); } }); return g;
 });
 def('sectional', 'Sectional (L)', 'Seating', { color: '#b9bcbc', colorable: true }, (ctx, it) => {
   const g = new THREE.Group(), c = M(it.c || '#b9bcbc', 0.95);
@@ -620,19 +644,20 @@ def('mini_tree', 'Mini pine tree', 'Holiday', { mount: 'surface', solid: false, 
   for (let i = 0; i < 3; i++) { const c = new THREE.Mesh(new THREE.ConeGeometry(0.09 - i * 0.022, 0.12, 10), M(0x2f5a3a, 0.8)); c.position.y = 0.11 + i * 0.07; g.add(c); }
   return g;
 });
-def('xmas_tree', 'Christmas tree', 'Holiday', {}, (ctx, it) => {
-  const g = new THREE.Group(); C(g, 0.22, 0.2, 0.25, M(0x8a6a4a, 0.9, 0, { map: getTex('woven') }), 0, 0, 0, 16);
-  C(g, 0.03, 0.03, 0.3, M(0x5a3d2a), 0, 0.2, 0, 6);
-  const nm = M(0x24452c, 0.9);
-  for (let i = 0; i < 7; i++) { const c = new THREE.Mesh(new THREE.ConeGeometry(0.45 - i * 0.055, 0.45, 14), nm); c.position.y = 0.55 + i * 0.24; g.add(c); }
-  const orn = [M(0xb3141f, 0.2, 0.5), M(0xd4af37, 0.2, 0.8), M(0xf1ece2, 0.2, 0.3)];
-  const bulbs = [];
-  for (let i = 0; i < 60; i++) { const y = 0.45 + Math.random() * 1.65, r = (0.45 - (y - 0.45) / 1.65 * 0.4) * 0.95, a = Math.random() * TAU; if (i < 34) S(g, 0.035, orn[i % 3], Math.cos(a) * r, y, Math.sin(a) * r, 10, 8); else bulbs.push(S(g, 0.015, E(0xffd27a, 2), Math.cos(a) * r, y, Math.sin(a) * r, 6, 4)); }
-  const star = S(g, 0.06, E(0xffe08a, 1.5), 0, 2.28, 0, 8, 6); star.scale.set(1, 1.3, 0.4);
-  const L = ctx.light(g, 0xffc070, 0, 4, 0, 1.2, 0.4);
+def('xmas_tree', 'Pencil Christmas tree', 'Holiday', {}, (ctx, it) => {
+  const g = new THREE.Group();
+  const skirt = C(g, 0.55, 0.6, 0.03, M(0xffffff, 0.95, 0, { map: getTex('treeskirt') }), 0, 0, 0, 24);
+  C(g, 0.025, 0.03, 0.35, M(0x5a3d2a), 0, 0.02, 0, 6);
+  const nm = M(0x1c3522, 0.95), nm2 = M(0x22402a, 0.95);
+  for (let i = 0; i < 10; i++) { const c = new THREE.Mesh(new THREE.ConeGeometry(0.33 - i * 0.026, 0.38, 12), i % 2 ? nm2 : nm); c.position.y = 0.45 + i * 0.19; c.rotation.y = i; g.add(c); }
+  const orn = [M(0x7a1018, 0.2, 0.5), M(0x9c1a22, 0.3, 0.4), M(0xe8e4dc, 0.1, 0.6)];
+  const bulbs = []; const bm = E(0xffe2a8, 2);
+  for (let i = 0; i < 150; i++) { const y = 0.3 + Math.random() * 1.95, r = (0.33 - (y - 0.3) / 1.95 * 0.3) * 0.98, a = Math.random() * TAU; if (i < 30) S(g, 0.028, orn[i % 3], Math.cos(a) * r, y, Math.sin(a) * r, 10, 8); else bulbs.push(S(g, 0.011, bm, Math.cos(a) * r, y, Math.sin(a) * r, 5, 4)); }
+  S(g, 0.03, M(0x2a4a30), 0, 2.28, 0, 6, 4).scale.y = 3;
+  const L = ctx.light(g, 0xffd8a0, 0, 4, 0, 1.2, 0.35);
   const st = { on: true };
   ctx.interact(g, { reach: 5, label: () => st.on ? 'Turn off tree lights' : 'Turn on tree lights ✨', action: () => { st.on = !st.on; Sfx.click(); ctx.task('tree'); } });
-  ctx.tick(g, (dt, t) => { const on = st.on && ctx.power(); bulbs.forEach((b, i) => b.material.emissiveIntensity = on ? 1.2 + Math.sin(t * 3 + i * 1.7) : 0); star.material.emissiveIntensity = on ? 1.5 : 0.1; L.intensity = on ? 1.2 : 0; });
+  ctx.tick(g, (dt, t) => { const on = st.on && ctx.power(); bm.emissiveIntensity = on ? 2 + Math.sin(t * 2) * 0.3 : 0; L.intensity = on ? 1.6 : 0; });
   return g;
 });
 def('present', 'Wrapped present', 'Holiday', { mount: 'surface', solid: false, small: true, color: '#b3141f', colorable: true }, (ctx, it) => {
@@ -657,6 +682,7 @@ def('art_landscape', 'Farmhouse print', 'Wall art', { mount: 'wall', solid: fals
 def('art_garden', 'Garden painting', 'Wall art', { mount: 'wall', solid: false }, (ctx, it) => { const g = new THREE.Group(); frameArt(ctx, g, 0.4, 0.55, 'garden', 3, 0xb08d57); return g; });
 def('art_bridge', 'Bridge painting', 'Wall art', { mount: 'wall', solid: false }, (ctx, it) => { const g = new THREE.Group(); frameArt(ctx, g, 0.3, 0.4, 'bridge', 4, 0x2a2a2a); return g; });
 def('art_print', 'Gallery print', 'Wall art', { mount: 'wall', solid: false, color: '#2a2a2a' }, (ctx, it) => { const g = new THREE.Group(); frameArt(ctx, g, 0.6, 0.75, 'print', (it.d && it.d.seed) || 5, 0x2a2a2a, 0.4); return g; });
+def('art_wedding', 'Matted photo (large)', 'Wall art', { mount: 'wall', solid: false }, (ctx, it) => { const g = new THREE.Group(); frameArt(ctx, g, 0.62, 0.8, 'wedding', (it.d && it.d.seed) || 31, 0x1a1a1a, 0.62); ctx.interact(g, { label: 'Look at the photo', action: () => ctx.msg('A favorite from the wedding. 🤍') }); return g; });
 def('art_photo', 'B&W photo', 'Wall art', { mount: 'wall', solid: false }, (ctx, it) => { const g = new THREE.Group(); frameArt(ctx, g, 0.3, 0.38, 'photo', (it.d && it.d.seed) || 6, 0x1f1f1f, 0.25); return g; });
 def('art_abstract', 'Abstract canvas', 'Wall art', { mount: 'wall', solid: false }, (ctx, it) => { const g = new THREE.Group(); B(g, 0.9, 0.9, 0.04, M(0xffffff, 0.9, 0, { map: artTex('abstract', 7) }), 0, -0.45, 0.02); return g; });
 def('art_poster', 'Fall poster', 'Wall art', { mount: 'wall', solid: false }, (ctx, it) => { const g = new THREE.Group(); frameArt(ctx, g, 0.5, 0.7, 'poster', 8, 0xf1ece2); return g; });
@@ -685,6 +711,7 @@ def('clock', 'Wall clock', 'Decor', { mount: 'wall', solid: false }, (ctx, it) =
   ctx.interact(g, { label: () => 'It\'s ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), action: () => Sfx.tone(800, 0.05) });
   return g;
 });
+def('rug_vintage', 'Vintage rug', 'Rugs', { solid: false, flat: true }, (ctx, it) => { const g = new THREE.Group(); B(g, 2.6, 0.012, 1.9, M(0xffffff, 1, 0, { map: getTex('oldrug') }), 0, 0, 0); return g; });
 def('rug', 'Area rug', 'Rugs', { solid: false, color: '#9b6a6b', colorable: true, flat: true }, (ctx, it) => {
   const g = new THREE.Group(); const m = M(it.c ? new THREE.Color(it.c).lerp(new THREE.Color(0xffffff), 0.3) : 0xffffff, 1, 0, { map: getTex('rug') }); if (it.c) m.color.set(it.c).lerp(new THREE.Color(0xffffff), 0.4);
   B(g, 2.4, 0.012, 1.7, m, 0, 0, 0); return g;

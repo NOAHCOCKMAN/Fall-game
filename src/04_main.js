@@ -127,10 +127,10 @@ const PI = Math.PI, HP = Math.PI / 2;
 const DEFAULT_LAYOUT = {
   v: 2, items: [
     // living room: sofa on the half wall, TV on the east wall, tree by the sofa, bistro set top right
-    ['sofa', 4.64, 0, 3.55, HP], ['art_print', 4.165, 1.72, 2.8, HP, null, { seed: 11 }], ['art_print', 4.165, 1.72, 3.55, HP, null, { seed: 12 }], ['art_print', 4.165, 1.72, 4.3, HP, null, { seed: 13 }],
-    ['picture_light', 4.165, 2.2, 2.8, HP], ['picture_light', 4.165, 2.2, 3.55, HP], ['picture_light', 4.165, 2.2, 4.3, HP],
-    ['xmas_tree', 4.6, 0, 1.92, 0], ['present', 5.2, 0, 1.75, 0.3], ['present', 5.35, 0, 2.2, -0.2, '#2e5a3a'],
-    ['rug', 5.9, 0, 3.7, HP], ['coffee_round', 5.9, 0, 3.7, 0], ['mini_tree', 5.75, 0.43, 3.55, 0], ['books', 6.07, 0.43, 3.82, 0.4], ['candle', 5.7, 0.43, 3.95, 0],
+    ['sofa', 4.65, 0, 3.55, HP], ['art_wedding', 4.165, 1.62, 2.8, HP, null, { seed: 11 }], ['art_wedding', 4.165, 1.62, 3.55, HP, null, { seed: 12 }], ['art_wedding', 4.165, 1.62, 4.3, HP, null, { seed: 13 }],
+    ['picture_light', 4.165, 2.17, 2.8, HP], ['picture_light', 4.165, 2.17, 3.55, HP], ['picture_light', 4.165, 2.17, 4.3, HP],
+    ['xmas_tree', 4.55, 0, 2.0, 0], ['present', 5.05, 0, 1.75, 0.3], ['present', 5.2, 0, 2.2, -0.2, '#2e5a3a'],
+    ['rug_vintage', 5.85, 0, 3.6, HP], ['coffee_marble', 5.75, 0, 3.6, HP], ['tray_trees', 5.75, 0.485, 3.32, 0], ['albums', 5.75, 0.485, 3.8, 0.5],
     ['media_console', 7.32, 0, 3.85, -HP], ['tv', 7.535, 1.55, 3.85, -HP], ['speaker', 7.32, 0.63, 3.2, -HP], ['mini_tree', 7.32, 0.63, 4.5, 0], ['basket', 4.45, 0, 5.0, 0],
     ['bistro_table', 6.95, 0, 1.95, 0], ['armchair', 6.2, 0, 2.0, HP], ['armchair', 6.9, 0, 2.62, PI], ['candle', 6.88, 0.735, 1.88, 0], ['mini_tree', 7.05, 0.735, 2.02, 0], ['wine', 6.83, 0.735, 2.08, 0],
     ['clothes_pile', 6.4, 0, 4.9, 0.6],
