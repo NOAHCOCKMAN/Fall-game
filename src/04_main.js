@@ -143,11 +143,11 @@ const DEFAULT_LAYOUT = {
     ['canisters', 2.3, 0.935, 9.7, PI], ['knife_block', 2.85, 0.935, 9.72, PI], ['toaster', 3.22, 0.935, 9.65, PI], ['pan', 4.10, 0.935, 9.44, PI], ['kettle', 3.74, 0.935, 9.74, PI],
     ['lamp_table', 4.62, 0.935, 9.7, 0, null, { on: true }], ['stand_mixer', 5.1, 0.935, 9.62, PI], ['fruit_bowl', 2.22, 0.935, 8.9, 0], ['plant_small', 2.22, 0.935, 8.05, 0],
     // bedroom
-    ['bed', 1.14, 0, 1.9, HP], ['nightstand', 0.27, 0, 0.6, HP], ['nightstand', 0.27, 0, 3.05, HP], ['lamp_table', 0.27, 0.63, 0.6, 0, null, { on: true }], ['lamp_table', 0.27, 0.63, 3.05, 0],
-    ['art_monet', 0.06, 1.75, 1.9, HP], ['arched_cabinet', 3.83, 0, 0.62, -HP], ['dresser', 3.8, 0, 2.3, -HP],
+    ['bed', 1.14, 0, 1.9, HP], ['nightstand', 0.27, 0, 0.6, HP], ['nightstand', 0.27, 0, 3.0, HP], ['lamp_table', 0.27, 0.63, 0.6, 0, null, { on: true }], ['lamp_table', 0.27, 0.63, 3.0, 0],
+    ['art_monet', 0.06, 1.75, 1.9, HP], ['arched_cabinet', 3.56, 0, 0.27, 0], ['dresser', 3.8, 0, 2.3, -HP],
     ['art_photo', 4.04, 1.45, 1.85, -HP, null, { seed: 21 }], ['art_photo', 4.04, 1.45, 2.3, -HP, null, { seed: 22 }], ['art_photo', 4.04, 1.45, 2.75, -HP, null, { seed: 23 }],
     ['art_photo', 4.04, 1.9, 1.85, -HP, null, { seed: 24 }], ['art_photo', 4.04, 1.9, 2.3, -HP, null, { seed: 25 }], ['art_photo', 4.04, 1.9, 2.75, -HP, null, { seed: 26 }],
-    ['record_player', 3.8, 0.83, 1.85, -HP], ['books', 3.8, 0.83, 2.8, 0.2], ['ironing', 2.95, 0, 0.7, 0],
+    ['record_player', 3.8, 0.83, 1.85, -HP], ['books', 3.8, 0.83, 2.8, 0.2], ['ironing', 2.45, 0, 0.95, 0],
     ['clothes_pile', 2.75, 0, 1.4, 0.4], ['clothes_pile', 2.5, 0, 2.95, 1.2],
     // bath, closet, balcony, corridor
     ['hair_dryer', 0.35, 0.9, 4.1, HP], ['candle', 0.32, 0.9, 5.3, 0], ['hamper', 1.45, 0, 6.95, 0],

@@ -1433,7 +1433,7 @@ function buildApartment(scene, ctx) {
   const doorOp = (a, b) => ({ a, b, bottom: 0, top: 2.08 });
   const winOp = (a, b) => ({ a, b, bottom: 0.55, top: 2.3 });
   // exterior (north facade faces the parking lot)
-  wall(0, 0, 4.1, 0, [winOp(1.25, 3.1)]);
+  wall(0, 0, 4.1, 0, [winOp(1.1, 2.75)]);
   wall(4.1, 1.45, 7.6, 1.45, [doorOp(5.0, 6.4)]);
   wall(4.1, 0, 4.1, 5.25); // half wall: runs past the recessed bedroom door
   wall(7.6, 0, 7.6, 1.45, [], { noBase: true });
@@ -1441,9 +1441,9 @@ function buildApartment(scene, ctx) {
   wall(0, 10, 7.6, 10);
   wall(0, 0, 0, 10);
   // interior
-  wall(0, 3.4, 2.9, 3.4);
+  wall(0, 3.4, 2.9, 3.4, [doorOp(0.95, 1.7)]); // bedroom ↔ bathroom door
   wall(2.9, 4.4, 4.1, 4.4, [doorOp(3.15, 3.95)]); // bedroom door, sunk into the alcove
-  wall(2.9, 3.4, 2.9, 6.5, [doorOp(4.75, 5.55)]);
+  wall(2.9, 3.4, 2.9, 6.5, [doorOp(5.55, 6.33)]); // bathroom door right beside the fridge
   wall(0, 6.5, 2.9, 6.5, [doorOp(0.95, 1.7)]);
   wall(1.85, 6.5, 1.85, 10, [], { noOutlet: true });
   // laundry & mechanical closets
@@ -1523,7 +1523,8 @@ function buildApartment(scene, ctx) {
   }
   const front = makeDoor({ x: 7.6, z: 7.05, axis: 'z', len: 0.9, hingeEnd: true, open: -1, label: 'front door', exterior: true, lock: true });
   makeDoor({ x: 3.15, z: 4.4, axis: 'x', len: 0.8, hingeEnd: false, open: -1, label: 'bedroom door' });
-  makeDoor({ x: 2.9, z: 4.75, axis: 'z', len: 0.8, hingeEnd: false, open: -1, label: 'bathroom door' });
+  makeDoor({ x: 2.9, z: 5.55, axis: 'z', len: 0.78, hingeEnd: false, open: -1, label: 'bathroom door' });
+  makeDoor({ x: 0.95, z: 3.4, axis: 'x', len: 0.75, hingeEnd: false, open: 1, label: 'bathroom door' });
   makeDoor({ x: 0.95, z: 6.5, axis: 'x', len: 0.75, hingeEnd: false, open: 1, label: 'closet door' });
   makeDoor({ x: 5.62, z: 8.9, axis: 'x', len: 0.71, hingeEnd: false, open: -1, label: 'laundry closet' });
   makeDoor({ x: 6.6, z: 8.9, axis: 'x', len: 0.75, hingeEnd: true, open: 1, label: 'mechanical closet' });
@@ -1570,7 +1571,7 @@ function buildApartment(scene, ctx) {
     ctx.interact(b, { reach: 4, label: () => st.up ? 'Lower blinds' : 'Raise blinds', action: () => { st.up = !st.up; Sfx.noise(0.6, 0.1, 2500, 1); } });
     ctx.tick(b, dt => { b.scale.y = lerp(b.scale.y, st.up ? 0.12 : 1, dt * 4); b.position.y = 0.58 + hh - hh * b.scale.y / 2; });
   }
-  windowAt(1.25, 3.1, 0, true, 1);
+  windowAt(1.1, 2.75, 0, true, 1);
   curtains(4.7, 6.7, 1.45 + WT / 2 + 0.1);
 
   // ---------- switches ----------
@@ -1590,12 +1591,12 @@ function buildApartment(scene, ctx) {
   sw(4.7, 1.515, 0, ['balcony', 'living'], '');
   sw(2.965, 4.55, Math.PI / 2, ['hall'], '');
   sw(4.035, 4.0, -Math.PI / 2, ['bedroom', 'bedroom:fan'], '');
-  sw(2.835, 5.8, -Math.PI / 2, ['bath'], '');
+  sw(2.835, 5.25, -Math.PI / 2, ['bath'], ''); sw(1.95, 3.465, 0, ['bath'], '');
   sw(0.75, 6.565, 0, ['closet'], '');
   sw(6.335, 9.1, -Math.PI / 2, ['laundry'], '');
   sw(6.465, 9.1, Math.PI / 2, ['mech'], '');
   sw(7.665, 6.8, Math.PI / 2, ['corridor'], '');
-  sw(2.965, 6.2, Math.PI / 2, ['kitchen', 'hall'], '');
+  sw(2.965, 5.3, Math.PI / 2, ['kitchen', 'hall'], '');
 
   // ---------- ceiling fans & pendants ----------
   function fan(key, x, z) {
@@ -2161,11 +2162,11 @@ const DEFAULT_LAYOUT = {
     ['canisters', 2.3, 0.935, 9.7, PI], ['knife_block', 2.85, 0.935, 9.72, PI], ['toaster', 3.22, 0.935, 9.65, PI], ['pan', 4.10, 0.935, 9.44, PI], ['kettle', 3.74, 0.935, 9.74, PI],
     ['lamp_table', 4.62, 0.935, 9.7, 0, null, { on: true }], ['stand_mixer', 5.1, 0.935, 9.62, PI], ['fruit_bowl', 2.22, 0.935, 8.9, 0], ['plant_small', 2.22, 0.935, 8.05, 0],
     // bedroom
-    ['bed', 1.14, 0, 1.9, HP], ['nightstand', 0.27, 0, 0.6, HP], ['nightstand', 0.27, 0, 3.05, HP], ['lamp_table', 0.27, 0.63, 0.6, 0, null, { on: true }], ['lamp_table', 0.27, 0.63, 3.05, 0],
-    ['art_monet', 0.06, 1.75, 1.9, HP], ['arched_cabinet', 3.83, 0, 0.62, -HP], ['dresser', 3.8, 0, 2.3, -HP],
+    ['bed', 1.14, 0, 1.9, HP], ['nightstand', 0.27, 0, 0.6, HP], ['nightstand', 0.27, 0, 3.0, HP], ['lamp_table', 0.27, 0.63, 0.6, 0, null, { on: true }], ['lamp_table', 0.27, 0.63, 3.0, 0],
+    ['art_monet', 0.06, 1.75, 1.9, HP], ['arched_cabinet', 3.56, 0, 0.27, 0], ['dresser', 3.8, 0, 2.3, -HP],
     ['art_photo', 4.04, 1.45, 1.85, -HP, null, { seed: 21 }], ['art_photo', 4.04, 1.45, 2.3, -HP, null, { seed: 22 }], ['art_photo', 4.04, 1.45, 2.75, -HP, null, { seed: 23 }],
     ['art_photo', 4.04, 1.9, 1.85, -HP, null, { seed: 24 }], ['art_photo', 4.04, 1.9, 2.3, -HP, null, { seed: 25 }], ['art_photo', 4.04, 1.9, 2.75, -HP, null, { seed: 26 }],
-    ['record_player', 3.8, 0.83, 1.85, -HP], ['books', 3.8, 0.83, 2.8, 0.2], ['ironing', 2.95, 0, 0.7, 0],
+    ['record_player', 3.8, 0.83, 1.85, -HP], ['books', 3.8, 0.83, 2.8, 0.2], ['ironing', 2.45, 0, 0.95, 0],
     ['clothes_pile', 2.75, 0, 1.4, 0.4], ['clothes_pile', 2.5, 0, 2.95, 1.2],
     // bath, closet, balcony, corridor
     ['hair_dryer', 0.35, 0.9, 4.1, HP], ['candle', 0.32, 0.9, 5.3, 0], ['hamper', 1.45, 0, 6.95, 0],
