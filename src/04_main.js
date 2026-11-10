@@ -152,6 +152,16 @@ const DEFAULT_LAYOUT = {
 
 DEFAULT_LAYOUT.items.forEach(i => spawnItem({ id: uid(), ...i, d: i.d ? JSON.parse(JSON.stringify(i.d)) : {} }));
 
+// ---- merge static geometry (rendering only; picking still uses the original meshes) ----
+camera.layers.enable(LAYER_MERGED);
+const optStats = optimizeStatic({
+  roots: [A.world, A.outdoor],
+  tickOwners: TICKS.map(t => t.owner).filter(o => o !== A.world && o !== itemsGroup),
+  registry: [...Object.values(A.lights).flatMap(L => L.mats), ...A.streetLamps, A.sky.material],
+  isItemContainer: (o) => { const d = CATALOG[o.userData.item.t]; return d.small || d.removable; },
+});
+console.info('static merge', optStats);
+
 // ---- clock & day/night ----
 function advanceTime(mins, skip) {
   P.minutes += mins;
@@ -303,6 +313,7 @@ addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 // ---- raycasting ----
 const ray = new THREE.Raycaster();
 const CENTER = new THREE.Vector2(0, 0);
+ray.layers.set(0); ray.layers.enable(LAYER_PICK); // aim at real objects (incl. merged originals), never at merged render meshes
 function aimRay() { ray.setFromCamera(locked || isTouch || !mouseInCanvas ? CENTER : mouseNDC, camera); }
 let frameHits = [];
 function castFrame() { aimRay(); ray.far = 9; frameHits.length = 0; ray.intersectObject(A.world, true, frameHits); } // the one raycast per frame
@@ -607,7 +618,7 @@ frame ${(sum / n).toFixed(1)} ms  worst ${worst.toFixed(1)} ms
 logic ${(lg / n).toFixed(2)} ms  render ${(rd / n).toFixed(2)} ms
 draw calls ${i.render.calls}  tris ${(i.render.triangles / 1000).toFixed(0)}k
 programs ${i.programs.length}  tex ${i.memory.textures}  geo ${i.memory.geometries}
-updates ${ticksRun}/${TICKS.length}  pixel ratio ${renderer.getPixelRatio().toFixed(2)}`;
+updates ${ticksRun}/${TICKS.length}  split-out ${detachedCount}  pixel ratio ${renderer.getPixelRatio().toFixed(2)}`;
 }
 function setPerf(on) { stats.show = on; EL.perf.hidden = !on; settings.perf = on; store.set('settings', settings); const cb = $('#perfToggle'); if (cb) cb.checked = on; }
 addEventListener('keydown', (e) => { if (e.code === 'F3') { e.preventDefault(); setPerf(!stats.show); } });
@@ -631,4 +642,4 @@ P.pos.set(A.spawn.x, 0, A.spawn.z); P.yaw = A.spawn.yaw; P.day = P.dayTarget = d
 updateHud(); renderTasks();
 camera.position.set(P.pos.x, P.eye, P.pos.z); camera.rotation.set(P.pitch, P.yaw, 0); camera.updateMatrixWorld();
 precompile().then(() => requestAnimationFrame(frame));
-window.__game = { stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
+window.__game = { optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };

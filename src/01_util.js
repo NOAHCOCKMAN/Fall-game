@@ -7,6 +7,10 @@ const lerp = (a, b, t) => a + (b - a) * t;
 let _seed = 1234;
 const srand = () => { _seed = (_seed * 16807) % 2147483647; return (_seed - 1) / 2147483646; };
 
+// tags for the static-mesh optimizer: markDyn = never merge this subtree (it moves, hides or changes on its own);
+// markMoves = this node moves as a rigid unit, so its children may be merged *inside* it
+function markDyn(...objs) { for (const o of objs.flat()) if (o) o.userData.dyn = true; }
+function markMoves(...objs) { for (const o of objs.flat()) if (o) o.userData.moves = true; }
 function M(color, r = 0.75, m = 0, extra = {}) {
   return new THREE.MeshStandardMaterial({ color, roughness: r, metalness: m, ...extra });
 }

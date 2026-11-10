@@ -180,7 +180,8 @@ function buildApartment(scene, ctx) {
     const box = new THREE.Box3();
     // a door only blocks you when it's fully shut; while swinging or open you can always pass
     ctx.addCollider(box, () => { const shut = !st.open && st.v === 0; if (shut && !st.boxOn) { piv.updateMatrixWorld(true); box.setFromObject(leaf); st.boxOn = true; } else if (!shut && st.boxOn) { box.makeEmpty(); st.boxOn = false; } }, st);
-    ctx.tick(leaf, dt => { const t = st.open ? 1 : 0; if (st.v === t) return; st.v += (t - st.v) * Math.min(1, dt * 7); if (Math.abs(t - st.v) < 0.002) st.v = t; piv.rotation.y = closed + s * 1.55 * st.v; });
+    leaf.userData.rigidTick = true;
+    ctx.tick(leaf, dt => { const t = st.open ? 1 : 0; if (st.v === t) return; if (leaf.userData.detach) leaf.userData.detach(); st.v += (t - st.v) * Math.min(1, dt * 7); if (Math.abs(t - st.v) < 0.002) st.v = t; piv.rotation.y = closed + s * 1.55 * st.v; });
     doors.push(st); st.leaf = leaf; if (id) A.doorById[id] = st;
     return st;
   }
@@ -264,9 +265,10 @@ function buildApartment(scene, ctx) {
   // ---------- ceiling fans & pendants ----------
   function fan(key, x, z) {
     const g = G(W, x, WALL_H, z); C(g, 0.012, 0.012, 0.25, black, 0, -0.25, 0, 8); C(g, 0.1, 0.12, 0.12, black, 0, -0.36, 0, 20);
-    const rot = G(g, 0, -0.33, 0); for (let i = 0; i < 5; i++) { const b = B(rot, 0.58, 0.012, 0.13, M(0x5a3d2a, 0.6), 0.36, 0, 0); const arm = G(rot, 0, 0, 0, i / 5 * TAU); arm.add(b); }
+    const rot = G(g, 0, -0.33, 0); markMoves(rot); for (let i = 0; i < 5; i++) { const b = B(rot, 0.58, 0.012, 0.13, M(0x5a3d2a, 0.6), 0.36, 0, 0); const arm = G(rot, 0, 0, 0, i / 5 * TAU); arm.add(b); }
     const lm = E(0xfff3df, 0); const lk = S(g, 0.11, lm, 0, -0.42, 0, 20, 10); lk.scale.y = 0.45; A.lights[key].mats.push(lm);
     const F = A.lights[key].fan = { on: false, speed: 0 };
+    g.userData.rigidTick = true; // only spins the blades; its light material is in the frozen registry
     ctx.tick(g, dt => { F.speed = lerp(F.speed, F.on && ctx.power() ? 9 : 0, dt * 0.8); rot.rotation.y += F.speed * dt; if (F.on && !F.snd) F.snd = Sfx.loop('fan', V3(x, 2, z), 0.04); if (!F.on && F.snd) { F.snd.stop(); F.snd = null; } }, true);
     ctx.interact(lk, { reach: 4, label: () => F.on ? 'Turn fan off' : 'Turn fan on', action: () => { F.on = !F.on; Sfx.click(); } });
   }
@@ -376,7 +378,7 @@ function buildApartment(scene, ctx) {
   const MW = G(K, 5.93, 1.45, 0.06);
   B(MW, 0.76, 0.42, 0.4, ss, 0, 0, 0.2); B(MW, 0.56, 0.36, 0.38, M(0xe8e8e8, 0.5), -0.08, 0.03, 0.2);
   const mwLight = M(0xe8e8e8, 0.5, 0, { emissive: 0xffe9b0, emissiveIntensity: 0 }); B(MW, 0.54, 0.01, 0.36, mwLight, -0.08, 0.37, 0.2);
-  const turn = G(MW, -0.08, 0.05, 0.2); C(turn, 0.14, 0.14, 0.01, M(0xdfe8ee, 0.1, 0, { transparent: true, opacity: 0.6 }), 0, 0, 0, 24); C(turn, 0.07, 0.05, 0.06, M(0xf4f1ea, 0.3), 0, 0.01, 0, 16); C(turn, 0.065, 0.065, 0.01, M(0xa0522d), 0, 0.055, 0, 16);
+  const turn = G(MW, -0.08, 0.05, 0.2); markMoves(turn); C(turn, 0.14, 0.14, 0.01, M(0xdfe8ee, 0.1, 0, { transparent: true, opacity: 0.6 }), 0, 0, 0, 24); C(turn, 0.07, 0.05, 0.06, M(0xf4f1ea, 0.3), 0, 0.01, 0, 16); C(turn, 0.065, 0.065, 0.01, M(0xa0522d), 0, 0.055, 0, 16);
   const mwd = G(MW, -0.38, 0.01, 0.4); B(mwd, 0.58, 0.4, 0.025, ss, 0.29, 0, 0); B(mwd, 0.4, 0.26, 0.004, M(0x0d0d0d, 0.1, 0.2, { transparent: true, opacity: 0.8 }), 0.25, 0.07, 0.013); B(mwd, 0.02, 0.3, 0.03, ssDark, 0.53, 0.05, 0.025);
   const mwDoor = hinge(ctx, mwd, 'y', -1.7, 'microwave', 'click');
   const kpd = B(MW, 0.15, 0.36, 0.02, M(0x111111, 0.3), 0.29, 0.03, 0.405); const mwDisp = canvasTex(64, 24, g => { }); plane(MW, 0.1, 0.035, new THREE.MeshBasicMaterial({ map: mwDisp }), 0.29, 0.33, 0.416);
@@ -440,11 +442,11 @@ function buildApartment(scene, ctx) {
   const sinkM = M(0xb9bdc1, 0.25, 0.9); B(IS, 0.76, 0.01, 0.5, sinkM, 0, 0.7, -0.15); B(IS, 0.76, 0.21, 0.01, sinkM, 0, 0.7, -0.4); B(IS, 0.76, 0.21, 0.01, sinkM, 0, 0.7, 0.1); B(IS, 0.01, 0.21, 0.5, sinkM, -0.38, 0.7, -0.15); B(IS, 0.01, 0.21, 0.5, sinkM, 0.38, 0.7, -0.15);
   C(IS, 0.03, 0.03, 0.005, M(0x333333), 0, 0.711, -0.15, 12);
   // dirty dishes
-  const dishes = []; for (let i = 0; i < 4; i++) { const d = C(IS, 0.11, 0.1, 0.012, M(i % 2 ? 0xf4f1ea : 0xdde4f2, 0.3), -0.18 + i * 0.1, 0.72 + i * 0.02, -0.15 + (i % 2) * 0.05, 18); d.rotation.z = 0.3; dishes.push(d); }
+  const dishes = []; for (let i = 0; i < 4; i++) { const d = C(IS, 0.11, 0.1, 0.012, M(i % 2 ? 0xf4f1ea : 0xdde4f2, 0.3), -0.18 + i * 0.1, 0.72 + i * 0.02, -0.15 + (i % 2) * 0.05, 18); d.rotation.z = 0.3; dishes.push(d); } markDyn(dishes);
   // faucet (on stool side, arching toward kitchen)
   const fau = G(IS, 0.0, 0.935, 0.2); C(fau, 0.025, 0.03, 0.04, nickel, 0, 0, 0, 12); C(fau, 0.014, 0.014, 0.36, nickel, 0, 0.04, 0, 10);
   const arc = T(fau, 0.12, 0.014, nickel, 0, 0.4, -0.12, Math.PI); arc.rotation.y = Math.PI / 2; C(fau, 0.016, 0.014, 0.12, nickel, 0, 0.29, -0.24, 10);
-  const lever = B(fau, 0.015, 0.012, 0.09, nickel, 0.05, 0.24, 0.02);
+  const lever = B(fau, 0.015, 0.012, 0.09, nickel, 0.05, 0.24, 0.02); markDyn(lever);
   const water = C(IS, 0.008, 0.012, 0.5, M(0xcfe8ff, 0.05, 0, { transparent: true, opacity: 0.55 }), 0, 0.72, -0.04, 8); water.visible = false;
   const sink = { on: false };
   ctx.interact(fau, { label: () => sink.on ? 'Turn off faucet' : 'Turn on faucet 💧', action: () => { sink.on = !sink.on; Sfx.click(); if (sink.on) sink.s = Sfx.loop('water', V3(5.0, 0.9, 7.4), 0.12); else sink.s && sink.s.stop(); } });
@@ -463,7 +465,7 @@ function buildApartment(scene, ctx) {
     const knob = C(g, 0.03, 0.03, 0.02, M(0xd9d9d9, 0.3, 0.5), 0.2, 0.75, 0.715, 16); knob.rotation.x = Math.PI / 2;
     const disp = B(g, 0.12, 0.04, 0.005, E(0x4fb3ff, 0), -0.1, 0.73, 0.712);
     const drum = G(g, 0, 0.36, 0.45); const dr = C(drum, 0.24, 0.24, 0.4, M(0x8d9196, 0.3, 0.8), 0, -0.2, 0, 24); dr.rotation.x = Math.PI / 2; dr.position.set(0, 0, -0.2); C(drum, 0.25, 0.25, 0.01, M(0x2a2a2a, 0.6), 0, 0, 0.0, 24).rotation.x = Math.PI / 2;
-    const clothes = G(drum); for (let i = 0; i < 6; i++) S(clothes, 0.08, M([0xe3b8b8, 0x2e3a46, 0xf1ece2, 0x7c8f6a, 0x9c3b3b, 0x6fb0a6][i], 1), Math.cos(i) * 0.12, Math.sin(i) * 0.12 - 0.05, -0.15, 8, 6);
+    const clothes = G(drum); markDyn(clothes); markMoves(g, drum); for (let i = 0; i < 6; i++) S(clothes, 0.08, M([0xe3b8b8, 0x2e3a46, 0xf1ece2, 0x7c8f6a, 0x9c3b3b, 0x6fb0a6][i], 1), Math.cos(i) * 0.12, Math.sin(i) * 0.12 - 0.05, -0.15, 8, 6);
     const door = G(g, -0.27, 0.36, 0.71); const ring = T(door, 0.22, 0.035, M(0xf7f7f7, 0.35), 0.27, 0, 0.02); const gl = new THREE.Mesh(new THREE.CircleGeometry(0.2, 24), M(0x404a55, 0.05, 0.3, { transparent: true, opacity: 0.45 })); gl.position.set(0.27, 0, 0.03); door.add(gl);
     const dSt = hinge(ctx, door, 'y', -1.8, kind + ' door', 'click');
     ctx.tick(g, () => { door.updateMatrixWorld(); });
@@ -539,7 +541,7 @@ function buildApartment(scene, ctx) {
   B(SH, sx1 - sx0, 0.03, 0.04, nickel, scx, 2.05, sz1); B(SH, sx1 - sx0, 0.03, 0.04, nickel, scx, 0.08, sz1);
   const glassM = M(0xdde8ee, 0.05, 0.1, { transparent: true, opacity: 0.2, depthWrite: false });
   const gw = (sx1 - sx0) / 2 + 0.03;
-  const gp1 = B(SH, gw, 1.95, 0.01, glassM, sx0 + gw / 2, 0.1, sz1 - 0.02); const gp2 = B(SH, gw, 1.95, 0.01, glassM, sx1 - gw / 2, 0.1, sz1);
+  const gp1 = B(SH, gw, 1.95, 0.01, glassM, sx0 + gw / 2, 0.1, sz1 - 0.02); markDyn(gp1); const gp2 = B(SH, gw, 1.95, 0.01, glassM, sx1 - gw / 2, 0.1, sz1);
   B(gp1, 0.02, 0.3, 0.04, nickel, gw / 2 - 0.05, -0.15, 0.03);
   const shSt = { open: false, v: 0, on: false };
   ctx.interact(gp1, { label: () => shSt.open ? 'Close shower door' : 'Open shower door', action: () => { shSt.open = !shSt.open; Sfx.noise(0.4, 0.1, 2500, 2); } });

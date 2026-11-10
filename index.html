@@ -282,6 +282,7 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
 <script type="module">
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { mergeGeometries as THREE_mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 // ---------- util: materials, geometry helpers, procedural textures, audio ----------
 const TAU = Math.PI * 2;
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
@@ -291,6 +292,10 @@ const lerp = (a, b, t) => a + (b - a) * t;
 let _seed = 1234;
 const srand = () => { _seed = (_seed * 16807) % 2147483647; return (_seed - 1) / 2147483646; };
 
+// tags for the static-mesh optimizer: markDyn = never merge this subtree (it moves, hides or changes on its own);
+// markMoves = this node moves as a rigid unit, so its children may be merged *inside* it
+function markDyn(...objs) { for (const o of objs.flat()) if (o) o.userData.dyn = true; }
+function markMoves(...objs) { for (const o of objs.flat()) if (o) o.userData.moves = true; }
 function M(color, r = 0.75, m = 0, extra = {}) {
   return new THREE.MeshStandardMaterial({ color, roughness: r, metalness: m, ...extra });
 }
@@ -620,13 +625,15 @@ function hinge(ctx, pivot, axis, angle, label, sound = 'door', onToggle) {
     label: () => (st.open ? 'Close ' : 'Open ') + label,
     action: () => { st.open = !st.open; sound === 'door' ? Sfx.door(st.open) : Sfx.click(); onToggle && onToggle(st.open); }
   });
-  ctx.tick(pivot, dt => { const t = st.open ? 1 : 0; if (st.v === t) return; st.v += (t - st.v) * Math.min(1, dt * 7); if (Math.abs(t - st.v) < 0.002) st.v = t; pivot.rotation[axis] = angle * st.v; });
+  pivot.userData.rigidTick = true;
+  ctx.tick(pivot, dt => { const t = st.open ? 1 : 0; if (st.v === t) return; if (pivot.userData.detach) pivot.userData.detach(); st.v += (t - st.v) * Math.min(1, dt * 7); if (Math.abs(t - st.v) < 0.002) st.v = t; pivot.rotation[axis] = angle * st.v; });
   return st;
 }
 function slider(ctx, obj, axis, dist, label) {
   const st = { open: false, v: 0 }, base = obj.position[axis];
   ctx.interact(obj, { label: () => (st.open ? 'Close ' : 'Open ') + label, action: () => { st.open = !st.open; Sfx.drawer(); } });
-  ctx.tick(obj, dt => { const t = st.open ? 1 : 0; if (st.v === t) return; st.v += (t - st.v) * Math.min(1, dt * 8); if (Math.abs(t - st.v) < 0.002) st.v = t; obj.position[axis] = base + dist * st.v; });
+  obj.userData.rigidTick = true;
+  ctx.tick(obj, dt => { const t = st.open ? 1 : 0; if (st.v === t) return; if (obj.userData.detach) obj.userData.detach(); st.v += (t - st.v) * Math.min(1, dt * 8); if (Math.abs(t - st.v) < 0.002) st.v = t; obj.position[axis] = base + dist * st.v; });
   return st;
 }
 // drawer: returns group with front at z=d/2
@@ -939,7 +946,7 @@ def('floor_lamp', 'Arc floor lamp', 'Lighting', { color: '#b08d57', colorable: t
 });
 def('candle', 'Candle', 'Lighting', { mount: 'surface', solid: false, small: true, color: '#f1ece2' }, (ctx, it) => {
   const g = new THREE.Group(); C(g, 0.04, 0.04, 0.1, M(0xf1ece2, 0.6), 0, 0, 0, 16); C(g, 0.045, 0.045, 0.06, M(0x9c3b3b, 0.3, 0, { transparent: true, opacity: 0.6 }), 0, 0, 0, 16);
-  const fl = S(g, 0.012, E(0xffb347, 2), 0, 0.125, 0, 8, 6); fl.scale.y = 2;
+  const fl = S(g, 0.012, E(0xffb347, 2), 0, 0.125, 0, 8, 6); fl.scale.y = 2; markDyn(fl);
   const st = { on: true };
   ctx.interact(g, { label: () => st.on ? 'Blow out candle' : 'Light candle', action: () => { st.on = !st.on; st.on ? Sfx.noise(0.2, 0.2, 2000, 1) : Sfx.noise(0.3, 0.1, 600, 1); } });
   ctx.tick(g, (dt, t) => { fl.visible = st.on; fl.scale.set(1 + Math.sin(t * 23) * 0.15, 2 + Math.sin(t * 17) * 0.3, 1); });
@@ -1023,7 +1030,7 @@ def('laptop', 'Laptop', 'Electronics', { mount: 'surface', solid: false, small: 
   const g = new THREE.Group(), al = M(0xb9bcc0, 0.3, 0.8);
   B(g, 0.32, 0.015, 0.22, al, 0, 0, 0); B(g, 0.28, 0.002, 0.1, M(0x222222), 0, 0.015, -0.03);
   const lid = G(g, 0, 0.019, -0.11); B(lid, 0.32, 0.008, 0.22, al, 0, 0, 0.11);
-  const scr = plane(lid, 0.29, 0.19, E(0x6c8fd6, 0.8), 0, -0.001, 0.11, Math.PI / 2);
+  const scr = plane(lid, 0.29, 0.19, E(0x6c8fd6, 0.8), 0, -0.001, 0.11, Math.PI / 2); markDyn(scr);
   const st = hinge(ctx, lid, 'x', -1.9, 'laptop', 'click', (o) => { if (o) ctx.task('computer'); });
   ctx.tick(lid, () => { scr.visible = st.v > 0.3; });
   return g;
@@ -1036,8 +1043,8 @@ def('espresso', 'Espresso machine', 'Kitchen', { mount: 'surface', solid: false,
   const gauge = C(g, 0.03, 0.03, 0.01, M(0xffffff), 0.08, 0.27, 0.15, 16); gauge.rotation.x = Math.PI / 2;
   B(g, 0.1, 0.03, 0.06, ss, 0, 0.22, 0.17); // group head
   const cup = G(g, 0, 0.04, 0.16); C(cup, 0.035, 0.03, 0.08, M(0xf4f1ea, 0.3), 0, 0, 0, 16); const coffee = C(cup, 0.031, 0.031, 0.005, M(0x4a2a14, 0.2), 0, 0.01, 0, 16);
-  const stream = C(g, 0.004, 0.004, 0.13, M(0x4a2a14, 0.3), 0, 0.09, 0.16, 6); stream.visible = false;
-  const steam = []; for (let i = 0; i < 6; i++) { const s = S(g, 0.02, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, depthWrite: false }), 0, 0.15, 0.16, 6, 4); s.visible = false; steam.push(s); }
+  const stream = C(g, 0.004, 0.004, 0.13, M(0x4a2a14, 0.3), 0, 0.09, 0.16, 6); stream.visible = false; markDyn(cup, stream);
+  const steam = []; for (let i = 0; i < 6; i++) { const s = S(g, 0.02, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, depthWrite: false }), 0, 0.15, 0.16, 6, 4); s.visible = false; steam.push(s); } markDyn(steam);
   const st = { state: 'idle', t: 0, fill: 0 };
   ctx.interact(g, {
     label: () => st.state === 'idle' ? (cup.visible ? 'Brew espresso ☕' : 'Place a cup & brew') : st.state === 'brewing' ? 'Brewing…' : 'Take your coffee',
@@ -1068,7 +1075,7 @@ def('speaker', 'Smart speaker', 'Electronics', { mount: 'surface', solid: false,
 });
 def('record_player', 'Record player', 'Electronics', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
   const g = new THREE.Group(); B(g, 0.42, 0.09, 0.34, M(0x8a5a3a, 0.5), 0, 0, 0);
-  const plat = G(g, -0.04, 0.09, 0); C(plat, 0.15, 0.15, 0.01, M(0x111111, 0.3), 0, 0, 0, 32); C(plat, 0.04, 0.04, 0.012, M(0xd9622b), 0, 0, 0, 16);
+  const plat = G(g, -0.04, 0.09, 0); markMoves(plat); C(plat, 0.15, 0.15, 0.01, M(0x111111, 0.3), 0, 0, 0, 32); C(plat, 0.04, 0.04, 0.012, M(0xd9622b), 0, 0, 0, 16);
   B(g, 0.02, 0.02, 0.2, M(0xc0c0c0, 0.3, 0.8), 0.14, 0.1, -0.02).rotation.y = 0.3;
   const st = { on: false };
   ctx.interact(g, { label: () => st.on ? 'Lift needle' : 'Play a record', action: () => { st.on = !st.on; if (st.on) { const mp = V3(); st.m = Sfx.music(() => g.getWorldPosition(mp), 1); ctx.task('music'); } else st.m && st.m.stop(); Sfx.noise(0.3, 0.05, 2000, 1); } });
@@ -1094,8 +1101,8 @@ const FOOD_ORDER = ['egg', 'pancake', 'bacon', 'grilled'];
 def('pan', 'Frying pan', 'Kitchen', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
   const g = new THREE.Group(), blk = M(0x202022, 0.4, 0.5);
   C(g, 0.13, 0.11, 0.045, blk, 0, 0, 0, 24); B(g, 0.03, 0.02, 0.2, blk, 0, 0.03, 0.22);
-  const food = G(g, 0, 0.025, 0); const fm = M(0xffffff, 0.6); const fbody = C(food, 0.08, 0.08, 0.012, fm, 0, 0, 0, 20); const yolk = S(food, 0.025, M(0xf2a516, 0.3), 0, 0.015, 0, 10, 8); yolk.scale.y = 0.5;
-  const smoke = []; for (let i = 0; i < 5; i++) { const s = S(g, 0.03, new THREE.MeshBasicMaterial({ color: 0x777777, transparent: true, opacity: 0.3, depthWrite: false }), 0, 0.1, 0, 6, 4); smoke.push(s); }
+  const food = G(g, 0, 0.025, 0); markDyn(food); const fm = M(0xffffff, 0.6); const fbody = C(food, 0.08, 0.08, 0.012, fm, 0, 0, 0, 20); const yolk = S(food, 0.025, M(0xf2a516, 0.3), 0, 0.015, 0, 10, 8); yolk.scale.y = 0.5;
+  const smoke = []; for (let i = 0; i < 5; i++) { const s = S(g, 0.03, new THREE.MeshBasicMaterial({ color: 0x777777, transparent: true, opacity: 0.3, depthWrite: false }), 0, 0.1, 0, 6, 4); smoke.push(s); } markDyn(smoke);
   const st = { food: null, cook: 0, sz: null }; const wp = V3();
   const doneness = () => st.cook < 1 ? 'raw' : st.cook < 2 ? 'cooked' : 'burnt';
   ctx.interact(g, {
@@ -1128,7 +1135,7 @@ def('plate', 'Plate of food', 'Kitchen', { mount: 'surface', solid: false, small
 });
 def('mug', 'Mug', 'Kitchen', { mount: 'surface', solid: false, small: true, color: '#f4f1ea', colorable: true }, (ctx, it) => {
   const g = new THREE.Group(); C(g, 0.045, 0.04, 0.1, M(it.c || '#f4f1ea', 0.3), 0, 0, 0, 16); T(g, 0.025, 0.007, M(it.c || '#f4f1ea', 0.3), 0.05, 0.05, 0, TAU);
-  const liq = C(g, 0.04, 0.04, 0.005, M(0x4a2a14, 0.2), 0, 0.085, 0, 16);
+  const liq = C(g, 0.04, 0.04, 0.005, M(0x4a2a14, 0.2), 0, 0.085, 0, 16); markDyn(liq);
   ctx.tick(g, () => { liq.visible = !!(it.d && it.d.fill); liq.material.color.set(it.d && it.d.fill === 'tea' ? 0xa0622a : 0x4a2a14); });
   it.use = () => { if (it.d && it.d.fill) { ctx.drink(it.d.fill); it.d.fill = null; return 'keep'; } ctx.msg('The mug is empty. Brew some coffee or tea.'); return 'keep'; };
   return g;
@@ -1153,8 +1160,8 @@ def('kettle', 'Tea kettle', 'Kitchen', { mount: 'surface', solid: false, small: 
 def('toaster', 'Toaster', 'Kitchen', { mount: 'surface', solid: false, small: true, color: '#f1ece2', colorable: true }, (ctx, it) => {
   const g = new THREE.Group(), m = M(it.c || '#f1ece2', 0.3, 0.2);
   B(g, 0.28, 0.19, 0.17, m, 0, 0, 0); B(g, 0.2, 0.005, 0.03, M(0x111111), 0, 0.19, -0.035); B(g, 0.2, 0.005, 0.03, M(0x111111), 0, 0.19, 0.035);
-  const lever = B(g, 0.03, 0.015, 0.04, M(0x333333), 0.15, 0.13, 0);
-  const toasts = [B(g, 0.12, 0.1, 0.012, M(0xe8cf9a), 0, 0.12, -0.035), B(g, 0.12, 0.1, 0.012, M(0xe8cf9a), 0, 0.12, 0.035)];
+  const lever = B(g, 0.03, 0.015, 0.04, M(0x333333), 0.15, 0.13, 0); markDyn(lever);
+  const toasts = [B(g, 0.12, 0.1, 0.012, M(0xe8cf9a), 0, 0.12, -0.035), B(g, 0.12, 0.1, 0.012, M(0xe8cf9a), 0, 0.12, 0.035)]; markDyn(toasts);
   const st = { s: 'ready', t: 0 };
   ctx.interact(g, {
     label: () => st.s === 'ready' ? 'Make toast 🍞' : st.s === 'toasting' ? 'Toasting…' : 'Take toast',
@@ -1173,7 +1180,7 @@ def('stand_mixer', 'Stand mixer', 'Kitchen', { mount: 'surface', solid: false, s
   const g = new THREE.Group(), m = M(it.c || '#e8a5b5', 0.3, 0.1);
   B(g, 0.2, 0.04, 0.32, m, 0, 0, 0); B(g, 0.1, 0.3, 0.1, m, 0, 0.04, -0.11);
   const head = B(g, 0.12, 0.11, 0.32, m, 0, 0.3, -0.02); C(g, 0.1, 0.08, 0.14, M(0xd8d8d8, 0.2, 0.9), 0, 0.04, 0.05, 20);
-  const whisk = G(g, 0, 0.12, 0.05); C(whisk, 0.025, 0.04, 0.12, M(0xd8d8d8, 0.2, 0.9), 0, 0, 0, 6);
+  const whisk = G(g, 0, 0.12, 0.05); C(whisk, 0.025, 0.04, 0.12, M(0xd8d8d8, 0.2, 0.9), 0, 0, 0, 6); markDyn(whisk, head);
   const st = { on: false };
   ctx.interact(g, { label: () => st.on ? 'Stop mixer' : 'Mix some batter', action: () => { st.on = !st.on; if (st.on) st.s = Sfx.loop('hum', g.getWorldPosition(V3()), 0.15); else st.s && st.s.stop(); } });
   ctx.onRemove(g, () => st.s && st.s.stop());
@@ -1184,7 +1191,7 @@ def('fruit_bowl', 'Fruit bowl', 'Kitchen', { mount: 'surface', solid: false, sma
   const g = new THREE.Group(); const bowl = new THREE.Mesh(new THREE.SphereGeometry(0.15, 20, 10, 0, TAU, Math.PI / 2, Math.PI / 2), M(0x8a5a3a, 0.5)); bowl.material.side = THREE.DoubleSide; bowl.position.y = 0.11; g.add(bowl);
   const fruit = []; const cols = [0xc0262d, 0xe8892b, 0xc0262d, 0x8fb339, 0xe8892b, 0xc0262d];
   for (let i = 0; i < 6; i++) fruit.push(S(g, 0.04, M(cols[i], 0.5), Math.cos(i) * 0.07, 0.07 + (i > 3 ? 0.04 : 0), Math.sin(i) * 0.07, 10, 8));
-  const ban = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.018, 6, 12, Math.PI * 0.7), M(0xf2d24b, 0.6)); ban.position.set(0, 0.13, 0); ban.rotation.x = -1.2; g.add(ban); fruit.push(ban);
+  const ban = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.018, 6, 12, Math.PI * 0.7), M(0xf2d24b, 0.6)); ban.position.set(0, 0.13, 0); ban.rotation.x = -1.2; g.add(ban); fruit.push(ban); markDyn(fruit);
   ctx.interact(g, { label: () => fruit.some(f => f.visible) ? 'Eat a piece of fruit 🍎' : 'Bowl is empty (refills tomorrow)', action: () => { const f = fruit.find(f => f.visible); if (f) { f.visible = false; Sfx.noise(0.15, 0.3, 2500, 2); ctx.eat(0.3); ctx.msg('Crunch. Fresh!'); ctx.task('eat'); } } });
   g.userData.refill = () => fruit.forEach(f => f.visible = true);
   return g;
@@ -1273,7 +1280,7 @@ def('xmas_tree', 'Pencil Christmas tree', 'Holiday', { shrink: 0.3 }, (ctx, it) 
 });
 def('present', 'Wrapped present', 'Holiday', { mount: 'surface', solid: false, small: true, color: '#b3141f', colorable: true }, (ctx, it) => {
   const g = new THREE.Group(); B(g, 0.25, 0.18, 0.25, M(it.c || '#b3141f', 0.6), 0, 0, 0);
-  const lid = G(g, 0, 0.18, 0); B(lid, 0.27, 0.05, 0.27, M(it.c || '#b3141f', 0.6), 0, 0, 0); B(lid, 0.04, 0.052, 0.272, M(0xd4af37, 0.3, 0.6), 0, 0, 0); B(lid, 0.272, 0.052, 0.04, M(0xd4af37, 0.3, 0.6), 0, 0, 0);
+  const lid = G(g, 0, 0.18, 0); B(lid, 0.27, 0.05, 0.27, M(it.c || '#b3141f', 0.6), 0, 0, 0); markMoves(lid); B(lid, 0.04, 0.052, 0.272, M(0xd4af37, 0.3, 0.6), 0, 0, 0); B(lid, 0.272, 0.052, 0.04, M(0xd4af37, 0.3, 0.6), 0, 0, 0);
   const gifts = ['cozy socks 🧦', 'a pumpkin candle 🎃', 'a new mug ☕', 'concert tickets 🎟', 'a scarf 🧣', 'a puzzle 🧩'];
   const st = { open: false };
   ctx.interact(g, { label: () => st.open ? 'Close the box' : 'Open present 🎁', action: () => { st.open = !st.open; if (st.open) { Sfx.chime(); ctx.msg('You got ' + gifts[(Math.random() * gifts.length) | 0] + '!'); ctx.task('gift'); } } });
@@ -1317,7 +1324,7 @@ def('clock', 'Wall clock', 'Decor', { mount: 'wall', solid: false }, (ctx, it) =
   const face = new THREE.Mesh(new THREE.CircleGeometry(0.165, 32), M(0xf7f5f0, 0.7)); face.position.z = 0.041; g.add(face);
   for (let i = 0; i < 12; i++) B(g, 0.008, 0.025, 0.004, M(0x222222), Math.sin(i / 12 * TAU) * 0.14, Math.cos(i / 12 * TAU) * 0.14 - 0.0125, 0.043);
   const mk = (len, w) => { const p = G(g, 0, 0, 0.046); B(p, w, len, 0.003, M(0x111111), 0, 0, 0); return p; };
-  const hh = mk(0.08, 0.01), mh = mk(0.12, 0.006), sh = mk(0.13, 0.002); sh.children[0].material = M(0xb3141f);
+  const hh = mk(0.08, 0.01), mh = mk(0.12, 0.006), sh = mk(0.13, 0.002); markMoves(hh, mh, sh); sh.children[0].material = M(0xb3141f);
   ctx.tick(g, () => { const d = new Date(); const s = d.getSeconds(), m = d.getMinutes() + s / 60, h = (d.getHours() % 12) + m / 60; sh.rotation.z = -s / 60 * TAU; mh.rotation.z = -m / 60 * TAU; hh.rotation.z = -h / 12 * TAU; });
   ctx.interact(g, { label: () => 'It\'s ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), action: () => Sfx.tone(800, 0.05) });
   return g;
@@ -1333,7 +1340,7 @@ def('rug_round', 'Round jute rug', 'Rugs', { solid: false, color: '#c9a27a', col
 def('runner', 'Hall runner', 'Rugs', { solid: false, color: '#2e3a46', colorable: true, flat: true }, (ctx, it) => {
   const g = new THREE.Group(); B(g, 0.75, 0.01, 2.2, M(it.c || '#2e3a46', 1), 0, 0, 0); B(g, 0.6, 0.012, 2.0, M(0xd9cbb5, 1), 0, 0, 0); return g;
 });
-def('clothes_pile', 'Pile of clothes', 'Fun', { solid: false, flat: true }, (ctx, it) => {
+def('clothes_pile', 'Pile of clothes', 'Fun', { solid: false, flat: true, removable: true }, (ctx, it) => {
   const g = new THREE.Group(); const cols = [0xe3b8b8, 0x2e3a46, 0xf1ece2, 0x7c8f6a, 0x1f1f22, 0x9c3b3b, 0x6fb0a6];
   for (let i = 0; i < 14; i++) { const b = B(g, rand(0.25, 0.5), rand(0.03, 0.08), rand(0.2, 0.4), M(cols[i % 7], 1), rand(-0.3, 0.3), rand(0, 0.08), rand(-0.25, 0.25)); b.rotation.set(rand(-0.2, 0.2), Math.random() * 3, rand(-0.2, 0.2)); }
   ctx.interact(g, { label: 'Gather clothes for the washer 🧺', action: () => { ctx.removeItem(g); ctx.laundry(1); Sfx.noise(0.5, 0.2, 800, 1); ctx.msg('Clothes gathered. Load the washer by the front door!'); ctx.task('tidy'); } });
@@ -1353,6 +1360,7 @@ def('aquarium', 'Aquarium', 'Fun', { mount: 'surface', solid: false }, (ctx, it)
   B(g, 0.6, 0.37, 0.3, M(0x6fc3e0, 0.05, 0, { transparent: true, opacity: 0.25, depthWrite: false }), 0, 0.03, 0);
   B(g, 0.58, 0.04, 0.28, M(0xd9c79a, 1), 0, 0.03, 0); for (let i = 0; i < 5; i++) { const w = B(g, 0.015, rand(0.1, 0.25), 0.015, M(0x3f8f45), rand(-0.25, 0.25), 0.07, rand(-0.1, 0.1)); w.rotation.z = rand(-0.2, 0.2); }
   const fish = []; for (let i = 0; i < 5; i++) { const f = G(g, 0, 0.2, 0); const b = S(f, 0.025, M([0xff7a1a, 0x2a9df4, 0xf2d24b, 0xff4f7a, 0xffffff][i], 0.4), 0, 0, 0, 8, 6); b.scale.set(1.4, 1, 0.5); const tl = B(f, 0.02, 0.03, 0.005, b.material, -0.04, -0.015, 0); fish.push(f); }
+  markDyn(fish);
   ctx.interact(g, { label: 'Feed the fish 🐟', action: () => { ctx.msg('The fish swarm to the top. Happy fish!'); fish.forEach(f => f.userData.feed = 3); Sfx.noise(0.2, 0.1, 3000, 2); ctx.task('fish'); } });
   ctx.tick(g, (dt, t) => fish.forEach((f, i) => { const k = t * (0.4 + i * 0.1) + i * 2; const feed = f.userData.feed > 0; if (feed) f.userData.feed -= dt; f.position.set(Math.sin(k) * 0.24, feed ? 0.33 : 0.12 + (i * 0.05) + Math.sin(k * 1.3) * 0.03, Math.cos(k * 0.7) * 0.09); f.rotation.y = Math.cos(k) > 0 ? 0 : Math.PI; }));
   return g;
@@ -1368,7 +1376,7 @@ def('yoga_mat', 'Yoga mat', 'Fun', { solid: false, flat: true, color: '#6c5b8f',
 def('basketball', 'Mini hoop', 'Fun', { mount: 'wall', solid: false }, (ctx, it) => {
   const g = new THREE.Group(); B(g, 0.45, 0.3, 0.02, M(0xffffff, 0.4), 0, -0.15, 0.01); B(g, 0.15, 0.1, 0.005, M(0xb3141f), 0, -0.2, 0.021);
   const rim = T(g, 0.08, 0.006, M(0xe85a1a, 0.4, 0.5), 0, -0.2, 0.11); rim.rotation.x = Math.PI / 2;
-  const ball = S(g, 0.06, M(0xe07a3f, 0.7), 0, -0.6, 0.4, 12, 10); ball.visible = false; let st = { t: -1, score: 0 };
+  const ball = S(g, 0.06, M(0xe07a3f, 0.7), 0, -0.6, 0.4, 12, 10); ball.visible = false; markDyn(ball); let st = { t: -1, score: 0 };
   ctx.interact(g, { label: 'Shoot a hoop 🏀', action: () => { st.t = 0; st.make = Math.random() < 0.6; ball.visible = true; } });
   ctx.tick(g, dt => { if (st.t < 0) return; st.t += dt; const k = st.t / 0.9; ball.position.set(st.make ? 0 : 0.1, -0.6 + Math.sin(Math.min(k, 1) * Math.PI) * 0.6 + k * 0.3 - (k > 1 ? (k - 1) * 3 : 0), 0.6 - k * 0.5); if (k > 1 && !st.done) { st.done = true; if (st.make) { st.score++; ctx.msg('Swish! Score: ' + st.score); Sfx.chime(); } else { ctx.msg('Clank! Brick.'); Sfx.tone(200, 0.2, 'square', 0.1); } } if (k > 1.6) { st.t = -1; st.done = false; ball.visible = false; } });
   return g;
@@ -1383,7 +1391,7 @@ def('pizza', 'Pizza box', 'Kitchen', { mount: 'surface', solid: false, small: tr
   const g = new THREE.Group(), card = M(0xd8b98a, 0.9); B(g, 0.38, 0.03, 0.38, card, 0, 0, 0);
   const lid = G(g, 0, 0.045, -0.19); B(lid, 0.38, 0.012, 0.38, card, 0, 0, 0.19); B(lid, 0.18, 0.002, 0.08, M(0xb3141f), 0, 0.012, 0.19);
   const slices = []; for (let i = 0; i < 8; i++) { const sl = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.012, 6, 1, false, i / 8 * TAU, TAU / 8), M(0xe0a23e, 0.7)); sl.position.y = 0.036; g.add(sl); slices.push(sl); for (let k = 0; k < 2; k++) { const a = (i + 0.5) / 8 * TAU, r = 0.06 + k * 0.05; S(sl, 0.012, M(0x9c2a1e, 0.6), Math.sin(a) * r, 0.008, Math.cos(a) * r, 6, 4).scale.y = 0.4; } }
-  const d = it.d || (it.d = {}); if (d.left == null) d.left = 8;
+  const d = it.d || (it.d = {}); if (d.left == null) d.left = 8; markDyn(slices);
   const st = hinge(ctx, lid, 'x', -1.7, 'pizza box', 'click');
   ctx.tick(g, () => slices.forEach((sl, i) => sl.visible = i < d.left));
   it.use = () => { d.left--; ctx.eat(0.18); ctx.task('eat'); if (d.left <= 0) { ctx.msg('That was the last slice. 🍕'); return 'consume'; } ctx.msg('🍕 So good. ' + d.left + ' slice' + (d.left === 1 ? '' : 's') + ' left.'); return 'keep'; };
@@ -1399,8 +1407,8 @@ def('takeout', 'Takeout bag', 'Kitchen', { mount: 'surface', solid: false, small
 });
 def('package', 'Package', 'Fun', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
   const g = new THREE.Group(), card = M(0xc49a6c, 0.95); B(g, 0.45, 0.3, 0.35, card, 0, 0, 0);
-  const tape = B(g, 0.06, 0.002, 0.36, M(0xd9c79a, 0.4), 0, 0.3, 0);
-  const flaps = []; for (const s of [-1, 1]) { const f = G(g, s * 0.225, 0.3, 0); B(f, 0.225, 0.01, 0.35, card, -s * 0.1125, 0, 0); flaps.push([f, s]); }
+  const tape = B(g, 0.06, 0.002, 0.36, M(0xd9c79a, 0.4), 0, 0.3, 0); markDyn(tape);
+  const flaps = []; for (const s of [-1, 1]) { const f = G(g, s * 0.225, 0.3, 0); B(f, 0.225, 0.01, 0.35, card, -s * 0.1125, 0, 0); flaps.push([f, s]); } markMoves(flaps.map(f => f[0]));
   const d = it.d || (it.d = {});
   const gifts = ['a cozy throw blanket', 'new candles for the living room', 'a cookbook', 'string lights', 'fuzzy socks', 'a fall wreath', 'a coffee sampler'];
   ctx.interact(g, { label: () => d.opened ? 'Break down the box ♻️' : 'Open package 📦', action: () => { if (!d.opened) { d.opened = true; d.what = gifts[(Math.random() * gifts.length) | 0]; Sfx.noise(0.5, 0.25, 2500, 0.8, 'bandpass', -1500); ctx.msg('📦 It\'s ' + d.what + '!'); ctx.need('fun', 0.15); ctx.task('package'); } else { Sfx.noise(0.3, 0.2, 500, 1); ctx.removeItem(g); } } });
@@ -1590,7 +1598,8 @@ function buildApartment(scene, ctx) {
     const box = new THREE.Box3();
     // a door only blocks you when it's fully shut; while swinging or open you can always pass
     ctx.addCollider(box, () => { const shut = !st.open && st.v === 0; if (shut && !st.boxOn) { piv.updateMatrixWorld(true); box.setFromObject(leaf); st.boxOn = true; } else if (!shut && st.boxOn) { box.makeEmpty(); st.boxOn = false; } }, st);
-    ctx.tick(leaf, dt => { const t = st.open ? 1 : 0; if (st.v === t) return; st.v += (t - st.v) * Math.min(1, dt * 7); if (Math.abs(t - st.v) < 0.002) st.v = t; piv.rotation.y = closed + s * 1.55 * st.v; });
+    leaf.userData.rigidTick = true;
+    ctx.tick(leaf, dt => { const t = st.open ? 1 : 0; if (st.v === t) return; if (leaf.userData.detach) leaf.userData.detach(); st.v += (t - st.v) * Math.min(1, dt * 7); if (Math.abs(t - st.v) < 0.002) st.v = t; piv.rotation.y = closed + s * 1.55 * st.v; });
     doors.push(st); st.leaf = leaf; if (id) A.doorById[id] = st;
     return st;
   }
@@ -1674,9 +1683,10 @@ function buildApartment(scene, ctx) {
   // ---------- ceiling fans & pendants ----------
   function fan(key, x, z) {
     const g = G(W, x, WALL_H, z); C(g, 0.012, 0.012, 0.25, black, 0, -0.25, 0, 8); C(g, 0.1, 0.12, 0.12, black, 0, -0.36, 0, 20);
-    const rot = G(g, 0, -0.33, 0); for (let i = 0; i < 5; i++) { const b = B(rot, 0.58, 0.012, 0.13, M(0x5a3d2a, 0.6), 0.36, 0, 0); const arm = G(rot, 0, 0, 0, i / 5 * TAU); arm.add(b); }
+    const rot = G(g, 0, -0.33, 0); markMoves(rot); for (let i = 0; i < 5; i++) { const b = B(rot, 0.58, 0.012, 0.13, M(0x5a3d2a, 0.6), 0.36, 0, 0); const arm = G(rot, 0, 0, 0, i / 5 * TAU); arm.add(b); }
     const lm = E(0xfff3df, 0); const lk = S(g, 0.11, lm, 0, -0.42, 0, 20, 10); lk.scale.y = 0.45; A.lights[key].mats.push(lm);
     const F = A.lights[key].fan = { on: false, speed: 0 };
+    g.userData.rigidTick = true; // only spins the blades; its light material is in the frozen registry
     ctx.tick(g, dt => { F.speed = lerp(F.speed, F.on && ctx.power() ? 9 : 0, dt * 0.8); rot.rotation.y += F.speed * dt; if (F.on && !F.snd) F.snd = Sfx.loop('fan', V3(x, 2, z), 0.04); if (!F.on && F.snd) { F.snd.stop(); F.snd = null; } }, true);
     ctx.interact(lk, { reach: 4, label: () => F.on ? 'Turn fan off' : 'Turn fan on', action: () => { F.on = !F.on; Sfx.click(); } });
   }
@@ -1786,7 +1796,7 @@ function buildApartment(scene, ctx) {
   const MW = G(K, 5.93, 1.45, 0.06);
   B(MW, 0.76, 0.42, 0.4, ss, 0, 0, 0.2); B(MW, 0.56, 0.36, 0.38, M(0xe8e8e8, 0.5), -0.08, 0.03, 0.2);
   const mwLight = M(0xe8e8e8, 0.5, 0, { emissive: 0xffe9b0, emissiveIntensity: 0 }); B(MW, 0.54, 0.01, 0.36, mwLight, -0.08, 0.37, 0.2);
-  const turn = G(MW, -0.08, 0.05, 0.2); C(turn, 0.14, 0.14, 0.01, M(0xdfe8ee, 0.1, 0, { transparent: true, opacity: 0.6 }), 0, 0, 0, 24); C(turn, 0.07, 0.05, 0.06, M(0xf4f1ea, 0.3), 0, 0.01, 0, 16); C(turn, 0.065, 0.065, 0.01, M(0xa0522d), 0, 0.055, 0, 16);
+  const turn = G(MW, -0.08, 0.05, 0.2); markMoves(turn); C(turn, 0.14, 0.14, 0.01, M(0xdfe8ee, 0.1, 0, { transparent: true, opacity: 0.6 }), 0, 0, 0, 24); C(turn, 0.07, 0.05, 0.06, M(0xf4f1ea, 0.3), 0, 0.01, 0, 16); C(turn, 0.065, 0.065, 0.01, M(0xa0522d), 0, 0.055, 0, 16);
   const mwd = G(MW, -0.38, 0.01, 0.4); B(mwd, 0.58, 0.4, 0.025, ss, 0.29, 0, 0); B(mwd, 0.4, 0.26, 0.004, M(0x0d0d0d, 0.1, 0.2, { transparent: true, opacity: 0.8 }), 0.25, 0.07, 0.013); B(mwd, 0.02, 0.3, 0.03, ssDark, 0.53, 0.05, 0.025);
   const mwDoor = hinge(ctx, mwd, 'y', -1.7, 'microwave', 'click');
   const kpd = B(MW, 0.15, 0.36, 0.02, M(0x111111, 0.3), 0.29, 0.03, 0.405); const mwDisp = canvasTex(64, 24, g => { }); plane(MW, 0.1, 0.035, new THREE.MeshBasicMaterial({ map: mwDisp }), 0.29, 0.33, 0.416);
@@ -1850,11 +1860,11 @@ function buildApartment(scene, ctx) {
   const sinkM = M(0xb9bdc1, 0.25, 0.9); B(IS, 0.76, 0.01, 0.5, sinkM, 0, 0.7, -0.15); B(IS, 0.76, 0.21, 0.01, sinkM, 0, 0.7, -0.4); B(IS, 0.76, 0.21, 0.01, sinkM, 0, 0.7, 0.1); B(IS, 0.01, 0.21, 0.5, sinkM, -0.38, 0.7, -0.15); B(IS, 0.01, 0.21, 0.5, sinkM, 0.38, 0.7, -0.15);
   C(IS, 0.03, 0.03, 0.005, M(0x333333), 0, 0.711, -0.15, 12);
   // dirty dishes
-  const dishes = []; for (let i = 0; i < 4; i++) { const d = C(IS, 0.11, 0.1, 0.012, M(i % 2 ? 0xf4f1ea : 0xdde4f2, 0.3), -0.18 + i * 0.1, 0.72 + i * 0.02, -0.15 + (i % 2) * 0.05, 18); d.rotation.z = 0.3; dishes.push(d); }
+  const dishes = []; for (let i = 0; i < 4; i++) { const d = C(IS, 0.11, 0.1, 0.012, M(i % 2 ? 0xf4f1ea : 0xdde4f2, 0.3), -0.18 + i * 0.1, 0.72 + i * 0.02, -0.15 + (i % 2) * 0.05, 18); d.rotation.z = 0.3; dishes.push(d); } markDyn(dishes);
   // faucet (on stool side, arching toward kitchen)
   const fau = G(IS, 0.0, 0.935, 0.2); C(fau, 0.025, 0.03, 0.04, nickel, 0, 0, 0, 12); C(fau, 0.014, 0.014, 0.36, nickel, 0, 0.04, 0, 10);
   const arc = T(fau, 0.12, 0.014, nickel, 0, 0.4, -0.12, Math.PI); arc.rotation.y = Math.PI / 2; C(fau, 0.016, 0.014, 0.12, nickel, 0, 0.29, -0.24, 10);
-  const lever = B(fau, 0.015, 0.012, 0.09, nickel, 0.05, 0.24, 0.02);
+  const lever = B(fau, 0.015, 0.012, 0.09, nickel, 0.05, 0.24, 0.02); markDyn(lever);
   const water = C(IS, 0.008, 0.012, 0.5, M(0xcfe8ff, 0.05, 0, { transparent: true, opacity: 0.55 }), 0, 0.72, -0.04, 8); water.visible = false;
   const sink = { on: false };
   ctx.interact(fau, { label: () => sink.on ? 'Turn off faucet' : 'Turn on faucet 💧', action: () => { sink.on = !sink.on; Sfx.click(); if (sink.on) sink.s = Sfx.loop('water', V3(5.0, 0.9, 7.4), 0.12); else sink.s && sink.s.stop(); } });
@@ -1873,7 +1883,7 @@ function buildApartment(scene, ctx) {
     const knob = C(g, 0.03, 0.03, 0.02, M(0xd9d9d9, 0.3, 0.5), 0.2, 0.75, 0.715, 16); knob.rotation.x = Math.PI / 2;
     const disp = B(g, 0.12, 0.04, 0.005, E(0x4fb3ff, 0), -0.1, 0.73, 0.712);
     const drum = G(g, 0, 0.36, 0.45); const dr = C(drum, 0.24, 0.24, 0.4, M(0x8d9196, 0.3, 0.8), 0, -0.2, 0, 24); dr.rotation.x = Math.PI / 2; dr.position.set(0, 0, -0.2); C(drum, 0.25, 0.25, 0.01, M(0x2a2a2a, 0.6), 0, 0, 0.0, 24).rotation.x = Math.PI / 2;
-    const clothes = G(drum); for (let i = 0; i < 6; i++) S(clothes, 0.08, M([0xe3b8b8, 0x2e3a46, 0xf1ece2, 0x7c8f6a, 0x9c3b3b, 0x6fb0a6][i], 1), Math.cos(i) * 0.12, Math.sin(i) * 0.12 - 0.05, -0.15, 8, 6);
+    const clothes = G(drum); markDyn(clothes); markMoves(g, drum); for (let i = 0; i < 6; i++) S(clothes, 0.08, M([0xe3b8b8, 0x2e3a46, 0xf1ece2, 0x7c8f6a, 0x9c3b3b, 0x6fb0a6][i], 1), Math.cos(i) * 0.12, Math.sin(i) * 0.12 - 0.05, -0.15, 8, 6);
     const door = G(g, -0.27, 0.36, 0.71); const ring = T(door, 0.22, 0.035, M(0xf7f7f7, 0.35), 0.27, 0, 0.02); const gl = new THREE.Mesh(new THREE.CircleGeometry(0.2, 24), M(0x404a55, 0.05, 0.3, { transparent: true, opacity: 0.45 })); gl.position.set(0.27, 0, 0.03); door.add(gl);
     const dSt = hinge(ctx, door, 'y', -1.8, kind + ' door', 'click');
     ctx.tick(g, () => { door.updateMatrixWorld(); });
@@ -1949,7 +1959,7 @@ function buildApartment(scene, ctx) {
   B(SH, sx1 - sx0, 0.03, 0.04, nickel, scx, 2.05, sz1); B(SH, sx1 - sx0, 0.03, 0.04, nickel, scx, 0.08, sz1);
   const glassM = M(0xdde8ee, 0.05, 0.1, { transparent: true, opacity: 0.2, depthWrite: false });
   const gw = (sx1 - sx0) / 2 + 0.03;
-  const gp1 = B(SH, gw, 1.95, 0.01, glassM, sx0 + gw / 2, 0.1, sz1 - 0.02); const gp2 = B(SH, gw, 1.95, 0.01, glassM, sx1 - gw / 2, 0.1, sz1);
+  const gp1 = B(SH, gw, 1.95, 0.01, glassM, sx0 + gw / 2, 0.1, sz1 - 0.02); markDyn(gp1); const gp2 = B(SH, gw, 1.95, 0.01, glassM, sx1 - gw / 2, 0.1, sz1);
   B(gp1, 0.02, 0.3, 0.04, nickel, gw / 2 - 0.05, -0.15, 0.03);
   const shSt = { open: false, v: 0, on: false };
   ctx.interact(gp1, { label: () => shSt.open ? 'Close shower door' : 'Open shower door', action: () => { shSt.open = !shSt.open; Sfx.noise(0.4, 0.1, 2500, 2); } });
@@ -2093,6 +2103,117 @@ function tree(p, x, y, z, s, seed) {
   C(p, 0.08 * s, 0.12 * s, 1.6 * s, M(0x4a3628), x, y, z, 6);
   const cols = [0xd9622b, 0xe8a23a, 0xb83a26];
   for (let i = 0; i < 3; i++) { const b = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55 * s, 1), M(cols[i % 3], 0.9)); b.position.set(x + rand(-0.4, 0.4) * s, y + (1.5 + Math.random() * 0.6) * s, z + rand(-0.4, 0.4) * s); p.add(b); }
+}
+
+// ---------- static-mesh optimizer: share materials and merge everything that never moves ----------
+// Rendering and picking are split with layers:
+//   layer 0 = normal meshes (rendered + raycast)        – anything dynamic is left exactly as it was
+//   layer 1 = originals that were merged (raycast only) – keeps the full hierarchy, so clicking/aiming is unchanged
+//   layer 2 = merged meshes (rendered only)             – a few big meshes per container, one per material
+const LAYER_PICK = 1, LAYER_MERGED = 2;
+let detachedCount = 0;
+
+function matKey(m) {
+  const c = (x) => (x && x.getHexString) ? x.getHexString() : '';
+  return [m.type, c(m.color), c(m.emissive), m.emissiveIntensity, m.roughness, m.metalness, m.map ? m.map.uuid : '', m.side, m.opacity, m.transparent, m.depthWrite, m.flatShading, m.vertexColors].join('|');
+}
+const isEmissive = (m) => m.emissive && (m.emissive.r + m.emissive.g + m.emissive.b) > 0;
+
+// Clone the triangles of one material slot of a mesh into container space, with exactly position/normal/uv
+function slotGeometry(mesh, group, rel, vcolor) {
+  let g = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
+  const pos = g.attributes.position, nor = g.attributes.normal, uv = g.attributes.uv;
+  const start = group ? group.start : 0, count = group ? Math.min(group.count, pos.count - start) : pos.count;
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos.array.slice(start * 3, (start + count) * 3), 3));
+  if (nor) out.setAttribute('normal', new THREE.BufferAttribute(nor.array.slice(start * 3, (start + count) * 3), 3));
+  out.setAttribute('uv', uv ? new THREE.BufferAttribute(uv.array.slice(start * 2, (start + count) * 2), 2) : new THREE.BufferAttribute(new Float32Array(count * 2), 2));
+  if (!nor) out.computeVertexNormals();
+  if (vcolor) { const c = new Float32Array(count * 3); for (let i = 0; i < count; i++) { c[i * 3] = vcolor.r; c[i * 3 + 1] = vcolor.g; c[i * 3 + 2] = vcolor.b; } out.setAttribute('color', new THREE.BufferAttribute(c, 3)); }
+  out.applyMatrix4(rel);
+  g.dispose();
+  return out;
+}
+
+function optimizeStatic({ roots, tickOwners, registry, isItemContainer }) {
+  const t0 = performance.now();
+  const owners = new Set(tickOwners);
+  const frozenMats = new Set(registry); // materials changed from outside their own subtree – never swapped for a shared one
+  for (const r of roots) r.updateMatrixWorld(true);
+  // containers: things that move (or may be removed) as a unit. Merged geometry is parented to its container.
+  // owners whose update only moves them (doors, drawers, cabinet doors, fans) never touch materials
+  const touchesMats = (o) => owners.has(o) && !o.userData.rigidTick;
+  const vcMats = new Map(); // finish key -> shared vertex-colored material
+  const isContainer = (o, root) => o === root || o.userData.moves || (owners.has(o) && !o.isMesh && !o.userData.rigidTick) || (o.userData.item && isItemContainer(o));
+  // doors, drawers and cabinet doors are 'detachable': merged into their surroundings while closed, split back out the first time they move
+  const isDetachable = (o) => owners.has(o) && !o.isMesh && o.userData.rigidTick;
+  const groups = new Set();
+  const canonical = new Map(); // matKey -> shared material
+  const buckets = new Map();   // container -> Map(bucketKey -> {mat, geos})
+  const merged = [];
+  let before = 0, sharedSwaps = 0;
+  const inv = new THREE.Matrix4(), rel = new THREE.Matrix4();
+
+  function collect(mesh, container, inTick, grp) {
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    if (mats.some(m => !m || m.transparent || m.visible === false || m.wireframe)) return;
+    const geo = mesh.geometry; if (!geo || !geo.attributes.position || geo.attributes.position.count === 0) return;
+    if (!buckets.has(container)) buckets.set(container, new Map());
+    const B = buckets.get(container);
+    inv.copy(container.matrixWorld).invert(); rel.multiplyMatrices(inv, mesh.matrixWorld);
+    const slots = Array.isArray(mesh.material) ? (geo.groups.length ? geo.groups : [{ start: 0, count: Infinity, materialIndex: 0 }]) : [null];
+    for (const slot of slots) {
+      let m = Array.isArray(mesh.material) ? mesh.material[slot.materialIndex] : mesh.material;
+      // share identical-looking materials, but only where nothing will ever change them at runtime
+      const shareable = !inTick && !frozenMats.has(m) && !isEmissive(m);
+      let vcolor = null;
+      if (shareable && m.isMeshStandardMaterial && !m.map && !m.vertexColors) {
+        // untextured: bake the color into the vertices so every part with the same finish is one draw call
+        const q = (v) => Math.round(v * 20) / 20, fk = q(m.roughness) + '|' + q(m.metalness) + '|' + m.side + '|' + m.flatShading;
+        if (!vcMats.has(fk)) vcMats.set(fk, new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: q(m.roughness), metalness: q(m.metalness), side: m.side, flatShading: m.flatShading }));
+        vcolor = m.color; m = vcMats.get(fk); sharedSwaps++;
+      } else if (shareable) { const k = matKey(m); if (!canonical.has(k)) canonical.set(k, m); else if (canonical.get(k) !== m) sharedSwaps++; m = canonical.get(k); }
+      const bk = m.uuid;
+      if (!B.has(bk)) B.set(bk, { mat: m, geos: [], tags: [] });
+      B.get(bk).geos.push(slotGeometry(mesh, slot, rel, vcolor)); B.get(bk).tags.push(grp);
+    }
+    mesh.layers.set(LAYER_PICK); merged.push(mesh); before++;
+    if (grp) { grp.userData.detachMeshes.push(mesh); }
+  }
+  function visit(o, root, container, inTick, grp) {
+    if (o.userData.dyn) return;                     // moves/hides/changes on its own: leave it alone
+    if (o.isInstancedMesh || o.isPoints || o.isLine || o.isSprite || o.isLight || o.isCamera) return;
+    if (!o.visible) return;                          // hidden things are toggled at runtime
+    if (o !== container && isContainer(o, root)) { container = o; inTick = inTick || touchesMats(o); grp = null; }
+    else if (o !== root && isDetachable(o)) { grp = o; groups.add(o); o.userData.detachMeshes = []; o.userData.ranges = []; }
+    if (o.isMesh) { if (owners.has(o)) return; collect(o, container, inTick, grp); } // a mesh with its own update animates itself
+    for (const c of o.children.slice()) visit(c, root, container, inTick, grp);
+  }
+  for (const r of roots) visit(r, r, r, false, null);
+
+  let drawMeshes = 0;
+  for (const [container, B] of buckets) {
+    for (const { mat, geos, tags } of B.values()) {
+      const counts = geos.map(x => x.attributes.position.count);
+      const g = geos.length === 1 ? geos[0] : THREE_mergeGeometries(geos, false);
+      if (!g) { console.warn('merge failed'); continue; }
+      if (geos.length > 1) geos.forEach(x => x.dispose());
+      g.computeBoundingSphere(); g.computeBoundingBox();
+      const mesh = new THREE.Mesh(g, mat); mesh.layers.set(LAYER_MERGED); mesh.matrixAutoUpdate = false; mesh.userData.mergedFrom = geos.length; mesh.name = 'merged';
+      container.add(mesh); drawMeshes++;
+      let off = 0; tags.forEach((t, i) => { if (t) t.userData.ranges.push({ mesh, start: off, count: counts[i] }); off += counts[i]; });
+    }
+  }
+  for (const G of groups) {
+    G.userData.detach = () => {
+      G.traverse(o => { if (o.userData.detach && o !== G) o.userData.detach(); }); // nested drawers/doors go too
+      G.userData.detach = null;
+      for (const { mesh, start, count } of G.userData.ranges) { const a = mesh.geometry.attributes.position; a.array.fill(0, start * 3, (start + count) * 3); a.needsUpdate = true; } // collapse its triangles
+      for (const m of G.userData.detachMeshes) m.layers.set(0); // the real parts render (and stay pickable) from now on
+      detachedCount++;
+    };
+  }
+  return { detachable: groups.size, originals: before, mergedMeshes: drawMeshes, containers: buckets.size, sharedMaterials: canonical.size + vcMats.size, vertexColorMaterials: vcMats.size, sharedSwaps, ms: Math.round(performance.now() - t0) };
 }
 
 // ---------- engine: renderer, player, needs, clock, actions, phone, events, UI ----------
@@ -2249,6 +2370,16 @@ const DEFAULT_LAYOUT = {
 
 DEFAULT_LAYOUT.items.forEach(i => spawnItem({ id: uid(), ...i, d: i.d ? JSON.parse(JSON.stringify(i.d)) : {} }));
 
+// ---- merge static geometry (rendering only; picking still uses the original meshes) ----
+camera.layers.enable(LAYER_MERGED);
+const optStats = optimizeStatic({
+  roots: [A.world, A.outdoor],
+  tickOwners: TICKS.map(t => t.owner).filter(o => o !== A.world && o !== itemsGroup),
+  registry: [...Object.values(A.lights).flatMap(L => L.mats), ...A.streetLamps, A.sky.material],
+  isItemContainer: (o) => { const d = CATALOG[o.userData.item.t]; return d.small || d.removable; },
+});
+console.info('static merge', optStats);
+
 // ---- clock & day/night ----
 function advanceTime(mins, skip) {
   P.minutes += mins;
@@ -2400,6 +2531,7 @@ addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 // ---- raycasting ----
 const ray = new THREE.Raycaster();
 const CENTER = new THREE.Vector2(0, 0);
+ray.layers.set(0); ray.layers.enable(LAYER_PICK); // aim at real objects (incl. merged originals), never at merged render meshes
 function aimRay() { ray.setFromCamera(locked || isTouch || !mouseInCanvas ? CENTER : mouseNDC, camera); }
 let frameHits = [];
 function castFrame() { aimRay(); ray.far = 9; frameHits.length = 0; ray.intersectObject(A.world, true, frameHits); } // the one raycast per frame
@@ -2704,7 +2836,7 @@ frame ${(sum / n).toFixed(1)} ms  worst ${worst.toFixed(1)} ms
 logic ${(lg / n).toFixed(2)} ms  render ${(rd / n).toFixed(2)} ms
 draw calls ${i.render.calls}  tris ${(i.render.triangles / 1000).toFixed(0)}k
 programs ${i.programs.length}  tex ${i.memory.textures}  geo ${i.memory.geometries}
-updates ${ticksRun}/${TICKS.length}  pixel ratio ${renderer.getPixelRatio().toFixed(2)}`;
+updates ${ticksRun}/${TICKS.length}  split-out ${detachedCount}  pixel ratio ${renderer.getPixelRatio().toFixed(2)}`;
 }
 function setPerf(on) { stats.show = on; EL.perf.hidden = !on; settings.perf = on; store.set('settings', settings); const cb = $('#perfToggle'); if (cb) cb.checked = on; }
 addEventListener('keydown', (e) => { if (e.code === 'F3') { e.preventDefault(); setPerf(!stats.show); } });
@@ -2728,7 +2860,7 @@ P.pos.set(A.spawn.x, 0, A.spawn.z); P.yaw = A.spawn.yaw; P.day = P.dayTarget = d
 updateHud(); renderTasks();
 camera.position.set(P.pos.x, P.eye, P.pos.z); camera.rotation.set(P.pitch, P.yaw, 0); camera.updateMatrixWorld();
 precompile().then(() => requestAnimationFrame(frame));
-window.__game = { stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
+window.__game = { optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
 
 </script>
 
