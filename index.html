@@ -742,7 +742,7 @@ def('barstool', 'Bar stool', 'Seating', { color: '#efe8dc', colorable: true , so
   B(g, 0.36, 0.015, 0.015, mt, 0, 0.25, 0.16); B(g, 0.36, 0.015, 0.015, mt, 0, 0.25, -0.16);
   const seat = B(g, 0.46, 0.09, 0.42, c, 0, 0.64, 0);
   const back = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.26, 20, 1, true, Math.PI * 0.6, Math.PI * 0.8), c);
-  back.material.side = THREE.DoubleSide; back.position.set(0, 0.86, 0.06); back.rotation.y = Math.PI; g.add(back);
+  back.material.side = THREE.DoubleSide; back.position.set(0, 0.86, -0.06); g.add(back); // seat back behind you, so you face +z
   sitOn(ctx, seat, 'Sit on stool', 0.1, 0.0);
   return g;
 });
@@ -1510,7 +1510,7 @@ function buildApartment(scene, ctx) {
   const doorOp = (a, b) => ({ a, b, bottom: 0, top: 2.08 });
   const winOp = (a, b) => ({ a, b, bottom: 0.55, top: 2.3 });
   // exterior (north facade faces the parking lot)
-  wall(0, 0, 4.1, 0, [winOp(1.1, 2.75)]);
+  wall(0, 0, 4.1, 0, [winOp(0.5, 1.95)]);
   wall(4.1, 1.45, 7.6, 1.45, [doorOp(5.0, 6.4)]);
   wall(4.1, 0, 4.1, 5.25); // half wall: runs past the recessed bedroom door
   wall(7.6, 0, 7.6, 1.45, [], { noBase: true });
@@ -1653,7 +1653,7 @@ function buildApartment(scene, ctx) {
     ctx.interact(b, { reach: 4, label: () => st.up ? 'Lower blinds' : 'Raise blinds', action: () => { st.up = !st.up; Sfx.noise(0.6, 0.1, 2500, 1); } });
     ctx.tick(b, dt => { b.scale.y = lerp(b.scale.y, st.up ? 0.12 : 1, dt * 4); b.position.y = 0.58 + hh - hh * b.scale.y / 2; });
   }
-  windowAt(1.1, 2.75, 0, true, 1);
+  windowAt(0.5, 1.95, 0, true, 1);
   curtains(4.7, 6.7, 1.45 + WT / 2 + 0.1);
 
   // ---------- switches ----------
@@ -1673,7 +1673,7 @@ function buildApartment(scene, ctx) {
   sw(4.7, 1.515, 0, ['balcony', 'living'], '');
   sw(2.965, 4.55, Math.PI / 2, ['hall'], '');
   sw(4.035, 4.0, -Math.PI / 2, ['bedroom', 'bedroom:fan'], '');
-  sw(2.835, 5.25, -Math.PI / 2, ['bath'], ''); sw(1.95, 3.465, 0, ['bath'], '');
+  sw(2.45, 6.435, Math.PI, ['bath'], ''); sw(0.8, 3.465, 0, ['bath'], '');
   sw(0.75, 6.565, 0, ['closet'], '');
   sw(6.335, 9.1, -Math.PI / 2, ['laundry'], '');
   sw(6.465, 9.1, Math.PI / 2, ['mech'], '');
@@ -1948,35 +1948,39 @@ function buildApartment(scene, ctx) {
   const towelTex = canvasTex(128, 256, (g) => { g.fillStyle = '#eef3f6'; g.fillRect(0, 0, 128, 256); for (let i = 0; i < 70; i++) { g.fillStyle = ['#2f6aa1', '#5d8fbf', '#9cc0dd'][i % 3]; g.beginPath(); g.ellipse(Math.random() * 128, Math.random() * 256, 8, 4, Math.random() * 3, 0, TAU); g.fill(); } });
   B(BA, 0.6, 0.02, 0.02, nickel, 1.55, 1.4, 6.41); B(BA, 0.42, 0.75, 0.04, M(0xffffff, 1, 0, { map: towelTex }), 1.55, 0.7, 6.4); B(BA, 0.2, 0.45, 0.045, M(0xffffff, 1), 1.75, 0.95, 6.38);
   const tp = C(BA, 0.05, 0.05, 0.1, M(0xffffff, 1), 0.85, 0.62, 6.39, 12); tp.rotation.z = Math.PI / 2;
-  // corner shower: back = north wall, right = hall wall, glass front sliding
-  const SH = G(BA); const sx0 = 1.75, sx1 = 2.84, sz0 = 3.46, sz1 = 4.55; const scx = (sx0 + sx1) / 2;
-  B(SH, sx1 - sx0, 0.08, sz1 - sz0, M(0xf4f4f2, 0.3), scx, 0, (sz0 + sz1) / 2);
-  B(SH, 0.06, 2.1, sz1 - sz0, M(0xf4f4f2, 0.3), sx0, 0, (sz0 + sz1) / 2);
-  B(SH, sx1 - sx0, 1.9, 0.01, M(0xf0efec, 0.3), scx, 0.08, sz0 + 0.005);
-  for (let i = 0; i < 3; i++) B(SH, 0.1, 0.02, 0.25, M(0xf4f4f2, 0.3), sx1 - 0.06, 0.9 + i * 0.35, sz0 + 0.2);
-  C(SH, 0.03, 0.03, 0.2, M(0xd94f70), sx1 - 0.06, 1.27, sz0 + 0.12, 10); C(SH, 0.03, 0.03, 0.22, M(0x2b2b2b), sx1 - 0.06, 1.27, sz0 + 0.24, 10);
-  const head = G(SH, scx, 1.95, sz0 + 0.01); const arm = C(head, 0.012, 0.012, 0.2, nickel, 0, 0, 0.1, 8); arm.rotation.x = Math.PI / 2; arm.position.set(0, 0, 0.1); const hd = C(head, 0.08, 0.05, 0.03, nickel, 0, -0.03, 0.2, 16); hd.rotation.x = 0.4;
-  B(SH, sx1 - sx0, 0.03, 0.04, nickel, scx, 2.05, sz1); B(SH, sx1 - sx0, 0.03, 0.04, nickel, scx, 0.08, sz1);
+  // walk-in shower along the hall-side wall: runs from the back (north) wall to the bathroom door,
+  // glass front faces the vanity mirrors, shower head toward the right (south) end as you face it
+  const SH = G(BA); const sx0 = 1.95, sx1 = 2.84, sz0 = 3.46, sz1 = 5.5; const scx = (sx0 + sx1) / 2, scz = (sz0 + sz1) / 2;
+  const tile = M(0xf0efec, 0.3), panelM = M(0xf4f4f2, 0.3);
+  B(SH, sx1 - sx0, 0.08, sz1 - sz0, panelM, scx, 0, scz);                      // tray
+  B(SH, sx1 - sx0 + 0.03, 2.1, 0.06, panelM, scx - 0.015, 0, sz1 - 0.03);      // end wall beside the bathroom door
+  B(SH, 0.01, 1.9, sz1 - sz0, tile, sx1 - 0.005, 0.08, scz);                    // tiled back wall
+  for (let i = 0; i < 3; i++) B(SH, 0.25, 0.02, 0.1, panelM, sx1 - 0.06, 0.9 + i * 0.35, sz0 + 0.25);  // corner shelves
+  C(SH, 0.03, 0.03, 0.2, M(0xd94f70), sx1 - 0.06, 1.27, sz0 + 0.15, 10); C(SH, 0.03, 0.03, 0.22, M(0x2b2b2b), sx1 - 0.06, 1.27, sz0 + 0.28, 10);
+  const headZ = sz0 + (sz1 - sz0) * 0.72;
+  const head = G(SH, sx1 - 0.01, 1.95, headZ); const arm = C(head, 0.012, 0.012, 0.2, nickel, 0, 0, 0, 8); arm.rotation.z = Math.PI / 2; arm.position.set(-0.1, 0, 0); const hd = C(head, 0.08, 0.05, 0.03, nickel, -0.2, -0.03, 0, 16); hd.rotation.z = 0.4;
+  B(SH, 0.04, 0.03, sz1 - sz0, nickel, sx0, 2.05, scz); B(SH, 0.04, 0.03, sz1 - sz0, nickel, sx0, 0.08, scz);  // rails
   const glassM = M(0xdde8ee, 0.05, 0.1, { transparent: true, opacity: 0.2, depthWrite: false });
-  const gw = (sx1 - sx0) / 2 + 0.03;
-  const gp1 = B(SH, gw, 1.95, 0.01, glassM, sx0 + gw / 2, 0.1, sz1 - 0.02); markDyn(gp1); const gp2 = B(SH, gw, 1.95, 0.01, glassM, sx1 - gw / 2, 0.1, sz1);
-  B(gp1, 0.02, 0.3, 0.04, nickel, gw / 2 - 0.05, -0.15, 0.03);
+  const gw = (sz1 - sz0) / 2 + 0.03;
+  // sliding panel starts at the back-wall end (the entrance); the fixed panel is at the head end so you don't get splashed
+  const gp1 = B(SH, 0.01, 1.95, gw, glassM, sx0 - 0.02, 0.1, sz0 + gw / 2); markDyn(gp1); const gp2 = B(SH, 0.01, 1.95, gw, glassM, sx0, 0.1, sz1 - gw / 2);
+  B(gp1, 0.04, 0.3, 0.02, nickel, -0.03, -0.15, -gw / 2 + 0.06);
   const shSt = { open: false, v: 0, on: false };
   ctx.interact(gp1, { label: () => shSt.open ? 'Close shower door' : 'Open shower door', action: () => { shSt.open = !shSt.open; Sfx.noise(0.4, 0.1, 2500, 2); } });
-  const knobS = C(SH, 0.05, 0.05, 0.03, nickel, scx, 1.15, sz0 + 0.03, 16); knobS.rotation.x = Math.PI / 2;
-  const wcx = scx, wcz = sz0 + 0.25;
+  const knobS = C(SH, 0.05, 0.05, 0.03, nickel, sx1 - 0.02, 1.15, headZ - 0.35, 16); knobS.rotation.z = Math.PI / 2;
+  const wcx = sx1 - 0.25, wcz = headZ;
   const NP = 220, wp = new Float32Array(NP * 3), wv = new Float32Array(NP);
   for (let i = 0; i < NP; i++) { wp[i * 3] = wcx + rand(-0.12, 0.12); wp[i * 3 + 1] = Math.random() * 1.9; wp[i * 3 + 2] = wcz + rand(-0.12, 0.12); wv[i] = rand(3, 5); }
   const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(wp, 3));
   const pts = new THREE.Points(pg, new THREE.PointsMaterial({ color: 0xcfe8ff, size: 0.025, transparent: true, opacity: 0.7, depthWrite: false })); pts.visible = false; SH.add(pts); pts.userData.noRay = true;
   ctx.interact(knobS, { label: () => shSt.on ? 'Turn off shower' : 'Turn on shower 🚿', action: () => { shSt.on = !shSt.on; Sfx.click(); if (shSt.on) { shSt.s = Sfx.loop('shower', V3(wcx, 1.2, wcz), 0.2); ctx.msg('Open the glass door and step in.'); } else shSt.s && shSt.s.stop(); } });
   ctx.tick(SH, dt => {
-    shSt.v += ((shSt.open ? 1 : 0) - shSt.v) * Math.min(1, dt * 5); gp1.position.x = sx0 + gw / 2 + shSt.v * (gw - 0.08);
+    shSt.v += ((shSt.open ? 1 : 0) - shSt.v) * Math.min(1, dt * 5); gp1.position.z = sz0 + gw / 2 + shSt.v * (gw - 0.08);
     if (shSt.on) { const pp = ctx.playerPos(); const inside = pp.x > sx0 && pp.x < sx1 && pp.z > sz0 && pp.z < sz1; ctx.flags.showering = inside; if (inside) { ctx.need('hygiene', dt / 12); if (!shSt.told) { shSt.told = true; ctx.task('shower'); ctx.msg('🚿 Ahh, hot water. Stay under it to get clean.'); } } else shSt.told = false; } else ctx.flags.showering = false;
     pts.visible = shSt.on; if (shSt.on) { for (let i = 0; i < NP; i++) { wp[i * 3 + 1] -= wv[i] * dt; if (wp[i * 3 + 1] < 0.08) { wp[i * 3 + 1] = 1.9; wp[i * 3] = wcx + rand(-0.04, 0.04); wp[i * 3 + 2] = wcz + rand(-0.04, 0.04); } wp[i * 3] += (wp[i * 3] - wcx) * dt * 1.2; wp[i * 3 + 2] += (wp[i * 3 + 2] - wcz) * dt * 1.2; } pg.attributes.position.needsUpdate = true; A.fog = Math.min(1, A.fog + dt / 20); }
     mirrorM.color.setRGB(0.79 + A.fog * 0.15, 0.83 + A.fog * 0.12, 0.86 + A.fog * 0.1); mirrorM.roughness = 0.08 + A.fog * 0.7; mirrorM.metalness = 0.55 - A.fog * 0.5;
   });
-  col(sx1 - gw, 0, sz1 - 0.03, sx1 + 0.04, 2, sz1 + 0.03); col(sx0 - 0.03, 0, sz0, sx0 + 0.04, 2.1, sz1); const gpBox = new THREE.Box3(); ctx.addCollider(gpBox, () => gpBox.setFromObject(gp1));
+  col(sx0 - 0.03, 0, sz1 - gw, sx0 + 0.03, 2, sz1); col(sx0, 0, sz1 - 0.06, sx1, 2.1, sz1); const gpBox = new THREE.Box3(); ctx.addCollider(gpBox, () => gpBox.setFromObject(gp1));
   B(BA, 0.5, 0.012, 0.8, M(0xd9d4cc, 1), 1.0, 0, 4.55); // bath mat in front of vanity
 
   // ---------- walk-in closet (behind the bathroom) ----------
@@ -2356,10 +2360,10 @@ const DEFAULT_LAYOUT = {
     // bedroom
     ['bed', 1.14, 0, 1.41, HP], ['nightstand', 0.27, 0, 0.31, HP], ['nightstand', 0.27, 0, 2.51, HP], ['lamp_table', 0.27, 0.63, 0.31, 0, null, { on: true }], ['lamp_table', 0.27, 0.63, 2.51, 0],
     ['desk', 2.3, 0, 3.065, PI], ['monitor', 2.3, 0.76, 3.0, PI], ['plant_small', 2.75, 0.76, 3.2, 0], ['office_chair', 2.3, 0, 2.97, 0],
-    ['art_monet', 0.06, 1.75, 1.41, HP], ['arched_cabinet', 3.56, 0, 0.27, 0], ['dresser', 3.8, 0, 2.3, -HP],
+    ['art_monet', 0.06, 1.75, 1.41, HP], ['arched_cabinet', 2.78, 0, 0.27, 0], ['dresser', 3.8, 0, 2.3, -HP],
     ['art_photo', 4.04, 1.45, 1.85, -HP, null, { seed: 21 }], ['art_photo', 4.04, 1.45, 2.3, -HP, null, { seed: 22 }], ['art_photo', 4.04, 1.45, 2.75, -HP, null, { seed: 23 }],
     ['art_photo', 4.04, 1.9, 1.85, -HP, null, { seed: 24 }], ['art_photo', 4.04, 1.9, 2.3, -HP, null, { seed: 25 }], ['art_photo', 4.04, 1.9, 2.75, -HP, null, { seed: 26 }],
-    ['vase', 3.8, 0.83, 1.85, 0], ['books', 3.8, 0.83, 2.8, 0.2], ['ironing', 2.45, 0, 0.95, 0],
+    ['vase', 3.8, 0.83, 1.85, 0], ['books', 3.8, 0.83, 2.8, 0.2], ['ironing', 3.6, 0, 0.98, 0],
     ['clothes_pile', 3.0, 0, 1.6, 0.4], ['clothes_pile', 3.35, 0, 2.7, 1.2],
     // bath, closet, balcony, corridor
     ['hair_dryer', 0.35, 0.9, 4.1, HP], ['candle', 0.32, 0.9, 5.3, 0], ['hamper', 1.45, 0, 6.95, 0],

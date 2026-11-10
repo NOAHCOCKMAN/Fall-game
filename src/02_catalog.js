@@ -130,7 +130,7 @@ def('barstool', 'Bar stool', 'Seating', { color: '#efe8dc', colorable: true , so
   B(g, 0.36, 0.015, 0.015, mt, 0, 0.25, 0.16); B(g, 0.36, 0.015, 0.015, mt, 0, 0.25, -0.16);
   const seat = B(g, 0.46, 0.09, 0.42, c, 0, 0.64, 0);
   const back = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.26, 20, 1, true, Math.PI * 0.6, Math.PI * 0.8), c);
-  back.material.side = THREE.DoubleSide; back.position.set(0, 0.86, 0.06); back.rotation.y = Math.PI; g.add(back);
+  back.material.side = THREE.DoubleSide; back.position.set(0, 0.86, -0.06); g.add(back); // seat back behind you, so you face +z
   sitOn(ctx, seat, 'Sit on stool', 0.1, 0.0);
   return g;
 });
