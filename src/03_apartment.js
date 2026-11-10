@@ -3,11 +3,10 @@ const WALL_H = 2.7, WT = 0.12;
 const ROOMS = {
   laundry: { name: 'Laundry closet', rects: [[5.55, 8.9, 6.4, 10]], wall: '#dedad2', floor: 'oak' },
   mech: { name: 'Mechanical closet', rects: [[6.4, 8.9, 7.6, 10]], wall: '#dedad2', floor: 'oak' },
-  hall: { name: 'Hallway', rects: [[2.9, 3.4, 4.1, 4.6]], wall: '#dedad2', floor: 'oak' },
-  living: { name: 'Living room & kitchen', rects: [[4.1, 1.45, 7.6, 8.9], [2.9, 4.6, 4.1, 8.9], [1.85, 6.5, 2.9, 8.9], [1.85, 8.9, 5.55, 10]], wall: '#dedad2', floor: 'oak' },
+  living: { name: 'Living room & kitchen', rects: [[4.1, 1.45, 7.6, 8.9], [2.9, 4.4, 4.1, 8.9], [1.85, 6.5, 2.9, 8.9], [1.85, 8.9, 5.55, 10]], wall: '#dedad2', floor: 'oak' },
   bath: { name: 'Bathroom', rects: [[0, 3.4, 2.9, 6.5]], wall: '#e2ded6', floor: 'oak' },
   closet: { name: 'Walk-in closet', rects: [[0, 6.5, 1.85, 10]], wall: '#dedad2', floor: 'oak' },
-  bedroom: { name: 'Bedroom', rects: [[0, 0, 4.1, 3.4]], wall: '#dcd7e8', floor: 'oak' },
+  bedroom: { name: 'Bedroom', rects: [[0, 0, 4.1, 3.4], [2.9, 3.4, 4.1, 4.4]], wall: '#dcd7e8', floor: 'oak' },
   balcony: { name: 'Balcony', rects: [[4.1, 0, 7.6, 1.45]], fixed: true },
   corridor: { name: 'Building corridor', rects: [[7.6, 5.5, 9.8, 10.5]], fixed: true },
 };
@@ -36,11 +35,11 @@ function buildApartment(scene, ctx) {
     return L;
   }
   function recessed(key, x, z) { const m = E(0xfff6e6, 2); const c = new THREE.Mesh(new THREE.CircleGeometry(0.08, 20), m); c.rotation.x = Math.PI / 2; c.position.set(x, WALL_H - 0.005, z); W.add(c); T(W, 0.085, 0.01, white, x, WALL_H - 0.01, z).rotation.x = Math.PI / 2; A.lights[key].mats.push(m); }
-  lightKey('kitchen', { points: [[3.9, 2.3, 8.6], [4.8, 1.8, 6.75]], intensity: 5 });
+  lightKey('kitchen', { points: [[3.9, 2.3, 8.6], [5.0, 1.8, 7.25]], intensity: 5 });
   lightKey('living', { points: [[5.85, 2.3, 3.6]], intensity: 7 });
   lightKey('bedroom', { points: [[2.05, 2.3, 1.7]], intensity: 6, on: false });
   lightKey('bath', { points: [[1.2, 2.2, 4.9]], intensity: 5, on: false });
-  lightKey('hall', { points: [[3.5, 2.3, 4.0]], intensity: 2.5, dist: 5, on: false });
+  lightKey('hall', { points: [[3.5, 2.3, 4.85]], intensity: 2.5, dist: 5, on: false });
   lightKey('closet', { points: [[0.9, 2.3, 8.2]], intensity: 2.5, dist: 4, on: false });
   lightKey('laundry', { points: [[5.97, 2.2, 9.45]], intensity: 1.6, dist: 3, on: false });
   lightKey('mech', { points: [[7.0, 2.2, 9.45]], intensity: 1.4, dist: 3, on: false });
@@ -49,7 +48,7 @@ function buildApartment(scene, ctx) {
   A.lightOn = (k) => A.lights[k] && A.lights[k].on && ctx.power();
   [[2.9, 8.4], [4.6, 8.6], [2.6, 7.3], [6.6, 7.6]].forEach(([x, z]) => recessed('kitchen', x, z));
   [[4.9, 2.4], [6.8, 2.4], [4.9, 5.0], [6.8, 5.0]].forEach(([x, z]) => recessed('living', x, z));
-  recessed('hall', 3.5, 4.0); recessed('closet', 0.9, 8.2); recessed('laundry', 5.97, 9.45); recessed('mech', 7.0, 9.45); recessed('corridor', 8.7, 7); recessed('corridor', 8.7, 9.3);
+  recessed('hall', 3.5, 4.85); recessed('bedroom', 3.5, 3.9); recessed('closet', 0.9, 8.2); recessed('laundry', 5.97, 9.45); recessed('mech', 7.0, 9.45); recessed('corridor', 8.7, 7); recessed('corridor', 8.7, 9.3);
   // HVAC grilles and smoke detectors for realism
   for (const [x, z, w, d] of [[3.2, 7.6, 0.3, 0.3], [5.85, 5.4, 0.35, 0.2], [2.6, 1.0, 0.3, 0.2], [1.2, 5.6, 0.25, 0.25]]) { B(W, w, 0.012, d, M(0xf2f2f0, 0.5), x, WALL_H - 0.012, z); for (let i = 0; i < 6; i++) B(W, w - 0.03, 0.004, 0.006, M(0x9a9a98), x, WALL_H - 0.016, z - d / 2 + 0.03 + i * (d - 0.06) / 5); }
   for (const [x, z] of [[5.0, 4.2], [3.5, 4.3], [1.8, 2.6]]) C(W, 0.06, 0.06, 0.03, M(0xf6f6f4, 0.6), x, WALL_H - 0.03, z, 16);
@@ -92,13 +91,14 @@ function buildApartment(scene, ctx) {
   // exterior (north facade faces the parking lot)
   wall(0, 0, 4.1, 0, [winOp(1.25, 3.1)]);
   wall(4.1, 1.45, 7.6, 1.45, [doorOp(5.0, 6.4)]);
-  wall(4.1, 0, 4.1, 3.9);
+  wall(4.1, 0, 4.1, 5.25); // half wall: runs past the recessed bedroom door
   wall(7.6, 0, 7.6, 1.45, [], { noBase: true });
-  wall(7.6, 1.45, 7.6, 10, [doorOp(7.55, 8.45)]);
+  wall(7.6, 1.45, 7.6, 10, [doorOp(7.05, 7.95)]);
   wall(0, 10, 7.6, 10);
   wall(0, 0, 0, 10);
   // interior
-  wall(0, 3.4, 4.1, 3.4, [doorOp(3.15, 3.95)]);
+  wall(0, 3.4, 2.9, 3.4);
+  wall(2.9, 4.4, 4.1, 4.4, [doorOp(3.15, 3.95)]); // bedroom door, sunk into the alcove
   wall(2.9, 3.4, 2.9, 6.5, [doorOp(4.75, 5.55)]);
   wall(0, 6.5, 2.9, 6.5, [doorOp(0.95, 1.7)]);
   wall(1.85, 6.5, 1.85, 10, [], { noOutlet: true });
@@ -177,8 +177,8 @@ function buildApartment(scene, ctx) {
     doors.push(st); st.leaf = leaf;
     return st;
   }
-  const front = makeDoor({ x: 7.6, z: 7.55, axis: 'z', len: 0.9, hingeEnd: true, open: -1, label: 'front door', exterior: true, lock: true });
-  makeDoor({ x: 3.15, z: 3.4, axis: 'x', len: 0.8, hingeEnd: false, open: -1, label: 'bedroom door' });
+  const front = makeDoor({ x: 7.6, z: 7.05, axis: 'z', len: 0.9, hingeEnd: true, open: -1, label: 'front door', exterior: true, lock: true });
+  makeDoor({ x: 3.15, z: 4.4, axis: 'x', len: 0.8, hingeEnd: false, open: -1, label: 'bedroom door' });
   makeDoor({ x: 2.9, z: 4.75, axis: 'z', len: 0.8, hingeEnd: false, open: -1, label: 'bathroom door' });
   makeDoor({ x: 0.95, z: 6.5, axis: 'x', len: 0.75, hingeEnd: false, open: 1, label: 'closet door' });
   makeDoor({ x: 5.62, z: 8.9, axis: 'x', len: 0.71, hingeEnd: false, open: -1, label: 'laundry closet' });
@@ -187,9 +187,9 @@ function buildApartment(scene, ctx) {
   makeDoor({ x: 5.7, z: 1.45, axis: 'x', len: 0.7, hingeEnd: true, open: -1, label: 'balcony door', glass: true, exterior: true });
   makeDoor({ x: 9.8, z: 7.0, axis: 'z', len: 0.95, open: -1, label: "neighbor's door", lock: true });
   // peephole / unit number (corridor side)
-  B(W, 0.01, 0.12, 0.2, M(0xb08d57, 0.3, 0.8), 7.675, 1.75, 8.0);
+  B(W, 0.01, 0.12, 0.2, M(0xb08d57, 0.3, 0.8), 7.675, 1.75, 7.5);
   // smart lock keypad (interior)
-  const kp = B(W, 0.04, 0.16, 0.08, black, 7.515, 1.0, 7.65); const kpLed = B(W, 0.005, 0.015, 0.015, E(0x33ff66, 1.5), 7.492, 1.13, 7.65);
+  const kp = B(W, 0.04, 0.16, 0.08, black, 7.515, 1.0, 7.2); const kpLed = B(W, 0.005, 0.015, 0.015, E(0x33ff66, 1.5), 7.492, 1.13, 7.2);
   ctx.interact(kp, { label: () => front.locked ? 'Unlock front door 🔓' : 'Lock front door 🔒', action: () => { if (front.open) return ctx.msg('Close the door first.'); front.locked = !front.locked; Sfx.beep(front.locked ? 2 : 1, front.locked ? 1200 : 1800); Sfx.noise(0.15, 0.3, 300, 2, 'lowpass', 0, 0.2); } });
   ctx.tick(kp, () => kpLed.material.emissive.set(front.locked ? 0xff3333 : 0x33ff66));
   A.doors = doors;
@@ -242,15 +242,15 @@ function buildApartment(scene, ctx) {
       ctx.tick(pad, () => { const on = isFan ? A.lights[key].fan && A.lights[key].fan.on : A.lights[key].on; pad.rotation.x = on ? -0.25 : 0.25; });
     });
   }
-  sw(7.535, 7.3, -Math.PI / 2, ['kitchen', 'living', 'living:fan'], '');
+  sw(7.535, 6.8, -Math.PI / 2, ['kitchen', 'living', 'living:fan'], '');
   sw(4.7, 1.515, 0, ['balcony', 'living'], '');
-  sw(2.965, 3.6, Math.PI / 2, ['hall'], '');
-  sw(2.9, 3.335, Math.PI, ['bedroom', 'bedroom:fan'], '');
+  sw(2.965, 4.55, Math.PI / 2, ['hall'], '');
+  sw(4.035, 4.0, -Math.PI / 2, ['bedroom', 'bedroom:fan'], '');
   sw(2.835, 5.8, -Math.PI / 2, ['bath'], '');
   sw(0.75, 6.565, 0, ['closet'], '');
   sw(6.335, 9.1, -Math.PI / 2, ['laundry'], '');
   sw(6.465, 9.1, Math.PI / 2, ['mech'], '');
-  sw(7.665, 7.3, Math.PI / 2, ['corridor'], '');
+  sw(7.665, 6.8, Math.PI / 2, ['corridor'], '');
   sw(2.965, 6.2, Math.PI / 2, ['kitchen', 'hall'], '');
 
   // ---------- ceiling fans & pendants ----------
@@ -263,8 +263,8 @@ function buildApartment(scene, ctx) {
     ctx.interact(lk, { reach: 4, label: () => F.on ? 'Turn fan off' : 'Turn fan on', action: () => { F.on = !F.on; Sfx.click(); } });
   }
   fan('living', 5.85, 3.6); fan('bedroom', 2.05, 1.7);
-  for (const x of [4.4, 5.2]) {
-    const g = G(W, x, WALL_H, 6.75); C(g, 0.004, 0.004, 0.6, black, 0, -0.6, 0, 4);
+  for (const x of [4.6, 5.4]) {
+    const g = G(W, x, WALL_H, 7.25); C(g, 0.004, 0.004, 0.6, black, 0, -0.6, 0, 4);
     const dome = new THREE.Mesh(new THREE.SphereGeometry(0.2, 24, 12, 0, TAU, 0, Math.PI / 2.4), M(0x161616, 0.35, 0.4, { side: THREE.DoubleSide })); dome.position.y = -0.82; g.add(dome);
     C(g, 0.04, 0.05, 0.08, black, 0, -0.66, 0, 12);
     const lm = E(0xfff1d6, 0); const d = new THREE.Mesh(new THREE.CircleGeometry(0.15, 20), lm); d.rotation.x = Math.PI / 2; d.position.y = -0.75; g.add(d); A.lights.kitchen.mats.push(lm);
@@ -408,7 +408,7 @@ function buildApartment(scene, ctx) {
   B(K, 0.74, 0.6, 0.04, cabinet, 7.57, 0, 2.23); B(K, 0.74, 2.4, 0.04, cabinet, 7.57, 0, 3.23); B(K, 0.74, 0.5, 0.96, cabinet, 7.57, 1.85, 2.73); B(K, 0.74, 2.4, 0.04, cabinet, 7.57, 0, 2.21);
   colK(7.18, 0, 2.2, 7.94, 2.4, 3.27);
   // ---- island ----
-  const IS = G(W, 4.8, 0, 6.75, Math.PI); // island: work side faces the range, stools on the living side
+  const IS = G(W, 5.0, 0, 7.25, Math.PI); // island: work side faces the range, stools on the living side
   // north (kitchen) side modules facing -z
   [['drawers', -1.15, -0.3], ['door2', -0.3, 0.3], ['door', 0.9, 1.15]].forEach(([k, a, b]) => baseModule(IS, k, b - a, -(a + b) / 2, -0.5, Math.PI));
   B(IS, 2.3, 0.9, 0.38, cabinet, 0, 0, 0.29); // body behind modules (south half)
@@ -422,7 +422,7 @@ function buildApartment(scene, ctx) {
   const dwSt = hinge(ctx, dwd, 'x', 1.5, 'dishwasher', 'click');
   const dwLed = B(DW, 0.04, 0.01, 0.01, E(0x33ff66, 0), 0.2, 0.86, 0.02);
   const dwRun = { on: false, t: 0 };
-  const dwRunDef = { label: () => dwRun.on ? 'Dishwasher running…' : dwSt.open ? 'Close the dishwasher to run it' : 'Start dishwasher', action: () => { if (dwSt.open) return ctx.msg('Close the dishwasher first.'); if (!dwRun.on) { dwRun.on = true; dwRun.t = 0; Sfx.beep(2, 1300); dwRun.s = Sfx.loop('washer', V3(4.2, 0.4, 7.2), 0.08); } } };
+  const dwRunDef = { label: () => dwRun.on ? 'Dishwasher running…' : dwSt.open ? 'Close the dishwasher to run it' : 'Start dishwasher', action: () => { if (dwSt.open) return ctx.msg('Close the dishwasher first.'); if (!dwRun.on) { dwRun.on = true; dwRun.t = 0; Sfx.beep(2, 1300); dwRun.s = Sfx.loop('washer', V3(4.4, 0.4, 7.7), 0.08); } } };
   ctx.interact(dwLed, dwRunDef); ctx.interact(dwh, { label: () => dwSt.open ? 'Close dishwasher' : dwRun.on ? 'Dishwasher running…' : 'Start dishwasher', action: () => dwSt.open ? (dwSt.open = false, Sfx.click()) : dwRunDef.action() });
   ctx.tick(DW, dt => { if (dwRun.on) { dwRun.t += dt; if (dwRun.t > 14 || !ctx.power()) { dwRun.on = false; dwRun.s && dwRun.s.stop(); if (dwRun.t > 14) { Sfx.chime(); ctx.msg('Dishes are sparkling clean.'); ctx.task('dishes'); } } } dwLed.material.emissiveIntensity = dwRun.on ? 2 : 0; });
   // island top with sink cut-out (sink centered at local x 0, z -0.15)
@@ -438,11 +438,11 @@ function buildApartment(scene, ctx) {
   const lever = B(fau, 0.015, 0.012, 0.09, nickel, 0.05, 0.24, 0.02);
   const water = C(IS, 0.008, 0.012, 0.5, M(0xcfe8ff, 0.05, 0, { transparent: true, opacity: 0.55 }), 0, 0.72, -0.04, 8); water.visible = false;
   const sink = { on: false };
-  ctx.interact(fau, { label: () => sink.on ? 'Turn off faucet' : 'Turn on faucet 💧', action: () => { sink.on = !sink.on; Sfx.click(); if (sink.on) sink.s = Sfx.loop('water', V3(4.8, 0.9, 6.9), 0.12); else sink.s && sink.s.stop(); } });
+  ctx.interact(fau, { label: () => sink.on ? 'Turn off faucet' : 'Turn on faucet 💧', action: () => { sink.on = !sink.on; Sfx.click(); if (sink.on) sink.s = Sfx.loop('water', V3(5.0, 0.9, 7.4), 0.12); else sink.s && sink.s.stop(); } });
   const dishHit = B(IS, 0.7, 0.18, 0.45, new THREE.MeshBasicMaterial({ visible: false }), 0, 0.71, -0.15);
   ctx.interact(dishHit, { label: () => dishes.some(d => d.visible) ? (sink.on ? 'Wash a dish 🧽' : 'Wash dishes (turn the faucet on first)') : 'Sink is clean ✨', action: () => { if (!sink.on) return ctx.msg('Turn on the water first.'); const d = [...dishes].reverse().find(d => d.visible); if (d) { d.visible = false; Sfx.splash(); if (!dishes.some(d => d.visible)) { ctx.msg('All the dishes are clean!'); ctx.task('dishes'); } } } });
   ctx.tick(fau, (dt, t) => { water.visible = sink.on; water.scale.x = water.scale.z = 1 + Math.sin(t * 40) * 0.1; lever.rotation.y = sink.on ? 0.6 : 0; });
-  col(3.62, 0, 6.25, 5.98, 0.95, 7.32);
+  col(3.82, 0, 6.75, 6.18, 0.95, 7.82);
   A.refillDishes = () => dishes.forEach(d => d.visible = true);
 
   // ---------- laundry (stacked washer/dryer) ----------
@@ -567,7 +567,7 @@ function buildApartment(scene, ctx) {
   col(0.06, 0, 6.56, 0.62, 2.2, 9.94); col(1.26, 0, 7.4, 1.79, 2.2, 9.94);
 
   // ---------- thermostat (living room, by the hall) ----------
-  const thermTex = canvasTex(128, 96, () => { }); const therm = G(W, 4.165, 1.45, 3.72, Math.PI / 2); B(therm, 0.12, 0.12, 0.025, white, 0, -0.06, 0.012); plane(therm, 0.09, 0.065, new THREE.MeshBasicMaterial({ map: thermTex }), 0, 0, 0.026);
+  const thermTex = canvasTex(128, 96, () => { }); const therm = G(W, 4.165, 1.45, 5.0, Math.PI / 2); B(therm, 0.12, 0.12, 0.025, white, 0, -0.06, 0.012); plane(therm, 0.09, 0.065, new THREE.MeshBasicMaterial({ map: thermTex }), 0, 0, 0.026);
   A.temp = 72; A.mode = 'Heat';
   const drawTherm = () => { const g = thermTex.userData.ctx; g.fillStyle = ctx.power() ? '#0d2a3a' : '#000'; g.fillRect(0, 0, 128, 96); if (!ctx.power()) { thermTex.needsUpdate = true; return; } g.fillStyle = '#fff'; g.font = 'bold 44px sans-serif'; g.textAlign = 'center'; g.fillText(A.temp + '°', 64, 58); g.font = '16px sans-serif'; g.fillStyle = A.mode === 'Heat' ? '#ff9a4a' : '#6ac8ff'; g.fillText(A.mode, 64, 84); thermTex.needsUpdate = true; };
   ctx.interact(therm, { label: () => 'Thermostat ' + A.temp + '°F — raise temp', action: () => { A.temp = A.temp >= 78 ? 64 : A.temp + 1; A.mode = A.temp >= 70 ? 'Heat' : 'Cool'; Sfx.beep(1, 2200); drawTherm(); } });

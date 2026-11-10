@@ -126,20 +126,20 @@ function undo() { const s = undoStack.pop(); if (!s) return toast('Nothing to un
 const PI = Math.PI, HP = Math.PI / 2;
 const DEFAULT_LAYOUT = {
   v: 2, items: [
-    // living room (balcony doors to the north, sofa on the east wall, TV on the west wall)
-    ['sofa', 7.12, 0, 3.5, -HP], ['art_print', 7.54, 1.72, 2.75, -HP, null, { seed: 11 }], ['art_print', 7.54, 1.72, 3.5, -HP, null, { seed: 12 }], ['art_print', 7.54, 1.72, 4.25, -HP, null, { seed: 13 }],
-    ['picture_light', 7.54, 2.2, 2.75, -HP], ['picture_light', 7.54, 2.2, 3.5, -HP], ['picture_light', 7.54, 2.2, 4.25, -HP],
-    ['xmas_tree', 7.12, 0, 1.95, 0], ['present', 6.45, 0, 1.85, 0.3], ['present', 6.55, 0, 2.3, -0.2, '#2e5a3a'],
-    ['rug', 5.8, 0, 3.5, HP], ['coffee_round', 5.85, 0, 3.5, 0], ['mini_tree', 5.7, 0.43, 3.35, 0], ['books', 6.02, 0.43, 3.62, 0.4], ['candle', 5.65, 0.43, 3.75, 0],
-    ['media_console', 4.38, 0, 3.2, HP], ['tv', 4.165, 1.55, 3.1, HP], ['speaker', 4.38, 0.63, 3.85, HP], ['mini_tree', 4.38, 0.63, 2.5, 0], ['basket', 4.45, 0, 5.0, 0],
-    ['bistro_table', 4.62, 0, 1.92, 0], ['armchair', 5.35, 0, 2.05, -HP], ['armchair', 6.25, 0, 5.1, -2.6], ['candle', 4.55, 0.735, 1.85, 0], ['mini_tree', 4.72, 0.735, 2.0, 0], ['wine', 4.5, 0.735, 2.05, 0],
+    // living room: sofa on the half wall, TV on the east wall, tree by the sofa, bistro set top right
+    ['sofa', 4.64, 0, 3.55, HP], ['art_print', 4.165, 1.72, 2.8, HP, null, { seed: 11 }], ['art_print', 4.165, 1.72, 3.55, HP, null, { seed: 12 }], ['art_print', 4.165, 1.72, 4.3, HP, null, { seed: 13 }],
+    ['picture_light', 4.165, 2.2, 2.8, HP], ['picture_light', 4.165, 2.2, 3.55, HP], ['picture_light', 4.165, 2.2, 4.3, HP],
+    ['xmas_tree', 4.6, 0, 1.92, 0], ['present', 5.2, 0, 1.75, 0.3], ['present', 5.35, 0, 2.2, -0.2, '#2e5a3a'],
+    ['rug', 5.9, 0, 3.7, HP], ['coffee_round', 5.9, 0, 3.7, 0], ['mini_tree', 5.75, 0.43, 3.55, 0], ['books', 6.07, 0.43, 3.82, 0.4], ['candle', 5.7, 0.43, 3.95, 0],
+    ['media_console', 7.32, 0, 3.85, -HP], ['tv', 7.535, 1.55, 3.85, -HP], ['speaker', 7.32, 0.63, 3.2, -HP], ['mini_tree', 7.32, 0.63, 4.5, 0], ['basket', 4.45, 0, 5.0, 0],
+    ['bistro_table', 6.95, 0, 1.95, 0], ['armchair', 6.2, 0, 2.0, HP], ['armchair', 6.9, 0, 2.62, PI], ['candle', 6.88, 0.735, 1.88, 0], ['mini_tree', 7.05, 0.735, 2.02, 0], ['wine', 6.83, 0.735, 2.08, 0],
     ['clothes_pile', 6.4, 0, 4.9, 0.6],
     // coffee bar by the entry
     ['sideboard', 7.38, 0, 5.75, -HP], ['espresso', 7.37, 0.88, 5.4, -HP], ['mug', 7.35, 0.88, 5.95, 0, '#2e3a46'], ['mug', 7.4, 0.88, 6.1, 0.5], ['plant_small', 7.38, 0.88, 6.3, 0],
-    ['wreath', 7.535, 2.4, 8.0, -HP], ['art_landscape', 7.535, 1.7, 6.95, -HP], ['art_garden', 4.165, 1.5, 1.85, HP], ['art_bridge', 4.165, 1.9, 2.25, HP],
+    ['wreath', 7.535, 2.4, 7.5, -HP], ['art_landscape', 7.535, 1.75, 1.75, -HP], ['art_garden', 7.535, 1.35, 1.95, -HP], ['art_bridge', 7.535, 1.85, 2.4, -HP],
     // kitchen (range on the south wall, island in the middle)
-    ['barstool', 4.15, 0, 5.55, 0], ['barstool', 4.8, 0, 5.55, 0], ['barstool', 5.45, 0, 5.55, 0],
-    ['flowers', 4.1, 0.935, 6.2, 0], ['tray_plant', 5.45, 0.935, 6.25, 0], ['bread', 5.72, 0.935, 6.6, 0.4], ['mug', 3.95, 0.935, 6.55, 0.8, '#a35d5d'],
+    ['barstool', 4.35, 0, 6.05, 0], ['barstool', 5.0, 0, 6.05, 0], ['barstool', 5.65, 0, 6.05, 0],
+    ['flowers', 4.3, 0.935, 6.7, 0], ['tray_plant', 5.65, 0.935, 6.75, 0], ['bread', 5.92, 0.935, 7.1, 0.4], ['mug', 4.15, 0.935, 7.05, 0.8, '#a35d5d'],
     ['canisters', 2.3, 0.935, 9.7, PI], ['knife_block', 2.85, 0.935, 9.72, PI], ['toaster', 3.22, 0.935, 9.65, PI], ['pan', 4.10, 0.935, 9.44, PI], ['kettle', 3.74, 0.935, 9.74, PI],
     ['lamp_table', 4.62, 0.935, 9.7, 0, null, { on: true }], ['stand_mixer', 5.1, 0.935, 9.62, PI], ['fruit_bowl', 2.22, 0.935, 8.9, 0], ['plant_small', 2.22, 0.935, 8.05, 0],
     // bedroom
@@ -151,7 +151,7 @@ const DEFAULT_LAYOUT = {
     ['clothes_pile', 2.75, 0, 1.4, 0.4], ['clothes_pile', 2.5, 0, 2.95, 1.2],
     // bath, closet, balcony, corridor
     ['hair_dryer', 0.35, 0.9, 4.1, HP], ['candle', 0.32, 0.9, 5.3, 0], ['hamper', 1.45, 0, 6.95, 0],
-    ['storage_bin', 4.6, 0, 0.45, 0], ['pumpkin', 7.2, 0, 0.6, 0], ['pumpkin', 7.85, 0, 7.4, 0.5],
+    ['storage_bin', 4.6, 0, 0.45, 0], ['pumpkin', 7.2, 0, 0.6, 0], ['pumpkin', 7.85, 0, 6.9, 0.5],
   ].map(([t, x, y, z, r, c, d]) => { const o = { t, x, y, z, r }; if (c) o.c = c; if (d) o.d = d; return o; }),
   rooms: {}
 };
