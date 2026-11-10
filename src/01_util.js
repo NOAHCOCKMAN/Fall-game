@@ -63,7 +63,7 @@ function noise(g, w, h, amt, alpha = 0.06) {
 }
 const TEX = {};
 const FLOOR_STYLES = {
-  oak: { name: 'Light oak', base: [201, 172, 133], var: 18 },
+  oak: { name: 'Light oak', base: [196, 174, 146], var: 16 },
   greige: { name: 'Greige LVP', base: [190, 170, 145], var: 12 },
   walnut: { name: 'Walnut', base: [110, 74, 48], var: 16 },
   ash: { name: 'White ash', base: [222, 208, 186], var: 10 },
@@ -133,7 +133,7 @@ function getTex(name) {
   let t;
   switch (name) {
     case 'quartz': t = canvasTex(512, 512, (g, w, h) => { g.fillStyle = '#f3f2ef'; g.fillRect(0, 0, w, h); noise(g, w, h, 3000, 0.05); for (let i = 0; i < 400; i++) { g.fillStyle = `rgba(150,150,150,${Math.random() * 0.2})`; g.fillRect(Math.random() * w, Math.random() * h, 1.5, 1.5); } }, [2, 2]); break;
-    case 'backsplash': t = canvasTex(512, 256, (g, w, h) => { g.fillStyle = '#9d9891'; g.fillRect(0, 0, w, h); for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) { const o = r % 2 ? 85 : 0; const v = rand(-8, 8); g.fillStyle = `rgb(${190 + v},${185 + v},${178 + v})`; g.fillRect(c * 170 + o + 2 - 85, r * 64 + 2, 166, 60); g.fillRect(c * 170 + o + 2 + 425, r * 64 + 2, 166, 60); } }, [3, 1]); break;
+    case 'backsplash': t = canvasTex(512, 256, (g, w, h) => { g.fillStyle = '#8e8a84'; g.fillRect(0, 0, w, h); for (let r = 0; r < 8; r++) for (let c = -1; c < 6; c++) { const o = r % 2 ? 48 : 0; const v = rand(-10, 10); const gr = g.createLinearGradient(0, r * 32, 0, r * 32 + 30); gr.addColorStop(0, `rgb(${178 + v},${176 + v},${170 + v})`); gr.addColorStop(1, `rgb(${158 + v},${155 + v},${150 + v})`); g.fillStyle = gr; g.fillRect(c * 96 + o + 2, r * 32 + 2, 92, 28); } }, [3, 1]); break;
     case 'siding': t = canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#eef0f0'; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 32) { g.fillStyle = 'rgba(0,0,0,0.12)'; g.fillRect(0, y, w, 3); g.fillStyle = 'rgba(255,255,255,0.5)'; g.fillRect(0, y + 3, w, 2); } }, [4, 4]); break;
     case 'deck': t = canvasTex(512, 512, (g, w, h) => { for (let i = 0; i < 8; i++) { const v = rand(-12, 12); g.fillStyle = `rgb(${196 + v},${160 + v},${112 + v})`; g.fillRect(i * 64, 0, 62, h); g.fillStyle = 'rgba(70,40,10,.5)'; g.fillRect(i * 64 + 62, 0, 2, h); for (let k = 0; k < 10; k++) { g.fillStyle = 'rgba(90,60,30,.12)'; g.fillRect(i * 64 + Math.random() * 60, 0, 1, h); } } }, [2, 2]); break;
     case 'grass': t = canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#6f8a3e'; g.fillRect(0, 0, w, h); for (let i = 0; i < 5000; i++) { g.fillStyle = `rgba(${rand(60, 140)},${rand(100, 150)},${rand(30, 60)},.5)`; g.fillRect(Math.random() * w, Math.random() * h, 2, 3); } }, [60, 60]); break;

@@ -1,8 +1,8 @@
 // ---------- engine: renderer, player, interaction, build mode, saving, UI ----------
 const $ = (s) => document.querySelector(s);
 const store = {
-  get(k, d) { try { const v = localStorage.getItem('fallapt.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
-  set(k, v) { try { localStorage.setItem('fallapt.' + k, JSON.stringify(v)); } catch (e) { } }
+  get(k, d) { try { const v = localStorage.getItem('fallapt2.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('fallapt2.' + k, JSON.stringify(v)); } catch (e) { } }
 };
 const settings = Object.assign({ sens: 1, invert: false, quality: 'high', muted: false, snap: true }, store.get('settings', {}));
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
@@ -12,7 +12,7 @@ const canvas = $('#game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 const applyQuality = () => renderer.setPixelRatio(Math.min(devicePixelRatio, settings.quality === 'high' ? 1.75 : settings.quality === 'med' ? 1.2 : 0.8));
 applyQuality();
-renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.9;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, 1, 0.05, 700); camera.rotation.order = 'YXZ';
 scene.add(camera);
@@ -21,7 +21,7 @@ scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.35;
 scene.fog = new THREE.Fog(0xcfe3f5, 60, 260);
 const hemi = new THREE.HemisphereLight(0xdfeaf7, 0x8a7a66, 0.9); scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xfff1dc, 2.0); sun.position.set(-20, 30, 40); scene.add(sun);
+const sun = new THREE.DirectionalLight(0xfff1dc, 2.0); sun.position.set(-25, 30, -40); scene.add(sun);
 function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
 addEventListener('resize', resize); resize();
 
@@ -125,32 +125,33 @@ function undo() { const s = undoStack.pop(); if (!s) return toast('Nothing to un
 // ---- default layout: my apartment as filmed ----
 const PI = Math.PI, HP = Math.PI / 2;
 const DEFAULT_LAYOUT = {
-  v: 1, items: [
-    // living room
-    ['sofa', 7.46, 0, 6.6, -HP], ['art_print', 7.94, 1.72, 5.85, -HP, null, { seed: 11 }], ['art_print', 7.94, 1.72, 6.6, -HP, null, { seed: 12 }], ['art_print', 7.94, 1.72, 7.35, -HP, null, { seed: 13 }],
-    ['picture_light', 7.94, 2.2, 5.85, -HP], ['picture_light', 7.94, 2.2, 6.6, -HP], ['picture_light', 7.94, 2.2, 7.35, -HP],
-    ['xmas_tree', 7.3, 0, 8.65, 0], ['present', 6.7, 0, 8.8, 0.3], ['present', 7.55, 0, 7.95, -0.2, '#2e5a3a'],
-    ['rug', 5.2, 0, 6.6, HP], ['coffee_round', 5.6, 0, 6.6, 0], ['mini_tree', 5.45, 0.43, 6.45, 0], ['books', 5.78, 0.43, 6.72, 0.4], ['candle', 5.4, 0.43, 6.85, 0],
-    ['media_console', 0.29, 0, 6.5, HP], ['tv', 0.06, 1.55, 6.5, HP], ['basket', 0.32, 0, 7.8, 0], ['basket', 0.32, 0, 5.2, 0], ['speaker', 0.29, 0.63, 7.15, HP], ['mini_tree', 0.29, 0.63, 5.85, 0],
-    ['bistro_table', 0.6, 0, 8.6, 0], ['armchair', 1.5, 0, 8.55, -HP], ['armchair', 0.65, 0, 7.72, 0], ['candle', 0.5, 0.735, 8.5, 0], ['mini_tree', 0.7, 0.735, 8.72, 0], ['wine', 0.45, 0.735, 8.75, 0],
-    ['art_landscape', 0.06, 2.0, 7.95, HP], ['art_garden', 0.06, 1.38, 8.2, HP], ['art_bridge', 0.06, 1.85, 8.68, HP],
-    ['sideboard', 0.29, 0, 3.0, HP], ['espresso', 0.3, 0.88, 3.35, HP], ['mug', 0.32, 0.88, 2.85, 0, '#2e3a46'], ['mug', 0.3, 0.88, 2.7, 0.5], ['plant_small', 0.3, 0.88, 2.45, 0],
-    ['ironing', 1.75, 0, 3.9, 0.3], ['clothes_pile', 3.0, 0, 6.1, 0], ['wreath', 0.06, 2.4, 1.02, HP],
-    // kitchen
-    ['barstool', 4.6, 0, 4.35, PI], ['barstool', 5.5, 0, 4.35, PI], ['barstool', 6.4, 0, 4.35, PI],
-    ['flowers', 4.95, 0.935, 3.6, 0], ['tray_plant', 6.15, 0.935, 3.75, 0], ['bread', 6.75, 0.935, 3.6, 0.4], ['mug', 4.45, 0.935, 3.75, 0.8, '#a35d5d'],
-    ['canisters', 3.45, 0.935, 0.3, 0], ['lamp_table', 3.9, 0.935, 0.32, 0, null, { on: true }], ['pan', 4.40, 0.935, 0.56, 0], ['kettle', 4.76, 0.935, 0.26, 0],
-    ['toaster', 5.35, 0.935, 0.35, 0], ['knife_block', 5.9, 0.935, 0.28, 0], ['stand_mixer', 6.6, 0.935, 0.35, 0], ['fruit_bowl', 7.55, 0.935, 0.45, 0], ['plant_small', 7.62, 0.935, 1.9, 0],
+  v: 2, items: [
+    // living room (balcony doors to the north, sofa on the east wall, TV on the west wall)
+    ['sofa', 7.12, 0, 3.5, -HP], ['art_print', 7.54, 1.72, 2.75, -HP, null, { seed: 11 }], ['art_print', 7.54, 1.72, 3.5, -HP, null, { seed: 12 }], ['art_print', 7.54, 1.72, 4.25, -HP, null, { seed: 13 }],
+    ['picture_light', 7.54, 2.2, 2.75, -HP], ['picture_light', 7.54, 2.2, 3.5, -HP], ['picture_light', 7.54, 2.2, 4.25, -HP],
+    ['xmas_tree', 7.12, 0, 1.95, 0], ['present', 6.45, 0, 1.85, 0.3], ['present', 6.55, 0, 2.3, -0.2, '#2e5a3a'],
+    ['rug', 5.8, 0, 3.5, HP], ['coffee_round', 5.85, 0, 3.5, 0], ['mini_tree', 5.7, 0.43, 3.35, 0], ['books', 6.02, 0.43, 3.62, 0.4], ['candle', 5.65, 0.43, 3.75, 0],
+    ['media_console', 4.38, 0, 3.2, HP], ['tv', 4.165, 1.55, 3.1, HP], ['speaker', 4.38, 0.63, 3.85, HP], ['mini_tree', 4.38, 0.63, 2.5, 0], ['basket', 4.45, 0, 5.0, 0],
+    ['bistro_table', 4.62, 0, 1.92, 0], ['armchair', 5.35, 0, 2.05, -HP], ['armchair', 6.25, 0, 5.1, -2.6], ['candle', 4.55, 0.735, 1.85, 0], ['mini_tree', 4.72, 0.735, 2.0, 0], ['wine', 4.5, 0.735, 2.05, 0],
+    ['clothes_pile', 6.4, 0, 4.9, 0.6],
+    // coffee bar by the entry
+    ['sideboard', 7.38, 0, 5.75, -HP], ['espresso', 7.37, 0.88, 5.4, -HP], ['mug', 7.35, 0.88, 5.95, 0, '#2e3a46'], ['mug', 7.4, 0.88, 6.1, 0.5], ['plant_small', 7.38, 0.88, 6.3, 0],
+    ['wreath', 7.535, 2.4, 8.0, -HP], ['art_landscape', 7.535, 1.7, 6.95, -HP], ['art_garden', 4.165, 1.5, 1.85, HP], ['art_bridge', 4.165, 1.9, 2.25, HP],
+    // kitchen (range on the south wall, island in the middle)
+    ['barstool', 4.15, 0, 5.55, 0], ['barstool', 4.8, 0, 5.55, 0], ['barstool', 5.45, 0, 5.55, 0],
+    ['flowers', 4.1, 0.935, 6.2, 0], ['tray_plant', 5.45, 0.935, 6.25, 0], ['bread', 5.72, 0.935, 6.6, 0.4], ['mug', 3.95, 0.935, 6.55, 0.8, '#a35d5d'],
+    ['canisters', 2.3, 0.935, 9.7, PI], ['knife_block', 2.85, 0.935, 9.72, PI], ['toaster', 3.22, 0.935, 9.65, PI], ['pan', 4.10, 0.935, 9.44, PI], ['kettle', 3.74, 0.935, 9.74, PI],
+    ['lamp_table', 4.62, 0.935, 9.7, 0, null, { on: true }], ['stand_mixer', 5.1, 0.935, 9.62, PI], ['fruit_bowl', 2.22, 0.935, 8.9, 0], ['plant_small', 2.22, 0.935, 8.05, 0],
     // bedroom
-    ['bed', 12.34, 0, 7.0, -HP], ['nightstand', 13.19, 0, 5.75, -HP], ['nightstand', 13.19, 0, 8.25, -HP], ['lamp_table', 13.19, 0.63, 5.75, 0, null, { on: true }], ['lamp_table', 13.19, 0.63, 8.25, 0],
-    ['art_monet', 13.44, 1.75, 7.0, -HP], ['arched_cabinet', 9.0, 0, 8.92, PI], ['dresser', 8.3, 0, 6.9, HP],
-    ['art_photo', 8.06, 1.45, 6.45, HP, null, { seed: 21 }], ['art_photo', 8.06, 1.45, 6.9, HP, null, { seed: 22 }], ['art_photo', 8.06, 1.45, 7.35, HP, null, { seed: 23 }],
-    ['art_photo', 8.06, 1.9, 6.45, HP, null, { seed: 24 }], ['art_photo', 8.06, 1.9, 6.9, HP, null, { seed: 25 }], ['art_photo', 8.06, 1.9, 7.35, HP, null, { seed: 26 }],
-    ['record_player', 8.3, 0.83, 6.35, HP], ['books', 8.3, 0.83, 7.4, 0.2], ['desk', 10.6, 0, 5.14, 0], ['monitor', 10.55, 0.76, 5.2, 0], ['office_chair', 10.6, 0, 5.8, PI], ['plant_small', 11.05, 0.76, 5.0, 0],
-    ['clothes_pile', 9.5, 0, 7.6, 0.4], ['clothes_pile', 10.7, 0, 8.4, 1.2],
-    // bath, hall, closet, balcony, corridor
-    ['hair_dryer', 10.3, 0.9, 0.35, 0.5], ['candle', 12.2, 0.9, 0.3, 0], ['runner', 8.8, 0, 3.6, 0], ['hamper', 9.25, 0, 1.6, 0],
-    ['storage_bin', 3.3, 0, 10.5, 0], ['pumpkin', 6.1, 0, 9.6, 0], ['pumpkin', -0.4, 0, 0.25, 0.5],
+    ['bed', 1.14, 0, 1.9, HP], ['nightstand', 0.27, 0, 0.6, HP], ['nightstand', 0.27, 0, 3.05, HP], ['lamp_table', 0.27, 0.63, 0.6, 0, null, { on: true }], ['lamp_table', 0.27, 0.63, 3.05, 0],
+    ['art_monet', 0.06, 1.75, 1.9, HP], ['arched_cabinet', 3.83, 0, 0.62, -HP], ['dresser', 3.8, 0, 2.3, -HP],
+    ['art_photo', 4.04, 1.45, 1.85, -HP, null, { seed: 21 }], ['art_photo', 4.04, 1.45, 2.3, -HP, null, { seed: 22 }], ['art_photo', 4.04, 1.45, 2.75, -HP, null, { seed: 23 }],
+    ['art_photo', 4.04, 1.9, 1.85, -HP, null, { seed: 24 }], ['art_photo', 4.04, 1.9, 2.3, -HP, null, { seed: 25 }], ['art_photo', 4.04, 1.9, 2.75, -HP, null, { seed: 26 }],
+    ['record_player', 3.8, 0.83, 1.85, -HP], ['books', 3.8, 0.83, 2.8, 0.2], ['ironing', 2.95, 0, 0.7, 0],
+    ['clothes_pile', 2.75, 0, 1.4, 0.4], ['clothes_pile', 2.5, 0, 2.95, 1.2],
+    // bath, closet, balcony, corridor
+    ['hair_dryer', 0.35, 0.9, 4.1, HP], ['candle', 0.32, 0.9, 5.3, 0], ['hamper', 1.45, 0, 6.95, 0],
+    ['storage_bin', 4.6, 0, 0.45, 0], ['pumpkin', 7.2, 0, 0.6, 0], ['pumpkin', 7.85, 0, 7.4, 0.5],
   ].map(([t, x, y, z, r, c, d]) => { const o = { t, x, y, z, r }; if (c) o.c = c; if (d) o.d = d; return o; }),
   rooms: {}
 };
@@ -188,7 +189,7 @@ function updatePlayer(dt) {
   P.eye = lerp(P.eye, P.crouch ? 1.05 : 1.62, dt * 10);
   camera.position.set(P.pos.x, P.pos.y + P.eye + Math.sin(P.bob) * 0.025, P.pos.z);
   camera.rotation.set(P.pitch, P.yaw, 0);
-  if (P.pos.z > 9.35 && P.pos.x > 2.6 && P.pos.x < 6.6) completeTask('outside');
+  if (P.pos.z < 1.4 && P.pos.x > 4.1 && P.pos.x < 7.6) completeTask('outside');
 }
 
 // ---- input ----
@@ -234,7 +235,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyF') useHeld();
   if (e.code === 'KeyB') setBuild(!buildMode);
   if (e.code === 'KeyN') { P.dayTarget = P.dayTarget > 0.5 ? 0 : 1; toast(P.dayTarget ? '☀️ Daytime' : '🌙 Nighttime'); }
-  if (e.code === 'KeyL') { const r = roomAt(P.pos.x, P.pos.z); const key = r === 'living' ? (P.pos.z < 4.6 ? 'kitchen' : 'living') : r; if (A.lights[key]) { A.lights[key].on = !A.lights[key].on; Sfx.click(); completeTask('lights'); } }
+  if (e.code === 'KeyL') { const r = roomAt(P.pos.x, P.pos.z); const key = r === 'living' ? (P.pos.z > 5.6 ? 'kitchen' : 'living') : r; if (A.lights[key]) { A.lights[key].on = !A.lights[key].on; Sfx.click(); completeTask('lights'); } }
   if (e.code === 'KeyM') { settings.muted = !settings.muted; Sfx.setMuted(settings.muted); store.set('settings', settings); toast(settings.muted ? '🔇 Muted' : '🔊 Sound on'); }
   if (e.code === 'KeyT') { renderTasks(); $('#tasks').hidden = false; unlock(); }
   if (e.code === 'KeyR') rotateTarget(e.shiftKey ? HP : PI / 12);
@@ -545,7 +546,7 @@ function updatePrompt() {
 const daySky = new THREE.Color(0xcfe3f5), nightSky = new THREE.Color(0x0a1220);
 function updateDay(dt) {
   P.day = lerp(P.day, P.dayTarget, Math.min(1, dt * 1.5)); const d = P.day;
-  sun.intensity = 2.0 * d; hemi.intensity = 0.12 + 0.85 * d; scene.environmentIntensity = 0.06 + 0.3 * d;
+  sun.intensity = 2.0 * d; hemi.intensity = 0.12 + 0.85 * d; scene.environmentIntensity = 0.05 + 0.24 * d;
   hemi.color.setRGB(lerp(0.25, 0.87, d), lerp(0.3, 0.92, d), lerp(0.45, 0.97, d));
   A.sky.material.color.setRGB(lerp(0.05, 1, d), lerp(0.07, 1, d), lerp(0.14, 1, d)); scene.fog.color.copy(nightSky).lerp(daySky, d);
   A.stars.material.opacity = 1 - d; A.streetLamps.forEach(m => m.emissiveIntensity = (1 - d) * 3);
