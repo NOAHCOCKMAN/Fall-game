@@ -155,6 +155,8 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
 .backbtn { margin-top: 6px; background: none; border: 0; color: var(--accent); font-weight: 600; padding: 6px 0; }
 .homebar { align-self: center; width: 120px; height: 6px; border-radius: 3px; background: #ddd; border: 0; margin-top: 10px; }
 #phoneBadge { position: absolute; top: 18px; right: 70px; width: 10px; height: 10px; border-radius: 50%; background: var(--bad); }
+#perfHud { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(60px + env(safe-area-inset-bottom, 0px)); margin: 0; padding: 8px 10px; font: 12px/1.45 ui-monospace, 'SF Mono', Menlo, Consolas, monospace; color: #c8f7c5; background: rgba(0,0,0,.72); border-radius: 8px; white-space: pre; pointer-events: none; z-index: 4; }
+#enter:disabled { opacity: .6; cursor: progress; }
 @media (max-width: 640px) { .stats { min-width: 110px; padding: 6px 8px; } .mood { font-size: 11px; } #panel { top: calc(56px + env(safe-area-inset-top, 0px)); bottom: calc(180px + env(safe-area-inset-bottom, 0px)); } .card-big { padding: 20px; } }
 @media (prefers-reduced-motion: reduce) { #toast, #fade, #cross { transition: none; } }
 </style>
@@ -180,6 +182,7 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
     </div>
   </div>
   <div id="prompt" class="glass" hidden></div>
+  <pre id="perfHud" hidden></pre>
   <div id="toast" class="glass"></div>
   <div id="hint" class="glass"><kbd>E</kbd> use · <kbd>G</kbd> pick up · <kbd>F</kbd> eat/drink · <kbd>Tab</kbd> phone · <kbd>T</kbd> to-dos · <kbd>Esc</kbd> menu</div>
   <div id="action" hidden><div id="actionRing"></div><span id="actionLabel"></span></div>
@@ -226,6 +229,7 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
       <label class="row" for="invert">Invert look up/down <input id="invert" type="checkbox"></label>
       <label class="row" for="quality">Graphics quality <select id="quality"><option value="high">High</option><option value="med">Medium</option><option value="low">Low (faster)</option></select></label>
       <label class="row" for="mute">Mute sound <input id="mute" type="checkbox"></label>
+      <label class="row" for="perfToggle">Show performance stats (F3) <input id="perfToggle" type="checkbox"></label>
       <div class="btns" style="margin-top:16px"><button class="ghostbtn" data-open="main">Back</button><button id="resetTasks" class="ghostbtn">Start a fresh day 1</button></div>
     </div>
     <div class="msec" data-sec="help" hidden>

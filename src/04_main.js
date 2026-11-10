@@ -23,11 +23,13 @@ scene.fog = new THREE.Fog(0xcfe3f5, 60, 260);
 const hemi = new THREE.HemisphereLight(0xdfeaf7, 0x8a7a66, 0.9); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff1dc, 2.0); sun.position.set(-25, 30, -40); scene.add(sun);
 function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
-addEventListener('resize', resize); resize();
+addEventListener('resize', () => { resize(); pausedDrawn = false; }); resize();
 
 // ---- world state ----
 const STATIC = [];
 let TICKS = [], CLEANUPS = [];
+const NEAR_R2 = 6 * 6, FAR_STRIDE = 4; // updates for objects more than 6 m away run every 4th frame (with accumulated time)
+let frameNo = 0, ticksRun = 0;
 let power = true, lightCount = 0;
 const MAX_LIGHTS = 18;
 const NEEDS = ['hunger', 'energy', 'hygiene', 'bladder', 'fun'];
@@ -46,7 +48,7 @@ const fmtTime = (m) => { const h = Math.floor(m / 60) % 24, mm = Math.floor(m % 
 const ctx = {
   flags,
   interact(obj, def) { obj.userData.int = def; },
-  tick(owner, fn) { TICKS.push({ owner, fn }); },
+  tick(owner, fn, always) { TICKS.push({ owner, fn, always: !!always, acc: 0, slot: TICKS.length % FAR_STRIDE }); },
   onRemove(owner, fn) { CLEANUPS.push({ owner, fn }); },
   addCollider(box, upd, door) { STATIC.push({ box, upd, door }); },
   light(parent, color, intensity, dist, x, y, z) {
@@ -189,7 +191,7 @@ function startAction(a) {
   P.action = { ...a, t: 0, snd: a.sound ? Sfx.loop(a.sound, null, 0.12) : null };
 }
 function updateAction(dt) {
-  const a = P.action; if (!a) { $('#action').hidden = true; return; }
+  const a = P.action; if (!a) { if (!EL.action.hidden) EL.action.hidden = true; return; }
   a.t += dt; const k = Math.min(1, a.t / a.dur);
   $('#action').hidden = false; $('#actionLabel').textContent = a.label + '…'; $('#actionRing').style.setProperty('--p', (k * 360) + 'deg');
   if (a.tick) a.tick(dt, k);
@@ -251,7 +253,8 @@ function updatePlayer(dt) {
 
 // ---- input ----
 let skipMoves = 0, locked = false, dragging = false, dragDist = 0, lastMouse = null; const mouseNDC = new THREE.Vector2(0, 0); let mouseInCanvas = false;
-const uiOpen = () => !$('#menu').hidden || !$('#start').hidden || !$('#tasks').hidden || !$('#phone').hidden;
+const EL = { menu: $('#menu'), start: $('#start'), tasks: $('#tasks'), phone: $('#phone'), prompt: $('#prompt'), vignette: $('#vignette'), wet: $('#wet'), action: $('#action'), perf: $('#perfHud') };
+const uiOpen = () => !EL.menu.hidden || !EL.start.hidden || !EL.tasks.hidden || !EL.phone.hidden;
 const tryLock = () => { if (isTouch) return; try { const p = canvas.requestPointerLock(); p && p.catch && p.catch(() => { }); } catch (e) { } };
 canvas.addEventListener('mousedown', (e) => {
   Sfx.init();
@@ -299,12 +302,16 @@ addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 
 // ---- raycasting ----
 const ray = new THREE.Raycaster();
-function aimRay() { ray.setFromCamera(locked || isTouch || !mouseInCanvas ? new THREE.Vector2(0, 0) : mouseNDC, camera); }
+const CENTER = new THREE.Vector2(0, 0);
+function aimRay() { ray.setFromCamera(locked || isTouch || !mouseInCanvas ? CENTER : mouseNDC, camera); }
+let frameHits = [];
+function castFrame() { aimRay(); ray.far = 9; frameHits.length = 0; ray.intersectObject(A.world, true, frameHits); } // the one raycast per frame
 function findIntDeep(o) { while (o) { if (o.userData.int) return o; o = o.parent; } return null; }
-function hitList(maxDist, opts = {}) {
-  aimRay(); ray.far = maxDist;
+const NOOPTS = {};
+function hitList(maxDist, opts = NOOPTS) {
   const out = [];
-  for (const h of ray.intersectObject(A.world, true)) {
+  for (const h of frameHits) {
+    if (h.distance > maxDist) break;
     const o = h.object; if (o.isPoints || o.isSprite || o.userData.noRay || heldSet.has(o)) continue;
     let vis = true, p = o; while (p) { if (!p.visible) { vis = false; break; } p = p.parent; } if (!vis) continue;
     const ghost = o.material && (o.material.visible === false || (o.material.transparent && o.material.opacity < 0.35));
@@ -329,6 +336,7 @@ function updateHover() {
 // ---- holding things in your hand ----
 const helper = new THREE.Box3Helper(new THREE.Box3(), 0x6fe08a); helper.visible = false; scene.add(helper);
 const HAND = V3(0.26, -0.3, -0.55);
+const _off = V3(), _n = V3(), _place = V3(), _ctr = V3(); // scratch vectors reused every frame
 const TWEENS = [];
 function startHold(g) {
   if (!g) return;
@@ -343,7 +351,7 @@ function startHold(g) {
 function updateHeld(dt) {
   if (!held) { helper.visible = false; placeTarget = null; return; }
   const inst = held.userData.item;
-  const a = P.anim; const off = V3(0, Math.sin(P.bob * 2) * 0.012, 0); let rx = 0, rz = 0;
+  const a = P.anim; const off = _off.set(0, Math.sin(P.bob * 2) * 0.012, 0); let rx = 0, rz = 0;
   if (a) {
     a.t += dt; const k = Math.min(1, a.t / a.dur), up = Math.sin(Math.min(1, k * 1.6) * Math.PI / 2) * (k > 0.85 ? (1 - k) / 0.15 : 1);
     off.set(-0.24 * up, 0.22 * up, 0.25 * up); rx = a.kind === 'drink' ? -0.9 * up : 0.2 * up; rz = a.kind === 'drink' ? 0.3 * up : 0;
@@ -353,11 +361,11 @@ function updateHeld(dt) {
   if (!held) return;
   held.position.copy(HAND).add(off); held.rotation.set(rx, (inst.r || 0) - P.yaw, rz);
   const h = a ? null : firstHit(3, { solidOnly: true }); placeTarget = null;
-  if (h) { const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : V3(0, 1, 0); if (n.y > 0.6) placeTarget = h.point.clone(); }
-  if (placeTarget) { const sz = held.userData.size; helper.box.setFromCenterAndSize(placeTarget.clone().add(V3(0, sz.y / 2, 0)), sz); helper.visible = true; } else helper.visible = false;
+  if (h) { const n = h.face ? _n.copy(h.face.normal).transformDirection(h.object.matrixWorld) : _n.set(0, 1, 0); if (n.y > 0.6) placeTarget = _place.copy(h.point); }
+  if (placeTarget) { const sz = held.userData.size; helper.box.setFromCenterAndSize(_ctr.copy(placeTarget).setY(placeTarget.y + sz.y / 2), sz); helper.visible = true; } else helper.visible = false;
 }
 function releaseTo(pos) {
-  const g = held; held = null; heldSet.clear(); helper.visible = false;
+  pos = pos.clone(); const g = held; held = null; heldSet.clear(); helper.visible = false;
   camera.remove(g); itemsGroup.add(g); g.scale.setScalar(1); g.position.copy(pos); g.rotation.set(0, g.userData.item.r || 0, 0);
   Object.assign(g.userData.item, { x: pos.x, y: pos.y, z: pos.z }); itemBox(g); return g;
 }
@@ -516,8 +524,9 @@ function updateHud() {
   const m = mood(); $('#mood').textContent = m[0] + ' ' + m[1];
   $('#taskChip').textContent = '✓ ' + done.size + '/' + TASKS.length;
 }
+let lastPrompt = null;
 function updatePrompt() {
-  const pr = $('#prompt');
+  const pr = EL.prompt;
   let html = '';
   const verb = isTouch ? 'Use' : 'E';
   if (!P.action && hover && hover.int) { const lab = typeof hover.int.label === 'function' ? hover.int.label() : hover.int.label; if (lab) html = `<b>${verb}</b> ${lab}`; }
@@ -525,8 +534,7 @@ function updatePrompt() {
   if (!P.action && !held && hover && hover.root && CATALOG[hover.root.userData.item.t].small) html += ` <b>${isTouch ? 'Grab' : 'G'}</b> pick up`;
   if (held && !P.anim) { const d = CATALOG[held.userData.item.t], i = held.userData.item; html += (html ? ' · ' : '') + `<span class="nm">${d.name}</span>${i.use ? ` <b>${isTouch ? 'Eat/Drink' : 'F'}</b> ${i.useLabel || (i.t === 'mug' ? 'drink' : 'eat')}` : ''} <b>${isTouch ? 'Use' : 'Click'}</b> set down <b>${isTouch ? 'Grab' : 'Q'}</b> drop`; }
   if (!html && P.sit && !P.action) html = P.sit.lie ? 'Resting… move to get up' : 'Move to stand up';
-  if (pr.innerHTML !== html) pr.innerHTML = html;
-  pr.hidden = !html;
+  if (html !== lastPrompt) { lastPrompt = html; pr.innerHTML = html; pr.hidden = !html; }
   document.body.classList.toggle('canuse', !!(hover && hover.int));
 }
 
@@ -539,26 +547,40 @@ function updateDay(dt) {
   const dusk = Math.max(0, 1 - Math.abs(d - 0.5) * 2.2);
   A.sky.material.color.setRGB(lerp(0.05, 1, d), Math.max(0, lerp(0.07, 1, d) - dusk * 0.12), Math.max(0, lerp(0.14, 1, d) - dusk * 0.25)); scene.fog.color.copy(nightSky).lerp(daySky, d).lerp(duskSky, dusk * 0.4);
   A.stars.material.opacity = 1 - d; A.streetLamps.forEach(m => m.emissiveIntensity = (1 - d) * 3);
-  const tired = clamp((0.25 - P.needs.energy) / 0.25, 0, 1); $('#vignette').style.opacity = (0.15 + tired * 0.6).toFixed(2);
-  $('#wet').style.opacity = flags.showering ? '1' : '0';
+  const vo = (0.15 + clamp((0.25 - P.needs.energy) / 0.25, 0, 1) * 0.6).toFixed(2); if (vo !== EL.vignette._o) { EL.vignette._o = vo; EL.vignette.style.opacity = vo; }
+  const wo = flags.showering ? '1' : '0'; if (wo !== EL.wet._o) { EL.wet._o = wo; EL.wet.style.opacity = wo; }
 }
 
 // ---- main loop ----
-let last = performance.now(), clockT = 0, hudAcc = 0, saveAcc = 0; const perf = { logic: 0, render: 0 };
+let last = performance.now(), clockT = 0, hudAcc = 0, saveAcc = 0, pausedDrawn = false;
+const perf = { logic: 0, render: 0 };
+const _pp = V3();
+function runTicks(dt) {
+  frameNo++; ticksRun = 0; const px = P.pos.x, pz = P.pos.z;
+  for (let i = 0; i < TICKS.length; i++) {
+    const e = TICKS[i]; e.acc += dt;
+    if (!e.always) { const m = e.owner.matrixWorld.elements, dx = m[12] - px, dz = m[14] - pz; if (dx * dx + dz * dz > NEAR_R2 && (frameNo % FAR_STRIDE) !== e.slot) continue; }
+    const step = e.acc; e.acc = 0; ticksRun++;
+    try { e.fn(step, clockT); } catch (err) { console.error(err); TICKS.splice(i--, 1); }
+  }
+}
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(0.05, (now - last) / 1000); last = now; clockT += dt;
+  const rawMs = now - last; const dt = Math.min(0.05, rawMs / 1000); last = now;
+  // menus, phone and to-do list freeze the world: draw one last frame, then skip all work
+  if (uiOpen()) { if (pausedDrawn) { stats.paused = true; recordFrame(rawMs, 0, 0); return; } pausedDrawn = true; } else pausedDrawn = false;
+  stats.paused = false; clockT += dt;
   const pf0 = performance.now();
-  const playing = $('#start').hidden && $('#menu').hidden;
+  const playing = EL.start.hidden && EL.menu.hidden && EL.phone.hidden;
   const gameMin = playing ? dt : 0; // 1 real second = 1 game minute
   if (playing) { advanceTime(gameMin); updateNeeds(dt, gameMin); updateEvents(gameMin); }
   for (const c of STATIC) if (c.upd) c.upd();
   updatePlayer(dt); camera.updateMatrixWorld();
   updateAction(dt);
-  updateHover(); updateHeld(dt); updatePrompt();
-  for (let i = 0; i < TICKS.length; i++) { try { TICKS[i].fn(playing ? dt : 0, clockT); } catch (e) { console.error(e); TICKS.splice(i--, 1); } }
+  castFrame(); updateHover(); updateHeld(dt); updatePrompt();
+  runTicks(playing ? dt : 0);
   for (let i = TWEENS.length - 1; i >= 0; i--) if (TWEENS[i](now)) TWEENS.splice(i, 1);
-  itemsGroup.children.forEach(g => { if (g.userData.wiggle > 0) { g.userData.wiggle -= dt; g.scale.setScalar(1 + Math.sin(g.userData.wiggle * 20) * 0.03 * g.userData.wiggle); } });
+  for (const g of itemsGroup.children) if (g.userData.wiggle > 0) { g.userData.wiggle -= dt; g.scale.setScalar(1 + Math.sin(g.userData.wiggle * 20) * 0.03 * g.userData.wiggle); }
   updateDay(dt);
   if (P.caffeine > 0) P.caffeine -= dt;
   if ((hudAcc += dt) > 0.4) { hudAcc = 0; updateHud(); const r = roomAt(P.pos.x, P.pos.z); $('#roomName').textContent = ROOMS[r] ? ROOMS[r].name : 'Outside'; $('#clock').textContent = (ctx.isNight() ? '🌙 ' : '☀️ ') + 'Day ' + P.dayNum + ' · ' + fmtTime(P.minutes); }
@@ -566,11 +588,47 @@ function frame(now) {
   Sfx.updateLoops(camera.position);
   const pf1 = performance.now();
   renderer.render(scene, camera);
-  perf.logic = lerp(perf.logic, pf1 - pf0, 0.1); perf.render = lerp(perf.render, performance.now() - pf1, 0.1);
+  const pf2 = performance.now();
+  perf.logic = lerp(perf.logic, pf1 - pf0, 0.1); perf.render = lerp(perf.render, pf2 - pf1, 0.1);
+  recordFrame(rawMs, pf1 - pf0, pf2 - pf1);
+}
+
+// ---- F3 performance overlay ----
+const stats = { show: !!settings.perf, frames: [], logic: [], render: [], paused: false, lastDraw: 0 };
+function recordFrame(ms, logic, render) {
+  if (!stats.show) return;
+  const now = performance.now(); stats.frames.push([now, ms, logic, render]);
+  while (stats.frames.length && now - stats.frames[0][0] > 1000) stats.frames.shift();
+  if (now - stats.lastDraw < 250) return; stats.lastDraw = now;
+  const f = stats.frames, n = f.length || 1; let sum = 0, worst = 0, lg = 0, rd = 0; for (const x of f) { sum += x[1]; worst = Math.max(worst, x[1]); lg += x[2]; rd += x[3]; }
+  const i = renderer.info;
+  EL.perf.textContent = `FPS ${(1000 / (sum / n)).toFixed(0)}${stats.paused ? '  (paused)' : ''}
+frame ${(sum / n).toFixed(1)} ms  worst ${worst.toFixed(1)} ms
+logic ${(lg / n).toFixed(2)} ms  render ${(rd / n).toFixed(2)} ms
+draw calls ${i.render.calls}  tris ${(i.render.triangles / 1000).toFixed(0)}k
+programs ${i.programs.length}  tex ${i.memory.textures}  geo ${i.memory.geometries}
+updates ${ticksRun}/${TICKS.length}  pixel ratio ${renderer.getPixelRatio().toFixed(2)}`;
+}
+function setPerf(on) { stats.show = on; EL.perf.hidden = !on; settings.perf = on; store.set('settings', settings); const cb = $('#perfToggle'); if (cb) cb.checked = on; }
+addEventListener('keydown', (e) => { if (e.code === 'F3') { e.preventDefault(); setPerf(!stats.show); } });
+EL.perf.hidden = !stats.show;
+$('#perfToggle').checked = stats.show; $('#perfToggle').onchange = (e) => setPerf(e.target.checked);
+
+// ---- precompile shaders and upload textures before you walk in (avoids first-look hitches) ----
+async function precompile() {
+  const btn = $('#enter'); btn.disabled = true; const label = btn.textContent; btn.textContent = 'Loading…';
+  const t0 = performance.now(); const hidden = [];
+  scene.traverse(o => { if (!o.visible) { hidden.push(o); o.visible = true; } }); // include things that appear later (steam, food, water…)
+  try { if (renderer.compileAsync) await renderer.compileAsync(scene, camera); else renderer.compile(scene, camera); } catch (e) { console.warn('compile', e); }
+  hidden.forEach(o => o.visible = false);
+  const seen = new Set(); scene.traverse(o => { if (!o.material) return; for (const m of [].concat(o.material)) for (const k of ['map', 'emissiveMap']) { const t = m[k]; if (t && !seen.has(t)) { seen.add(t); renderer.initTexture(t); } } });
+  stats.compileMs = performance.now() - t0; btn.disabled = false; btn.textContent = label;
+  console.info('precompiled ' + renderer.info.programs.length + ' programs and ' + seen.size + ' textures in ' + stats.compileMs.toFixed(0) + ' ms');
 }
 
 // ---- boot ----
 P.pos.set(A.spawn.x, 0, A.spawn.z); P.yaw = A.spawn.yaw; P.day = P.dayTarget = dayFactor();
 updateHud(); renderTasks();
-requestAnimationFrame(frame);
-window.__game = { blocked, probe() { camera.updateMatrixWorld(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
+camera.position.set(P.pos.x, P.eye, P.pos.z); camera.rotation.set(P.pitch, P.yaw, 0); camera.updateMatrixWorld();
+precompile().then(() => requestAnimationFrame(frame));
+window.__game = { stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };

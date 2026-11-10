@@ -15,6 +15,9 @@ function roomAt(x, z) {
   return 'ext';
 }
 
+const cookieDone = new THREE.Color(0xb57a3c);
+let _clockMin = -1, _clockStr = '';
+function clockText() { const d = new Date(); if (d.getMinutes() !== _clockMin) { _clockMin = d.getMinutes(); _clockStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/ ?[AP]M/, ''); } return _clockStr; }
 function buildApartment(scene, ctx) {
   const A = { world: new THREE.Group(), outdoor: new THREE.Group(), lights: {}, heat: [], wallMats: {}, floorMats: {}, floorMeshes: {} };
   const W = A.world; scene.add(W); scene.add(A.outdoor);
@@ -176,8 +179,8 @@ function buildApartment(scene, ctx) {
     st.def = def; st.center = axis === 'x' ? V3(x + len / 2, 1, z) : V3(x, 1, z + len / 2);
     const box = new THREE.Box3();
     // a door only blocks you when it's fully shut; while swinging or open you can always pass
-    ctx.addCollider(box, () => { if (!st.open && st.v < 0.05) box.setFromObject(leaf); else box.makeEmpty(); }, st);
-    ctx.tick(leaf, dt => { st.v += ((st.open ? 1 : 0) - st.v) * Math.min(1, dt * 7); piv.rotation.y = closed + s * 1.55 * st.v; });
+    ctx.addCollider(box, () => { const shut = !st.open && st.v === 0; if (shut && !st.boxOn) { piv.updateMatrixWorld(true); box.setFromObject(leaf); st.boxOn = true; } else if (!shut && st.boxOn) { box.makeEmpty(); st.boxOn = false; } }, st);
+    ctx.tick(leaf, dt => { const t = st.open ? 1 : 0; if (st.v === t) return; st.v += (t - st.v) * Math.min(1, dt * 7); if (Math.abs(t - st.v) < 0.002) st.v = t; piv.rotation.y = closed + s * 1.55 * st.v; });
     doors.push(st); st.leaf = leaf; if (id) A.doorById[id] = st;
     return st;
   }
@@ -264,7 +267,7 @@ function buildApartment(scene, ctx) {
     const rot = G(g, 0, -0.33, 0); for (let i = 0; i < 5; i++) { const b = B(rot, 0.58, 0.012, 0.13, M(0x5a3d2a, 0.6), 0.36, 0, 0); const arm = G(rot, 0, 0, 0, i / 5 * TAU); arm.add(b); }
     const lm = E(0xfff3df, 0); const lk = S(g, 0.11, lm, 0, -0.42, 0, 20, 10); lk.scale.y = 0.45; A.lights[key].mats.push(lm);
     const F = A.lights[key].fan = { on: false, speed: 0 };
-    ctx.tick(g, dt => { F.speed = lerp(F.speed, F.on && ctx.power() ? 9 : 0, dt * 0.8); rot.rotation.y += F.speed * dt; if (F.on && !F.snd) F.snd = Sfx.loop('fan', V3(x, 2, z), 0.04); if (!F.on && F.snd) { F.snd.stop(); F.snd = null; } });
+    ctx.tick(g, dt => { F.speed = lerp(F.speed, F.on && ctx.power() ? 9 : 0, dt * 0.8); rot.rotation.y += F.speed * dt; if (F.on && !F.snd) F.snd = Sfx.loop('fan', V3(x, 2, z), 0.04); if (!F.on && F.snd) { F.snd.stop(); F.snd = null; } }, true);
     ctx.interact(lk, { reach: 4, label: () => F.on ? 'Turn fan off' : 'Turn fan on', action: () => { F.on = !F.on; Sfx.click(); } });
   }
   fan('living', 5.85, 3.6); fan('bedroom', 2.05, 1.7);
@@ -361,11 +364,12 @@ function buildApartment(scene, ctx) {
   const panelHit = B(R, 0.3, 0.12, 0.02, new THREE.MeshBasicMaterial({ visible: false }), 0, 0.98, 0.07);
   ctx.interact(panelHit, { label: () => oven.on ? 'Turn oven off' : 'Preheat oven to 350°F', action: () => { if (!ctx.power()) return ctx.msg('No power.'); oven.on = !oven.on; Sfx.beep(1, 1400); } });
   ctx.tick(R, (dt) => {
-    burners.forEach(h => { if (!ctx.power()) h.on = false; h.mat.emissiveIntensity = lerp(h.mat.emissiveIntensity, h.on ? 1.6 : 0, dt * 2); R.updateMatrixWorld(); h.pos.copy(h.hit.position); h.pos.y = 0.93; R.localToWorld(h.pos); });
+    if (!R.userData.posDone) { R.updateWorldMatrix(true, false); burners.forEach(h => { h.pos.copy(h.hit.position); h.pos.y = 0.93; R.localToWorld(h.pos); }); R.userData.posDone = true; } // the range never moves
+    burners.forEach(h => { if (!ctx.power()) h.on = false; const t = h.on ? 1.6 : 0; if (h.mat.emissiveIntensity !== t) { h.mat.emissiveIntensity = lerp(h.mat.emissiveIntensity, t, dt * 2); if (Math.abs(h.mat.emissiveIntensity - t) < 0.01) h.mat.emissiveIntensity = t; } });
     if (!ctx.power()) oven.on = false;
     ovenIn.emissiveIntensity = oven.on ? 0.35 : odSt.open ? 0.1 : 0;
-    if (oven.on && oven.hasCookies && !oven.done && !odSt.open) { oven.t += dt; cookies.forEach(c => c.material.color.lerp(new THREE.Color(0xb57a3c), dt * 0.08)); if (oven.t > 18) { oven.done = true; Sfx.beep(4, 1500); ctx.msg('⏰ The cookies are ready!'); } }
-    const g = disp.userData.ctx; g.fillStyle = '#000'; g.fillRect(0, 0, 128, 32); g.fillStyle = '#4fb3ff'; g.font = 'bold 22px monospace'; g.fillText(oven.on ? '350°' : new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/ ?[AP]M/, ''), 18, 25); disp.needsUpdate = true;
+    if (oven.on && oven.hasCookies && !oven.done && !odSt.open) { oven.t += dt; cookies.forEach(c => c.material.color.lerp(cookieDone, dt * 0.08)); if (oven.t > 18) { oven.done = true; Sfx.beep(4, 1500); ctx.msg('⏰ The cookies are ready!'); } }
+    const txt = !ctx.power() ? '' : oven.on ? '350°' : clockText(); if (txt !== disp.userData.last) { disp.userData.last = txt; const g = disp.userData.ctx; g.fillStyle = '#000'; g.fillRect(0, 0, 128, 32); g.fillStyle = '#4fb3ff'; g.font = 'bold 22px monospace'; g.fillText(txt, 18, 25); disp.needsUpdate = true; } // only re-upload when the text changes
   });
   colK(5.55, 0, 0.06, 6.31, 1.1, 0.74);
   // ---- microwave ----
@@ -382,7 +386,7 @@ function buildApartment(scene, ctx) {
   ctx.tick(MW, dt => {
     if (mw.on) { mw.t += dt; turn.rotation.y += dt * 1.5; if (mw.t > 8 || !ctx.power() || mwDoor.open) { mw.on = false; mw.snd && mw.snd.stop(); if (mw.t > 8) { Sfx.beep(3, 2000); ctx.msg('Leftovers are hot. Smells great.'); ctx.eat(0.6); ctx.task('microwave'); } } }
     mwLight.emissiveIntensity = (mw.on || mwDoor.v > 0.2) && ctx.power() ? 1 : 0;
-    const g = mwDisp.userData.ctx; g.fillStyle = '#000'; g.fillRect(0, 0, 64, 24); g.fillStyle = '#4fffa0'; g.font = 'bold 18px monospace'; g.fillText(mw.on ? '0:' + String(Math.max(0, 30 - Math.floor(mw.t * 3.75))).padStart(2, '0') : new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/ ?[AP]M/, ''), 4, 19); mwDisp.needsUpdate = true;
+    const txt = !ctx.power() ? '' : mw.on ? '0:' + String(Math.max(0, 30 - Math.floor(mw.t * 3.75))).padStart(2, '0') : clockText(); if (txt !== mwDisp.userData.last) { mwDisp.userData.last = txt; const g = mwDisp.userData.ctx; g.fillStyle = '#000'; g.fillRect(0, 0, 64, 24); g.fillStyle = '#4fffa0'; g.font = 'bold 18px monospace'; g.fillText(txt, 4, 19); mwDisp.needsUpdate = true; }
   });
   // ---- fridge ----
   const FR = G(K, 7.2, 0, 2.73, -Math.PI / 2); // local: front faces +z → world -x
@@ -580,7 +584,7 @@ function buildApartment(scene, ctx) {
   A.temp = 72; A.mode = 'Heat';
   const drawTherm = () => { const g = thermTex.userData.ctx; g.fillStyle = ctx.power() ? '#0d2a3a' : '#000'; g.fillRect(0, 0, 128, 96); if (!ctx.power()) { thermTex.needsUpdate = true; return; } g.fillStyle = '#fff'; g.font = 'bold 44px sans-serif'; g.textAlign = 'center'; g.fillText(A.temp + '°', 64, 58); g.font = '16px sans-serif'; g.fillStyle = A.mode === 'Heat' ? '#ff9a4a' : '#6ac8ff'; g.fillText(A.mode, 64, 84); thermTex.needsUpdate = true; };
   ctx.interact(therm, { label: () => 'Thermostat ' + A.temp + '°F — raise temp', action: () => { A.temp = A.temp >= 78 ? 64 : A.temp + 1; A.mode = A.temp >= 70 ? 'Heat' : 'Cool'; Sfx.beep(1, 2200); drawTherm(); } });
-  ctx.tick(therm, (dt, t) => { if (((t * 2) | 0) % 4 === 0) drawTherm(); });
+  ctx.tick(therm, () => { const k = ctx.power() + '|' + A.temp + A.mode; if (k !== therm.userData.k) { therm.userData.k = k; drawTherm(); } }); // redraw only when it changes
   // ---------- mechanical closet: water heater, air handler, breaker panel ----------
   const MC = G(W);
   C(MC, 0.28, 0.28, 1.45, M(0xe8e8e4, 0.5), 6.85, 0.02, 9.6, 24); C(MC, 0.05, 0.05, 0.6, M(0xb87333, 0.3, 0.8), 6.75, 1.47, 9.6, 8);
@@ -605,7 +609,7 @@ function buildApartment(scene, ctx) {
   ctx.tick(W, () => {
     const p = ctx.power();
     for (const k in A.lights) { const L = A.lights[k]; const on = L.on && p; L.lights.forEach(l => l.intensity = on ? L.base : 0); L.mats.forEach(m => m.emissiveIntensity = on ? 2 : 0); }
-  });
+  }, true);
 
   A.setWall = (room, color) => { if (A.wallMats[room] && !ROOMS[room].fixed) A.wallMats[room].color.set(color); };
   A.setFloor = (room, style) => { if (A.floorMats[room]) { A.floorMats[room].map = floorTex(style); A.floorMats[room].needsUpdate = true; } };

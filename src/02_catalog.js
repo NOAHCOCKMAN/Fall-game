@@ -1,6 +1,7 @@
 // ---------- furniture & decor catalog ----------
 // Each item: origin at bottom-center (floor/surface) or at wall contact point (wall). Front faces +z.
 const CATALOG = {};
+const _c1 = new THREE.Color(); // shared scratch color (avoids per-frame allocations)
 const CATS = ['Seating', 'Tables', 'Storage', 'Beds', 'Lighting', 'Electronics', 'Kitchen', 'Decor', 'Wall art', 'Plants', 'Rugs', 'Holiday', 'Fun'];
 function def(id, name, cat, opts, build) { CATALOG[id] = { id, name, cat, mount: 'floor', solid: true, small: false, ...opts, build }; }
 const PALETTE = ['#f1ece2', '#d9cbb5', '#b9bcbc', '#8a9aa0', '#5b6b73', '#2e3a46', '#1f1f22', '#6b4a35', '#a4764d', '#c9a27a', '#7c8f6a', '#3e5c48', '#a35d5d', '#c98c8c', '#e3b8b8', '#b8a7d6', '#6c5b8f', '#d9b44a', '#e07a3f', '#4a7fb5'];
@@ -12,13 +13,13 @@ function hinge(ctx, pivot, axis, angle, label, sound = 'door', onToggle) {
     label: () => (st.open ? 'Close ' : 'Open ') + label,
     action: () => { st.open = !st.open; sound === 'door' ? Sfx.door(st.open) : Sfx.click(); onToggle && onToggle(st.open); }
   });
-  ctx.tick(pivot, dt => { st.v += ((st.open ? 1 : 0) - st.v) * Math.min(1, dt * 7); pivot.rotation[axis] = angle * st.v; });
+  ctx.tick(pivot, dt => { const t = st.open ? 1 : 0; if (st.v === t) return; st.v += (t - st.v) * Math.min(1, dt * 7); if (Math.abs(t - st.v) < 0.002) st.v = t; pivot.rotation[axis] = angle * st.v; });
   return st;
 }
 function slider(ctx, obj, axis, dist, label) {
   const st = { open: false, v: 0 }, base = obj.position[axis];
   ctx.interact(obj, { label: () => (st.open ? 'Close ' : 'Open ') + label, action: () => { st.open = !st.open; Sfx.drawer(); } });
-  ctx.tick(obj, dt => { st.v += ((st.open ? 1 : 0) - st.v) * Math.min(1, dt * 8); obj.position[axis] = base + dist * st.v; });
+  ctx.tick(obj, dt => { const t = st.open ? 1 : 0; if (st.v === t) return; st.v += (t - st.v) * Math.min(1, dt * 8); if (Math.abs(t - st.v) < 0.002) st.v = t; obj.position[axis] = base + dist * st.v; });
   return st;
 }
 // drawer: returns group with front at z=d/2
@@ -396,15 +397,15 @@ def('monitor', 'Computer setup', 'Electronics', { mount: 'surface', solid: false
   const g = new THREE.Group(), blk = M(0x151515, 0.4);
   B(g, 0.22, 0.015, 0.16, blk, 0, 0, -0.08); B(g, 0.04, 0.3, 0.02, blk, 0, 0, -0.1);
   B(g, 0.56, 0.34, 0.03, blk, 0, 0.12, -0.08);
-  const tex = screenCanvas(256, 150); const sm = new THREE.MeshBasicMaterial({ color: 0x050505 });
+  const tex = screenCanvas(256, 150); const sm = new THREE.MeshBasicMaterial({ color: 0x050505, map: tex });
   plane(g, 0.53, 0.31, sm, 0, 0.29, -0.064);
   B(g, 0.44, 0.02, 0.14, M(0x222222, 0.6), 0, 0, 0.12); B(g, 0.06, 0.02, 0.1, M(0x222222, 0.6), 0.32, 0, 0.12);
   const st = { on: false, acc: 0 };
   ctx.interact(g, { label: () => st.on ? 'Turn off computer' : 'Turn on computer', action: () => { st.on = !st.on; Sfx.beep(1, st.on ? 880 : 440); if (st.on) ctx.task('computer'); } });
   ctx.tick(g, (dt, t) => {
-    const on = st.on && ctx.power(); sm.color.set(on ? 0xffffff : 0x050505); sm.map = on ? tex : null; sm.needsUpdate = true;
-    if (on && (st.acc += dt) > 0.5) {
-      st.acc = 0; const c = tex.userData.ctx; const gr = c.createLinearGradient(0, 0, 256, 150); gr.addColorStop(0, '#e07a3f'); gr.addColorStop(1, '#6c5b8f'); c.fillStyle = gr; c.fillRect(0, 0, 256, 150);
+    const on = st.on && ctx.power(); if (on !== st.was) { st.was = on; sm.color.set(on ? 0xffffff : 0x050505); st.drawn = ''; }
+    const stamp = on ? new Date().getMinutes() + '' : ''; if (on && stamp !== st.drawn) {
+      st.drawn = stamp; const c = tex.userData.ctx; const gr = c.createLinearGradient(0, 0, 256, 150); gr.addColorStop(0, '#e07a3f'); gr.addColorStop(1, '#6c5b8f'); c.fillStyle = gr; c.fillRect(0, 0, 256, 150);
       c.fillStyle = 'rgba(255,255,255,.9)'; c.fillRect(30, 25, 120, 80); c.fillStyle = '#333'; c.font = '10px sans-serif'; c.fillText('apartment_plans.txt', 36, 40); c.fillText('- buy pumpkins', 36, 56); c.fillText('- redecorate living rm', 36, 70);
       c.fillStyle = 'rgba(0,0,0,.4)'; c.fillRect(0, 138, 256, 12); c.fillStyle = '#fff'; c.fillText(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), 210, 147); tex.needsUpdate = true;
     }
@@ -453,7 +454,7 @@ def('espresso', 'Espresso machine', 'Kitchen', { mount: 'surface', solid: false,
 def('speaker', 'Smart speaker', 'Electronics', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
   const g = new THREE.Group(); C(g, 0.06, 0.06, 0.18, M(0x6f7378, 1), 0, 0, 0, 20); const ring = T(g, 0.05, 0.006, E(0x4fa3ff, 0), 0, 0.18, 0); ring.rotation.x = Math.PI / 2;
   const st = { on: false };
-  ctx.interact(g, { label: () => st.on ? 'Stop music' : 'Play music ♫', action: () => { st.on = !st.on; if (st.on) { st.m = Sfx.music(() => g.getWorldPosition(V3()), 0); ctx.task('music'); } else { st.m && st.m.stop(); } } });
+  ctx.interact(g, { label: () => st.on ? 'Stop music' : 'Play music ♫', action: () => { st.on = !st.on; if (st.on) { const mp = V3(); st.m = Sfx.music(() => g.getWorldPosition(mp), 0); ctx.task('music'); } else { st.m && st.m.stop(); } } });
   ctx.onRemove(g, () => st.m && st.m.stop());
   ctx.tick(g, (dt, t) => { ring.material.emissiveIntensity = st.on ? 1 + Math.sin(t * 6) : 0; if (st.on && ctx.flags) ctx.flags.musicT = performance.now(); });
   return g;
@@ -463,7 +464,7 @@ def('record_player', 'Record player', 'Electronics', { mount: 'surface', solid: 
   const plat = G(g, -0.04, 0.09, 0); C(plat, 0.15, 0.15, 0.01, M(0x111111, 0.3), 0, 0, 0, 32); C(plat, 0.04, 0.04, 0.012, M(0xd9622b), 0, 0, 0, 16);
   B(g, 0.02, 0.02, 0.2, M(0xc0c0c0, 0.3, 0.8), 0.14, 0.1, -0.02).rotation.y = 0.3;
   const st = { on: false };
-  ctx.interact(g, { label: () => st.on ? 'Lift needle' : 'Play a record', action: () => { st.on = !st.on; if (st.on) { st.m = Sfx.music(() => g.getWorldPosition(V3()), 1); ctx.task('music'); } else st.m && st.m.stop(); Sfx.noise(0.3, 0.05, 2000, 1); } });
+  ctx.interact(g, { label: () => st.on ? 'Lift needle' : 'Play a record', action: () => { st.on = !st.on; if (st.on) { const mp = V3(); st.m = Sfx.music(() => g.getWorldPosition(mp), 1); ctx.task('music'); } else st.m && st.m.stop(); Sfx.noise(0.3, 0.05, 2000, 1); } });
   ctx.onRemove(g, () => st.m && st.m.stop());
   ctx.tick(g, dt => { if (st.on) { plat.rotation.y += dt * 3.5; if (ctx.flags) ctx.flags.musicT = performance.now(); } });
   return g;
@@ -472,11 +473,11 @@ def('fireplace', 'Electric fireplace', 'Electronics', { color: '#f1ece2', colora
   const g = new THREE.Group(), m = M(it.c || '#f1ece2', 0.7);
   B(g, 1.3, 1.05, 0.35, m, 0, 0, 0); B(g, 1.4, 0.06, 0.42, m, 0, 1.05, 0);
   B(g, 0.8, 0.5, 0.02, M(0x111111), 0, 0.2, 0.17);
-  const tex = screenCanvas(256, 160); const sm = new THREE.MeshBasicMaterial({ color: 0x0a0a0a }); plane(g, 0.78, 0.48, sm, 0, 0.45, 0.181);
+  const tex = screenCanvas(256, 160); const sm = new THREE.MeshBasicMaterial({ color: 0x0a0a0a, map: tex }); plane(g, 0.78, 0.48, sm, 0, 0.45, 0.181);
   const L = ctx.light(g, 0xff8a3a, 0, 5, 0, 0.5, 0.5); const st = { on: false, acc: 0 };
   ctx.interact(g, { reach: 6, label: () => st.on ? 'Turn off fireplace' : 'Turn on fireplace 🔥', action: () => { st.on = !st.on; Sfx.click(); if (st.on) { st.s = Sfx.loop('fire', g.getWorldPosition(V3()), 0.1); ctx.task('fire'); } else st.s && st.s.stop(); } });
   ctx.onRemove(g, () => st.s && st.s.stop());
-  ctx.tick(g, (dt, t) => { const on = st.on && ctx.power(); L.intensity = on ? 2 + Math.sin(t * 13) * 0.4 : 0; sm.color.set(on ? 0xffffff : 0x0a0a0a); sm.map = on ? tex : null; sm.needsUpdate = true; if (on && (st.acc += dt) > 0.06) { st.acc = 0; tvDraw(tex.userData.ctx, 256, 160, 1, t); tex.needsUpdate = true; } });
+  ctx.tick(g, (dt, t) => { const on = st.on && ctx.power(); L.intensity = on ? 2 + Math.sin(t * 13) * 0.4 : 0; if (on !== st.was) { st.was = on; sm.color.set(on ? 0xffffff : 0x0a0a0a); } if (on && (st.acc += dt) > 0.06) { st.acc = 0; tvDraw(tex.userData.ctx, 256, 160, 1, t); tex.needsUpdate = true; } });
   return g;
 });
 
@@ -488,7 +489,7 @@ def('pan', 'Frying pan', 'Kitchen', { mount: 'surface', solid: false, small: tru
   C(g, 0.13, 0.11, 0.045, blk, 0, 0, 0, 24); B(g, 0.03, 0.02, 0.2, blk, 0, 0.03, 0.22);
   const food = G(g, 0, 0.025, 0); const fm = M(0xffffff, 0.6); const fbody = C(food, 0.08, 0.08, 0.012, fm, 0, 0, 0, 20); const yolk = S(food, 0.025, M(0xf2a516, 0.3), 0, 0.015, 0, 10, 8); yolk.scale.y = 0.5;
   const smoke = []; for (let i = 0; i < 5; i++) { const s = S(g, 0.03, new THREE.MeshBasicMaterial({ color: 0x777777, transparent: true, opacity: 0.3, depthWrite: false }), 0, 0.1, 0, 6, 4); smoke.push(s); }
-  const st = { food: null, cook: 0, sz: null };
+  const st = { food: null, cook: 0, sz: null }; const wp = V3();
   const doneness = () => st.cook < 1 ? 'raw' : st.cook < 2 ? 'cooked' : 'burnt';
   ctx.interact(g, {
     label: () => !st.food ? 'Add ' + FOODS[FOOD_ORDER[(st.next || 0) % 4]].name + ' (E) — tap again for other food' : doneness() === 'raw' ? (ctx.heatAt(g.getWorldPosition(V3())) ? 'Cooking ' + FOODS[st.food].name + '… ' + Math.round(st.cook * 100) + '%' : 'Put pan on a lit burner to cook') : doneness() === 'cooked' ? 'Plate the ' + FOODS[st.food].name + ' 🍽' : 'Scrape out burnt food 😬',
@@ -502,9 +503,9 @@ def('pan', 'Frying pan', 'Kitchen', { mount: 'surface', solid: false, small: tru
   ctx.onRemove(g, () => st.sz && st.sz.stop());
   ctx.tick(g, (dt, t) => {
     food.visible = !!st.food;
-    const heat = st.food && ctx.heatAt(g.getWorldPosition(V3()));
-    if (heat) { st.cook += dt / 9; if (!st.sz) st.sz = Sfx.loop('sizzle', () => g.getWorldPosition(V3()), 0.12); } else if (st.sz) { st.sz.stop(); st.sz = null; }
-    if (st.food) { const f = FOODS[st.food]; const c = new THREE.Color(f.raw).lerp(new THREE.Color(f.cook), clamp(st.cook, 0, 1)); if (st.cook > 1.5) c.lerp(new THREE.Color(0x1d1410), clamp(st.cook - 1.5, 0, 1)); fm.color.copy(c); yolk.visible = !!f.yolk; fbody.scale.set(st.food === 'bacon' ? 0.4 : 1, 1, 1); }
+    const heat = st.food && ctx.heatAt(g.getWorldPosition(wp));
+    if (heat) { st.cook += dt / 9; if (!st.sz) st.sz = Sfx.loop('sizzle', () => g.getWorldPosition(wp), 0.12); } else if (st.sz) { st.sz.stop(); st.sz = null; }
+    if (st.food) { const f = FOODS[st.food]; fm.color.set(f.raw).lerp(_c1.set(f.cook), clamp(st.cook, 0, 1)); if (st.cook > 1.5) fm.color.lerp(_c1.set(0x1d1410), clamp(st.cook - 1.5, 0, 1)); yolk.visible = !!f.yolk; fbody.scale.set(st.food === 'bacon' ? 0.4 : 1, 1, 1); }
     smoke.forEach((s, i) => { s.visible = st.food && st.cook > 1.6; const k = (t * 0.4 + i / 5) % 1; s.position.set(Math.sin(i * 2 + t) * 0.05, 0.05 + k * 0.6, Math.cos(i) * 0.05); s.scale.setScalar(1 + k * 3); s.material.opacity = 0.35 * (1 - k); });
   });
   return g;
@@ -531,13 +532,13 @@ def('kettle', 'Tea kettle', 'Kitchen', { mount: 'surface', solid: false, small: 
   const sp = C(g, 0.012, 0.02, 0.12, m, 0.1, 0.08, 0, 8); sp.rotation.z = -0.9;
   const handle = T(g, 0.07, 0.01, M(0x1a1a1a), 0, 0.18, 0, Math.PI);
   const steam = []; for (let i = 0; i < 4; i++) { const s = S(g, 0.02, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, depthWrite: false }), 0.16, 0.16, 0, 6, 4); steam.push(s); }
-  const st = { temp: 0, whistle: 0 };
+  const st = { temp: 0, whistle: 0 }; const wp = V3();
   ctx.interact(g, { label: () => st.temp >= 1 ? 'Pour a cup of tea 🍵' : ctx.heatAt(g.getWorldPosition(V3())) ? 'Heating… ' + Math.round(st.temp * 100) + '%' : 'Put on a lit burner to boil', action: () => { if (st.temp >= 1) { ctx.give('mug', { fill: 'tea' }); ctx.msg('Hot tea! Press F to sip.'); ctx.task('tea'); st.temp = 0.6; } } });
   ctx.onRemove(g, () => st.b && st.b.stop());
   ctx.tick(g, (dt, t) => {
-    const heat = ctx.heatAt(g.getWorldPosition(V3()));
+    const heat = ctx.heatAt(g.getWorldPosition(wp));
     st.temp = clamp(st.temp + (heat ? dt / 12 : -dt / 60), 0, 1.2);
-    if (st.temp >= 1 && heat) { if (!st.b) st.b = Sfx.loop('boil', () => g.getWorldPosition(V3()), 0.1); if ((st.whistle -= dt) < 0) { Sfx.tone(2400, 0.8, 'sine', 0.05, 80); st.whistle = 1.2; } } else if (st.b) { st.b.stop(); st.b = null; }
+    if (st.temp >= 1 && heat) { if (!st.b) st.b = Sfx.loop('boil', () => g.getWorldPosition(wp), 0.1); if ((st.whistle -= dt) < 0) { Sfx.tone(2400, 0.8, 'sine', 0.05, 80); st.whistle = 1.2; } } else if (st.b) { st.b.stop(); st.b = null; }
     steam.forEach((s, i) => { s.visible = st.temp > 0.8; const k = (t * 0.6 + i / 4) % 1; s.position.set(0.17 + k * 0.1, 0.17 + k * 0.25, 0); s.scale.setScalar(1 + k * 2); s.material.opacity = 0.3 * (1 - k); });
   });
   return g;
@@ -556,7 +557,7 @@ def('toaster', 'Toaster', 'Kitchen', { mount: 'surface', solid: false, small: tr
     }
   });
   ctx.tick(g, dt => {
-    if (st.s === 'toasting') { st.t += dt; toasts.forEach(t => t.material.color.lerp(new THREE.Color(0xb57a3c), dt * 0.3)); if (st.t > 6) { st.s = 'done'; Sfx.pop(); } }
+    if (st.s === 'toasting') { st.t += dt; toasts.forEach(t => t.material.color.lerp(_c1.set(0xb57a3c), dt * 0.3)); if (st.t > 6) { st.s = 'done'; Sfx.pop(); } }
     lever.position.y = st.s === 'toasting' ? 0.04 : 0.13; toasts.forEach(t => t.position.y = st.s === 'toasting' ? 0.07 : st.s === 'done' ? 0.15 : 0.12);
   });
   return g;
