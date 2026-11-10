@@ -137,10 +137,11 @@ function buildApartment(scene, ctx) {
     const H = 2.05, t = 0.04;
     // casing trims
     const casing = glass ? M(0x2b2f33, 0.5) : trim;
+    const cas = [];
     for (const sgn of [1, -1]) {
       const off = sgn * (WT / 2 + 0.008);
-      if (axis === 'x') { B(W, 0.07, H + 0.07, 0.016, trim, x - 0.035, 0, z + off); B(W, 0.07, H + 0.07, 0.016, trim, x + len + 0.035, 0, z + off); B(W, len + 0.14, 0.07, 0.016, trim, x + len / 2, H, z + off); }
-      else { B(W, 0.016, H + 0.07, 0.07, trim, x + off, 0, z - 0.035); B(W, 0.016, H + 0.07, 0.07, trim, x + off, 0, z + len + 0.035); B(W, 0.016, 0.07, len + 0.14, trim, x + off, H, z + len / 2); }
+      if (axis === 'x') cas.push(B(W, 0.07, H + 0.07, 0.016, trim, x - 0.035, 0, z + off), B(W, 0.07, H + 0.07, 0.016, trim, x + len + 0.035, 0, z + off), B(W, len + 0.14, 0.07, 0.016, trim, x + len / 2, H, z + off));
+      else cas.push(B(W, 0.016, H + 0.07, 0.07, trim, x + off, 0, z - 0.035), B(W, 0.016, H + 0.07, 0.07, trim, x + off, 0, z + len + 0.035), B(W, 0.016, 0.07, len + 0.14, trim, x + off, H, z + len / 2));
     }
     const hx = axis === 'x' ? (hingeEnd ? x + len : x) : x, hz = axis === 'z' ? (hingeEnd ? z + len : z) : z;
     const piv = G(W, hx, 0, hz);
@@ -167,13 +168,16 @@ function buildApartment(scene, ctx) {
     }
     for (const sd of [1, -1]) { const h = G(leaf, L - 0.07, 1.0, sd * 0.04); C(h, 0.025, 0.025, 0.015, glass ? black : nickel, 0, 0, 0, 12).rotation.x = Math.PI / 2; const lv = B(h, 0.12, 0.018, 0.02, glass ? black : nickel, -0.05, -0.01, sd * 0.02); }
     const st = { open: false, v: 0, locked: lock, label };
-    ctx.interact(leaf, {
+    const def = {
       label: () => st.locked && !st.open ? 'Locked 🔒 (unlock at the keypad)' : (st.open ? 'Close ' : 'Open ') + label,
       action: () => { if (st.locked && !st.open) { Sfx.tone(300, 0.15, 'square', 0.08); return; } st.open = !st.open; Sfx.door(st.open); if (exterior && st.open) ctx.task('outside'); }
-    });
+    };
+    ctx.interact(leaf, def); cas.forEach(m => m.userData.int = def);
+    st.def = def; st.center = axis === 'x' ? V3(x + len / 2, 1, z) : V3(x, 1, z + len / 2);
     const box = new THREE.Box3();
-    ctx.addCollider(box, () => { box.setFromObject(leaf); });
-    ctx.tick(leaf, dt => { st.v += ((st.open ? 1 : 0) - st.v) * Math.min(1, dt * 5); piv.rotation.y = closed + s * 1.55 * st.v; });
+    // a door only blocks you when it's fully shut; while swinging or open you can always pass
+    ctx.addCollider(box, () => { if (!st.open && st.v < 0.05) box.setFromObject(leaf); else box.makeEmpty(); }, st);
+    ctx.tick(leaf, dt => { st.v += ((st.open ? 1 : 0) - st.v) * Math.min(1, dt * 7); piv.rotation.y = closed + s * 1.55 * st.v; });
     doors.push(st); st.leaf = leaf; if (id) A.doorById[id] = st;
     return st;
   }

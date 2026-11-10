@@ -107,7 +107,7 @@ def('sectional', 'Sectional (L)', 'Seating', { color: '#b9bcbc', colorable: true
   const s = B(g, 0.85, 0.12, 0.95, c, 0.825, 0.45, 0.95); sitOn(ctx, s, 'Stretch out on chaise', 0.15, 0.1);
   return g;
 });
-def('armchair', 'Swivel chair', 'Seating', { color: '#b8bec3', colorable: true }, (ctx, it) => {
+def('armchair', 'Swivel chair', 'Seating', { color: '#b8bec3', colorable: true, shrink: 0.15 }, (ctx, it) => {
   const g = new THREE.Group(), c = M(it.c || '#b8bec3', 0.95);
   const top = G(g);
   C(top, 0.38, 0.36, 0.2, c, 0, 0.18, 0, 24);
@@ -121,7 +121,7 @@ def('armchair', 'Swivel chair', 'Seating', { color: '#b8bec3', colorable: true }
   ctx.tick(top, dt => { if (top.userData.spin > 0) { top.rotation.y += top.userData.spin * dt; top.userData.spin -= dt * 6; } });
   return g;
 });
-def('barstool', 'Bar stool', 'Seating', { color: '#efe8dc', colorable: true }, (ctx, it) => {
+def('barstool', 'Bar stool', 'Seating', { color: '#efe8dc', colorable: true , solid: false }, (ctx, it) => {
   const g = new THREE.Group(), c = M(it.c || '#efe8dc', 0.9), mt = M(0x3b2b20, 0.5, 0.2);
   for (const [x, z] of [[-0.18, -0.16], [0.18, -0.16], [-0.18, 0.16], [0.18, 0.16]]) { const l = C(g, 0.014, 0.014, 0.66, mt, x, 0, z, 6); l.rotation.set(z * 0.3, 0, -x * 0.3); }
   B(g, 0.36, 0.015, 0.015, mt, 0, 0.25, 0.16); B(g, 0.36, 0.015, 0.015, mt, 0, 0.25, -0.16);
@@ -131,7 +131,7 @@ def('barstool', 'Bar stool', 'Seating', { color: '#efe8dc', colorable: true }, (
   sitOn(ctx, seat, 'Sit on stool', 0.1, 0.0);
   return g;
 });
-def('dining_chair', 'Dining chair', 'Seating', { color: '#8a6446', colorable: true }, (ctx, it) => {
+def('dining_chair', 'Dining chair', 'Seating', { color: '#8a6446', colorable: true , solid: false }, (ctx, it) => {
   const g = new THREE.Group(), w = M(it.c || '#8a6446', 0.6);
   for (const [x, z] of [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]]) B(g, 0.04, 0.45, 0.04, w, x, 0, z);
   const s = B(g, 0.46, 0.05, 0.46, w, 0, 0.45, 0);
@@ -139,22 +139,24 @@ def('dining_chair', 'Dining chair', 'Seating', { color: '#8a6446', colorable: tr
   sitOn(ctx, s, 'Sit', 0.05, 0);
   return g;
 });
-def('office_chair', 'Office chair', 'Seating', { color: '#2b2d31', colorable: true }, (ctx, it) => {
-  const g = new THREE.Group(), c = M(it.c || '#2b2d31', 0.8), mt = M(0x777b80, 0.3, 0.8);
+def('office_chair', 'Desk chair (tucks under)', 'Seating', { color: '#2b2d31', colorable: true, solid: false }, (ctx, it) => {
+  const g0 = new THREE.Group(), g = G(g0), c = M(it.c || '#2b2d31', 0.8), mt = M(0x777b80, 0.3, 0.8);
   for (let i = 0; i < 5; i++) { const a = i / 5 * TAU; const l = B(g, 0.04, 0.03, 0.3, mt, Math.sin(a) * 0.15, 0.06, Math.cos(a) * 0.15); l.rotation.y = a; S(g, 0.03, M(0x111111), Math.sin(a) * 0.3, 0.03, Math.cos(a) * 0.3, 8, 6); }
   C(g, 0.025, 0.025, 0.4, mt, 0, 0.08, 0, 8);
   const top = G(g, 0, 0.45, 0);
-  const s = B(top, 0.5, 0.08, 0.48, c, 0, 0, 0); B(top, 0.46, 0.55, 0.06, c, 0, 0.2, -0.25).rotation.x = -0.1;
-  sitOn(ctx, s, 'Sit at desk', 0.05, 0);
-  ctx.interact(top, { label: 'Spin chair', action: () => { top.userData.spin = 10; } });
-  ctx.tick(top, dt => { if (top.userData.spin > 0) { top.rotation.y += top.userData.spin * dt; top.userData.spin -= dt * 6; } });
-  return g;
+  const s = B(top, 0.5, 0.08, 0.48, c, 0, 0, 0); B(top, 0.46, 0.5, 0.06, c, 0, 0.12, -0.25).rotation.x = -0.1;
+  // tucked under the desk; slides out when you sit, rolls back in when you get up
+  const st = { out: 0 };
+  const sit = { label: 'Pull out the chair and sit', action: () => { g.position.z = -0.5; g.updateMatrixWorld(true); const p = V3(0, 0.5, 0.05); top.localToWorld(p); const q = new THREE.Quaternion(); g0.getWorldQuaternion(q); const e = new THREE.Euler().setFromQuaternion(q, 'YXZ'); ctx.sit(p, e.y + Math.PI, false, g0); st.out = 1; Sfx.noise(0.4, 0.12, 600, 1); } };
+  ctx.interact(g0, sit);
+  ctx.tick(g, dt => { const sitting = ctx.sittingOn && ctx.sittingOn() === g0; if (st.out && !sitting) { st.out = 0; Sfx.noise(0.4, 0.1, 600, 1); } g.position.z = lerp(g.position.z, sitting ? -0.5 : 0, Math.min(1, dt * 6)); });
+  return g0;
 });
 def('beanbag', 'Bean bag', 'Seating', { color: '#c98c8c', colorable: true }, (ctx, it) => {
   const g = new THREE.Group(); const s = S(g, 0.45, M(it.c || '#c98c8c', 1), 0, 0.3, 0, 20, 14); s.scale.set(1, 0.65, 1);
   sitOn(ctx, s, 'Flop onto bean bag', -0.05, 0.1); return g;
 });
-def('ottoman', 'Pouf', 'Seating', { color: '#d9cbb5', colorable: true }, (ctx, it) => {
+def('ottoman', 'Pouf', 'Seating', { color: '#d9cbb5', colorable: true , solid: false }, (ctx, it) => {
   const g = new THREE.Group(); const s = C(g, 0.26, 0.26, 0.4, M(it.c || '#d9cbb5', 1), 0, 0, 0, 24); sitOn(ctx, s, 'Sit on pouf', 0.2, 0); return g;
 });
 def('bench', 'Entry bench', 'Seating', { color: '#a4764d', colorable: true }, (ctx, it) => {
@@ -263,7 +265,7 @@ def('bookshelf', 'Bookshelf', 'Storage', { color: '#f1ece2', colorable: true }, 
   ctx.interact(g, { label: 'Read a book', action: () => { ctx.msg(['"The leaves fell like little notes from the trees."', 'You read a chapter. Cozy.', 'You find a pressed maple leaf inside.'][(Math.random() * 3) | 0]); ctx.task('read'); Sfx.noise(0.2, 0.1, 3000, 1); } });
   return g;
 });
-def('basket', 'Woven basket', 'Storage', { color: '#b48c58' }, (ctx, it) => {
+def('basket', 'Woven basket', 'Storage', { color: '#b48c58' , solid: false }, (ctx, it) => {
   const g = new THREE.Group(), wv = M(0xffffff, 0.95, 0, { map: getTex('woven') });
   C(g, 0.2, 0.17, 0.42, wv, 0, 0, 0, 20); const lid = G(g, 0, 0.42, -0.2); C(lid, 0.21, 0.21, 0.04, wv, 0, 0, 0.2, 20);
   B(g, 0.2, 0.15, 0.2, M(0xd9cbb5, 1), 0, 0.27, 0);
@@ -274,7 +276,7 @@ def('storage_bin', 'Storage tote', 'Storage', { color: '#1f1f22' }, (ctx, it) =>
   const lid = G(g, 0, 0.38, -0.25); B(lid, 0.8, 0.05, 0.55, M(0xf2c418, 0.5), 0, 0, 0.25);
   hinge(ctx, lid, 'x', -1.6, 'tote lid', 'click'); B(g, 0.3, 0.1, 0.2, M(0x7c4a2e), -0.1, 0.05, 0); return g;
 });
-def('hamper', 'Laundry hamper', 'Storage', { color: '#d9cbb5' }, (ctx, it) => {
+def('hamper', 'Laundry hamper', 'Storage', { color: '#d9cbb5' , solid: false }, (ctx, it) => {
   const g = new THREE.Group(); C(g, 0.22, 0.2, 0.6, M(0xffffff, 1, 0, { map: getTex('woven') }), 0, 0, 0, 16); S(g, 0.18, M(0xe3b8b8, 1), 0, 0.58, 0, 10, 8).scale.y = 0.4; return g;
 });
 
@@ -645,7 +647,7 @@ def('mini_tree', 'Mini pine tree', 'Holiday', { mount: 'surface', solid: false, 
   for (let i = 0; i < 3; i++) { const c = new THREE.Mesh(new THREE.ConeGeometry(0.09 - i * 0.022, 0.12, 10), M(0x2f5a3a, 0.8)); c.position.y = 0.11 + i * 0.07; g.add(c); }
   return g;
 });
-def('xmas_tree', 'Pencil Christmas tree', 'Holiday', {}, (ctx, it) => {
+def('xmas_tree', 'Pencil Christmas tree', 'Holiday', { shrink: 0.3 }, (ctx, it) => {
   const g = new THREE.Group();
   const skirt = C(g, 0.55, 0.6, 0.03, M(0xffffff, 0.95, 0, { map: getTex('treeskirt') }), 0, 0, 0, 24);
   C(g, 0.025, 0.03, 0.35, M(0x5a3d2a), 0, 0.02, 0, 6);
@@ -729,7 +731,7 @@ def('clothes_pile', 'Pile of clothes', 'Fun', { solid: false, flat: true }, (ctx
   ctx.interact(g, { label: 'Gather clothes for the washer 🧺', action: () => { ctx.removeItem(g); ctx.laundry(1); Sfx.noise(0.5, 0.2, 800, 1); ctx.msg('Clothes gathered. Load the washer by the front door!'); ctx.task('tidy'); } });
   return g;
 });
-def('ironing', 'Ironing board', 'Fun', { solid: true }, (ctx, it) => {
+def('ironing', 'Ironing board', 'Fun', { solid: false }, (ctx, it) => {
   const g = new THREE.Group(); const top = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.02, 20, 1, false, 0, Math.PI), M(0xffffff, 0.9, 0, { map: getTex('floral') }));
   B(g, 0.38, 0.02, 1.0, M(0xffffff, 0.9, 0, { map: getTex('floral') }), 0, 0.88, 0); top.position.set(0, 0.89, 0.5); top.rotation.y = -Math.PI / 2; g.add(top);
   const leg = M(0xd9d9d9, 0.3, 0.8); const l1 = B(g, 0.02, 1.15, 0.02, leg, 0, 0, 0); l1.rotation.x = 0.5; l1.position.set(-0.15, 0.45, 0); const l2 = B(g, 0.02, 1.15, 0.02, leg, 0, 0, 0); l2.rotation.x = -0.5; l2.position.set(0.15, 0.45, 0);

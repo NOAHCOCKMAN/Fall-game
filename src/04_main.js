@@ -48,7 +48,7 @@ const ctx = {
   interact(obj, def) { obj.userData.int = def; },
   tick(owner, fn) { TICKS.push({ owner, fn }); },
   onRemove(owner, fn) { CLEANUPS.push({ owner, fn }); },
-  addCollider(box, upd) { STATIC.push({ box, upd }); },
+  addCollider(box, upd, door) { STATIC.push({ box, upd, door }); },
   light(parent, color, intensity, dist, x, y, z) {
     if (lightCount >= MAX_LIGHTS) return { intensity: 0 };
     const l = new THREE.PointLight(color, intensity, dist, 1.5); l.position.set(x, y, z); parent.add(l); lightCount++;
@@ -67,7 +67,7 @@ const ctx = {
   give(type, d) { if (held) dropHeld(); const g = spawnItem({ id: uid(), t: type, x: P.pos.x, y: 0, z: P.pos.z, r: P.yaw, d: d || {} }); startHold(g); },
   removeItem(g) { removeItem(g); },
   sit(pos, yaw, lie) {
-    P.sit = { pos: pos.clone(), yaw, lie, prev: P.pos.clone() }; P.yaw = yaw; P.pitch = lie ? 0.9 : -0.1;
+    P.sit = { pos: pos.clone(), yaw, lie, prev: P.pos.clone(), root: arguments[3] || null }; P.yaw = yaw; P.pitch = lie ? 0.9 : -0.1;
   },
   sleep(bed) {
     if (P.needs.energy > 0.85 && !ctx.isNight()) return toast('You\'re not tired right now.');
@@ -87,6 +87,7 @@ const ctx = {
   stretch() { ctx.need('energy', 0.1); ctx.need('fun', 0.05); },
   laundry(n) { A.laundry.load += n; },
   startAction(a) { startAction(a); },
+  sittingOn: () => P.sit && P.sit.root,
 };
 const uid = () => Math.random().toString(36).slice(2, 9);
 
@@ -97,7 +98,7 @@ A.world.add(itemsGroup);
 function itemBox(g) {
   const def = CATALOG[g.userData.item.t]; if (!def.solid || def.mount !== 'floor') { g.userData.box = null; return; }
   g.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(g); if (b.max.y < 0.3) { g.userData.box = null; return; }
-  b.expandByVector(V3(-0.03, 0, -0.03)); g.userData.box = b;
+  const sh = def.shrink || 0.07; b.expandByVector(V3(-sh, 0, -sh)); g.userData.box = b;
 }
 function spawnItem(inst) {
   const def = CATALOG[inst.t]; if (!def) return null;
@@ -120,7 +121,7 @@ const DEFAULT_LAYOUT = {
     ['sofa', 4.65, 0, 3.55, HP], ['art_wedding', 4.165, 1.62, 2.8, HP, null, { seed: 11 }], ['art_wedding', 4.165, 1.62, 3.55, HP, null, { seed: 12 }], ['art_wedding', 4.165, 1.62, 4.3, HP, null, { seed: 13 }],
     ['picture_light', 4.165, 2.17, 2.8, HP], ['picture_light', 4.165, 2.17, 3.55, HP], ['picture_light', 4.165, 2.17, 4.3, HP],
     ['xmas_tree', 4.55, 0, 2.0, 0], ['present', 5.05, 0, 1.75, 0.3], ['present', 5.2, 0, 2.2, -0.2, '#2e5a3a'],
-    ['rug_vintage', 5.85, 0, 3.6, HP], ['coffee_marble', 5.75, 0, 3.6, HP], ['tray_trees', 5.75, 0.485, 3.32, 0], ['albums', 5.75, 0.485, 3.8, 0.5],
+    ['rug_vintage', 5.9, 0, 3.6, HP], ['coffee_marble', 5.9, 0, 3.6, HP], ['tray_trees', 5.9, 0.485, 3.32, 0], ['albums', 5.9, 0.485, 3.8, 0.5],
     ['media_console', 7.32, 0, 3.85, -HP], ['tv', 7.535, 1.55, 3.85, -HP], ['speaker', 7.32, 0.63, 3.2, -HP], ['record_player', 7.32, 0.63, 3.85, -HP], ['mini_tree', 7.32, 0.63, 4.5, 0], ['basket', 4.45, 0, 5.0, 0],
     ['bistro_table', 6.95, 0, 1.95, 0], ['armchair', 6.2, 0, 2.0, HP], ['armchair', 6.9, 0, 2.62, PI], ['candle', 6.88, 0.735, 1.88, 0], ['mini_tree', 7.05, 0.735, 2.02, 0], ['wine', 6.83, 0.735, 2.08, 0],
     ['clothes_pile', 6.4, 0, 4.9, 0.6],
@@ -134,7 +135,7 @@ const DEFAULT_LAYOUT = {
     ['lamp_table', 4.62, 0.935, 9.7, 0, null, { on: true }], ['stand_mixer', 5.1, 0.935, 9.62, PI], ['fruit_bowl', 2.22, 0.935, 8.9, 0], ['plant_small', 2.22, 0.935, 8.05, 0],
     // bedroom
     ['bed', 1.14, 0, 1.41, HP], ['nightstand', 0.27, 0, 0.31, HP], ['nightstand', 0.27, 0, 2.51, HP], ['lamp_table', 0.27, 0.63, 0.31, 0, null, { on: true }], ['lamp_table', 0.27, 0.63, 2.51, 0],
-    ['desk', 2.3, 0, 3.065, PI], ['monitor', 2.3, 0.76, 3.0, PI], ['plant_small', 2.75, 0.76, 3.2, 0], ['office_chair', 2.3, 0, 2.55, 0],
+    ['desk', 2.3, 0, 3.065, PI], ['monitor', 2.3, 0.76, 3.0, PI], ['plant_small', 2.75, 0.76, 3.2, 0], ['office_chair', 2.3, 0, 2.97, 0],
     ['art_monet', 0.06, 1.75, 1.41, HP], ['arched_cabinet', 3.56, 0, 0.27, 0], ['dresser', 3.8, 0, 2.3, -HP],
     ['art_photo', 4.04, 1.45, 1.85, -HP, null, { seed: 21 }], ['art_photo', 4.04, 1.45, 2.3, -HP, null, { seed: 22 }], ['art_photo', 4.04, 1.45, 2.75, -HP, null, { seed: 23 }],
     ['art_photo', 4.04, 1.9, 1.85, -HP, null, { seed: 24 }], ['art_photo', 4.04, 1.9, 2.3, -HP, null, { seed: 25 }], ['art_photo', 4.04, 1.9, 2.75, -HP, null, { seed: 26 }],
@@ -197,10 +198,21 @@ function updateAction(dt) {
 
 // ---- player ----
 function blocked(x, z, feet) {
-  const r = 0.2, y0 = feet + 0.3, y1 = feet + (P.crouch ? 1.1 : 1.75);
-  for (const c of STATIC) { const b = c.box; if (b.isEmpty()) continue; if (b.max.y > y0 && b.min.y < y1 && x + r > b.min.x && x - r < b.max.x && z + r > b.min.z && z - r < b.max.z) return true; }
-  for (const g of itemsGroup.children) { const b = g.userData.box; if (!b) continue; if (b.max.y > y0 && b.min.y < y1 && x + r > b.min.x && x - r < b.max.x && z + r > b.min.z && z - r < b.max.z) return true; }
-  return false;
+  const r = 0.19, y0 = feet + 0.3, y1 = feet + (P.crouch ? 1.1 : 1.75);
+  for (const c of STATIC) { const b = c.box; if (b.isEmpty()) continue; if (b.max.y > y0 && b.min.y < y1 && x + r > b.min.x && x - r < b.max.x && z + r > b.min.z && z - r < b.max.z) return c; }
+  for (const g of itemsGroup.children) { const b = g.userData.box; if (!b) continue; if (b.max.y > y0 && b.min.y < y1 && x + r > b.min.x && x - r < b.max.x && z + r > b.min.z && z - r < b.max.z) return g; }
+  return null;
+}
+let bumpT = 0;
+function bump(hit, dt) { // walking into a closed door opens it
+  if (!hit || !hit.door) { bumpT = 0; return; }
+  const d = hit.door; bumpT += dt;
+  if (bumpT > 0.12 && !d.open) { bumpT = 0; if (d.locked) { if (!d.toldT || performance.now() - d.toldT > 3000) { d.toldT = performance.now(); toast('🔒 The ' + d.label + ' is locked.'); } } else d.def.action(); }
+}
+// if you ever end up inside something (e.g. standing up next to furniture), nudge out to free space
+function unstick() {
+  if (!blocked(P.pos.x, P.pos.z, P.pos.y)) return;
+  for (let rad = 0.05; rad < 0.8; rad += 0.05) for (let a = 0; a < TAU; a += Math.PI / 8) { const x = P.pos.x + Math.cos(a) * rad, z = P.pos.z + Math.sin(a) * rad; if (!blocked(x, z, P.pos.y)) { P.pos.x = x; P.pos.z = z; return; } }
 }
 const keys = {}; const joy = { x: 0, y: 0 };
 const joyRun = () => Math.hypot(joy.x, joy.y) > 0.95;
@@ -223,8 +235,10 @@ function updatePlayer(dt) {
   const s = Math.sin(P.yaw), c = Math.cos(P.yaw);
   const vx = (mx * c + mz * s) * speed * dt, vz = (-mx * s + mz * c) * speed * dt;
   const ox = P.pos.x, oz = P.pos.z;
-  if (!blocked(P.pos.x + vx, P.pos.z, P.pos.y)) P.pos.x += vx;
-  if (!blocked(P.pos.x, P.pos.z + vz, P.pos.y)) P.pos.z += vz;
+  unstick();
+  const hx = blocked(P.pos.x + vx, P.pos.z, P.pos.y); if (!hx) P.pos.x += vx;
+  const hz = blocked(P.pos.x, P.pos.z + vz, P.pos.y); if (!hz) P.pos.z += vz;
+  if (Math.abs(vx) + Math.abs(vz) > 0) bump((hx && hx.door) ? hx : hz, dt);
   const moved = Math.hypot(P.pos.x - ox, P.pos.z - oz);
   P.vy -= 9.8 * dt; P.pos.y += P.vy * dt; if (P.pos.y <= 0) { if (P.vy < -2) Sfx.step(); P.pos.y = 0; P.vy = 0; if (keys.Space && !uiOpen() && !P.action) P.vy = 3.6; }
   if (moved > 0.001 && P.pos.y === 0) { P.bob += moved * 3.4; P.stepAcc += moved; if (P.stepAcc > (running ? 0.85 : 0.65)) { P.stepAcc = 0; Sfx.step(P.crouch || roomAt(P.pos.x, P.pos.z) === 'corridor'); } }
@@ -353,7 +367,13 @@ function primary() {
   Sfx.init();
   if (P.action || P.anim) return;
   if (hover && hover.int) { const d = hover.int; try { d.action && d.action(); } catch (e) { console.error(e); } return; }
+  const nd = nearDoor(); if (nd) { nd.def.action(); return; }
   if (held) return placeHeld();
+}
+function nearDoor() {
+  const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); let best = null, bd = 1.7;
+  for (const d of A.doors) { const dx = d.center.x - P.pos.x, dz = d.center.z - P.pos.z, dist = Math.hypot(dx, dz); if (dist < bd && (dx * fx + dz * fz) / (dist || 1) > 0.35) { bd = dist; best = d; } }
+  return best;
 }
 function grab() {
   if (P.action) return;
@@ -501,6 +521,7 @@ function updatePrompt() {
   let html = '';
   const verb = isTouch ? 'Use' : 'E';
   if (!P.action && hover && hover.int) { const lab = typeof hover.int.label === 'function' ? hover.int.label() : hover.int.label; if (lab) html = `<b>${verb}</b> ${lab}`; }
+  if (!html && !P.action && !(hover && hover.int)) { const nd = nearDoor(); if (nd) html = `<b>${verb}</b> ${nd.def.label()}`; }
   if (!P.action && !held && hover && hover.root && CATALOG[hover.root.userData.item.t].small) html += ` <b>${isTouch ? 'Grab' : 'G'}</b> pick up`;
   if (held && !P.anim) { const d = CATALOG[held.userData.item.t], i = held.userData.item; html += (html ? ' · ' : '') + `<span class="nm">${d.name}</span>${i.use ? ` <b>${isTouch ? 'Eat/Drink' : 'F'}</b> ${i.useLabel || (i.t === 'mug' ? 'drink' : 'eat')}` : ''} <b>${isTouch ? 'Use' : 'Click'}</b> set down <b>${isTouch ? 'Grab' : 'Q'}</b> drop`; }
   if (!html && P.sit && !P.action) html = P.sit.lie ? 'Resting… move to get up' : 'Move to stand up';
@@ -552,4 +573,4 @@ function frame(now) {
 P.pos.set(A.spawn.x, 0, A.spawn.z); P.yaw = A.spawn.yaw; P.day = P.dayTarget = dayFactor();
 updateHud(); renderTasks();
 requestAnimationFrame(frame);
-window.__game = { probe() { camera.updateMatrixWorld(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
+window.__game = { blocked, probe() { camera.updateMatrixWorld(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };

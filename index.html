@@ -710,7 +710,7 @@ def('sectional', 'Sectional (L)', 'Seating', { color: '#b9bcbc', colorable: true
   const s = B(g, 0.85, 0.12, 0.95, c, 0.825, 0.45, 0.95); sitOn(ctx, s, 'Stretch out on chaise', 0.15, 0.1);
   return g;
 });
-def('armchair', 'Swivel chair', 'Seating', { color: '#b8bec3', colorable: true }, (ctx, it) => {
+def('armchair', 'Swivel chair', 'Seating', { color: '#b8bec3', colorable: true, shrink: 0.15 }, (ctx, it) => {
   const g = new THREE.Group(), c = M(it.c || '#b8bec3', 0.95);
   const top = G(g);
   C(top, 0.38, 0.36, 0.2, c, 0, 0.18, 0, 24);
@@ -724,7 +724,7 @@ def('armchair', 'Swivel chair', 'Seating', { color: '#b8bec3', colorable: true }
   ctx.tick(top, dt => { if (top.userData.spin > 0) { top.rotation.y += top.userData.spin * dt; top.userData.spin -= dt * 6; } });
   return g;
 });
-def('barstool', 'Bar stool', 'Seating', { color: '#efe8dc', colorable: true }, (ctx, it) => {
+def('barstool', 'Bar stool', 'Seating', { color: '#efe8dc', colorable: true , solid: false }, (ctx, it) => {
   const g = new THREE.Group(), c = M(it.c || '#efe8dc', 0.9), mt = M(0x3b2b20, 0.5, 0.2);
   for (const [x, z] of [[-0.18, -0.16], [0.18, -0.16], [-0.18, 0.16], [0.18, 0.16]]) { const l = C(g, 0.014, 0.014, 0.66, mt, x, 0, z, 6); l.rotation.set(z * 0.3, 0, -x * 0.3); }
   B(g, 0.36, 0.015, 0.015, mt, 0, 0.25, 0.16); B(g, 0.36, 0.015, 0.015, mt, 0, 0.25, -0.16);
@@ -734,7 +734,7 @@ def('barstool', 'Bar stool', 'Seating', { color: '#efe8dc', colorable: true }, (
   sitOn(ctx, seat, 'Sit on stool', 0.1, 0.0);
   return g;
 });
-def('dining_chair', 'Dining chair', 'Seating', { color: '#8a6446', colorable: true }, (ctx, it) => {
+def('dining_chair', 'Dining chair', 'Seating', { color: '#8a6446', colorable: true , solid: false }, (ctx, it) => {
   const g = new THREE.Group(), w = M(it.c || '#8a6446', 0.6);
   for (const [x, z] of [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]]) B(g, 0.04, 0.45, 0.04, w, x, 0, z);
   const s = B(g, 0.46, 0.05, 0.46, w, 0, 0.45, 0);
@@ -742,22 +742,24 @@ def('dining_chair', 'Dining chair', 'Seating', { color: '#8a6446', colorable: tr
   sitOn(ctx, s, 'Sit', 0.05, 0);
   return g;
 });
-def('office_chair', 'Office chair', 'Seating', { color: '#2b2d31', colorable: true }, (ctx, it) => {
-  const g = new THREE.Group(), c = M(it.c || '#2b2d31', 0.8), mt = M(0x777b80, 0.3, 0.8);
+def('office_chair', 'Desk chair (tucks under)', 'Seating', { color: '#2b2d31', colorable: true, solid: false }, (ctx, it) => {
+  const g0 = new THREE.Group(), g = G(g0), c = M(it.c || '#2b2d31', 0.8), mt = M(0x777b80, 0.3, 0.8);
   for (let i = 0; i < 5; i++) { const a = i / 5 * TAU; const l = B(g, 0.04, 0.03, 0.3, mt, Math.sin(a) * 0.15, 0.06, Math.cos(a) * 0.15); l.rotation.y = a; S(g, 0.03, M(0x111111), Math.sin(a) * 0.3, 0.03, Math.cos(a) * 0.3, 8, 6); }
   C(g, 0.025, 0.025, 0.4, mt, 0, 0.08, 0, 8);
   const top = G(g, 0, 0.45, 0);
-  const s = B(top, 0.5, 0.08, 0.48, c, 0, 0, 0); B(top, 0.46, 0.55, 0.06, c, 0, 0.2, -0.25).rotation.x = -0.1;
-  sitOn(ctx, s, 'Sit at desk', 0.05, 0);
-  ctx.interact(top, { label: 'Spin chair', action: () => { top.userData.spin = 10; } });
-  ctx.tick(top, dt => { if (top.userData.spin > 0) { top.rotation.y += top.userData.spin * dt; top.userData.spin -= dt * 6; } });
-  return g;
+  const s = B(top, 0.5, 0.08, 0.48, c, 0, 0, 0); B(top, 0.46, 0.5, 0.06, c, 0, 0.12, -0.25).rotation.x = -0.1;
+  // tucked under the desk; slides out when you sit, rolls back in when you get up
+  const st = { out: 0 };
+  const sit = { label: 'Pull out the chair and sit', action: () => { g.position.z = -0.5; g.updateMatrixWorld(true); const p = V3(0, 0.5, 0.05); top.localToWorld(p); const q = new THREE.Quaternion(); g0.getWorldQuaternion(q); const e = new THREE.Euler().setFromQuaternion(q, 'YXZ'); ctx.sit(p, e.y + Math.PI, false, g0); st.out = 1; Sfx.noise(0.4, 0.12, 600, 1); } };
+  ctx.interact(g0, sit);
+  ctx.tick(g, dt => { const sitting = ctx.sittingOn && ctx.sittingOn() === g0; if (st.out && !sitting) { st.out = 0; Sfx.noise(0.4, 0.1, 600, 1); } g.position.z = lerp(g.position.z, sitting ? -0.5 : 0, Math.min(1, dt * 6)); });
+  return g0;
 });
 def('beanbag', 'Bean bag', 'Seating', { color: '#c98c8c', colorable: true }, (ctx, it) => {
   const g = new THREE.Group(); const s = S(g, 0.45, M(it.c || '#c98c8c', 1), 0, 0.3, 0, 20, 14); s.scale.set(1, 0.65, 1);
   sitOn(ctx, s, 'Flop onto bean bag', -0.05, 0.1); return g;
 });
-def('ottoman', 'Pouf', 'Seating', { color: '#d9cbb5', colorable: true }, (ctx, it) => {
+def('ottoman', 'Pouf', 'Seating', { color: '#d9cbb5', colorable: true , solid: false }, (ctx, it) => {
   const g = new THREE.Group(); const s = C(g, 0.26, 0.26, 0.4, M(it.c || '#d9cbb5', 1), 0, 0, 0, 24); sitOn(ctx, s, 'Sit on pouf', 0.2, 0); return g;
 });
 def('bench', 'Entry bench', 'Seating', { color: '#a4764d', colorable: true }, (ctx, it) => {
@@ -866,7 +868,7 @@ def('bookshelf', 'Bookshelf', 'Storage', { color: '#f1ece2', colorable: true }, 
   ctx.interact(g, { label: 'Read a book', action: () => { ctx.msg(['"The leaves fell like little notes from the trees."', 'You read a chapter. Cozy.', 'You find a pressed maple leaf inside.'][(Math.random() * 3) | 0]); ctx.task('read'); Sfx.noise(0.2, 0.1, 3000, 1); } });
   return g;
 });
-def('basket', 'Woven basket', 'Storage', { color: '#b48c58' }, (ctx, it) => {
+def('basket', 'Woven basket', 'Storage', { color: '#b48c58' , solid: false }, (ctx, it) => {
   const g = new THREE.Group(), wv = M(0xffffff, 0.95, 0, { map: getTex('woven') });
   C(g, 0.2, 0.17, 0.42, wv, 0, 0, 0, 20); const lid = G(g, 0, 0.42, -0.2); C(lid, 0.21, 0.21, 0.04, wv, 0, 0, 0.2, 20);
   B(g, 0.2, 0.15, 0.2, M(0xd9cbb5, 1), 0, 0.27, 0);
@@ -877,7 +879,7 @@ def('storage_bin', 'Storage tote', 'Storage', { color: '#1f1f22' }, (ctx, it) =>
   const lid = G(g, 0, 0.38, -0.25); B(lid, 0.8, 0.05, 0.55, M(0xf2c418, 0.5), 0, 0, 0.25);
   hinge(ctx, lid, 'x', -1.6, 'tote lid', 'click'); B(g, 0.3, 0.1, 0.2, M(0x7c4a2e), -0.1, 0.05, 0); return g;
 });
-def('hamper', 'Laundry hamper', 'Storage', { color: '#d9cbb5' }, (ctx, it) => {
+def('hamper', 'Laundry hamper', 'Storage', { color: '#d9cbb5' , solid: false }, (ctx, it) => {
   const g = new THREE.Group(); C(g, 0.22, 0.2, 0.6, M(0xffffff, 1, 0, { map: getTex('woven') }), 0, 0, 0, 16); S(g, 0.18, M(0xe3b8b8, 1), 0, 0.58, 0, 10, 8).scale.y = 0.4; return g;
 });
 
@@ -1248,7 +1250,7 @@ def('mini_tree', 'Mini pine tree', 'Holiday', { mount: 'surface', solid: false, 
   for (let i = 0; i < 3; i++) { const c = new THREE.Mesh(new THREE.ConeGeometry(0.09 - i * 0.022, 0.12, 10), M(0x2f5a3a, 0.8)); c.position.y = 0.11 + i * 0.07; g.add(c); }
   return g;
 });
-def('xmas_tree', 'Pencil Christmas tree', 'Holiday', {}, (ctx, it) => {
+def('xmas_tree', 'Pencil Christmas tree', 'Holiday', { shrink: 0.3 }, (ctx, it) => {
   const g = new THREE.Group();
   const skirt = C(g, 0.55, 0.6, 0.03, M(0xffffff, 0.95, 0, { map: getTex('treeskirt') }), 0, 0, 0, 24);
   C(g, 0.025, 0.03, 0.35, M(0x5a3d2a), 0, 0.02, 0, 6);
@@ -1332,7 +1334,7 @@ def('clothes_pile', 'Pile of clothes', 'Fun', { solid: false, flat: true }, (ctx
   ctx.interact(g, { label: 'Gather clothes for the washer 🧺', action: () => { ctx.removeItem(g); ctx.laundry(1); Sfx.noise(0.5, 0.2, 800, 1); ctx.msg('Clothes gathered. Load the washer by the front door!'); ctx.task('tidy'); } });
   return g;
 });
-def('ironing', 'Ironing board', 'Fun', { solid: true }, (ctx, it) => {
+def('ironing', 'Ironing board', 'Fun', { solid: false }, (ctx, it) => {
   const g = new THREE.Group(); const top = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.02, 20, 1, false, 0, Math.PI), M(0xffffff, 0.9, 0, { map: getTex('floral') }));
   B(g, 0.38, 0.02, 1.0, M(0xffffff, 0.9, 0, { map: getTex('floral') }), 0, 0.88, 0); top.position.set(0, 0.89, 0.5); top.rotation.y = -Math.PI / 2; g.add(top);
   const leg = M(0xd9d9d9, 0.3, 0.8); const l1 = B(g, 0.02, 1.15, 0.02, leg, 0, 0, 0); l1.rotation.x = 0.5; l1.position.set(-0.15, 0.45, 0); const l2 = B(g, 0.02, 1.15, 0.02, leg, 0, 0, 0); l2.rotation.x = -0.5; l2.position.set(0.15, 0.45, 0);
@@ -1540,10 +1542,11 @@ function buildApartment(scene, ctx) {
     const H = 2.05, t = 0.04;
     // casing trims
     const casing = glass ? M(0x2b2f33, 0.5) : trim;
+    const cas = [];
     for (const sgn of [1, -1]) {
       const off = sgn * (WT / 2 + 0.008);
-      if (axis === 'x') { B(W, 0.07, H + 0.07, 0.016, trim, x - 0.035, 0, z + off); B(W, 0.07, H + 0.07, 0.016, trim, x + len + 0.035, 0, z + off); B(W, len + 0.14, 0.07, 0.016, trim, x + len / 2, H, z + off); }
-      else { B(W, 0.016, H + 0.07, 0.07, trim, x + off, 0, z - 0.035); B(W, 0.016, H + 0.07, 0.07, trim, x + off, 0, z + len + 0.035); B(W, 0.016, 0.07, len + 0.14, trim, x + off, H, z + len / 2); }
+      if (axis === 'x') cas.push(B(W, 0.07, H + 0.07, 0.016, trim, x - 0.035, 0, z + off), B(W, 0.07, H + 0.07, 0.016, trim, x + len + 0.035, 0, z + off), B(W, len + 0.14, 0.07, 0.016, trim, x + len / 2, H, z + off));
+      else cas.push(B(W, 0.016, H + 0.07, 0.07, trim, x + off, 0, z - 0.035), B(W, 0.016, H + 0.07, 0.07, trim, x + off, 0, z + len + 0.035), B(W, 0.016, 0.07, len + 0.14, trim, x + off, H, z + len / 2));
     }
     const hx = axis === 'x' ? (hingeEnd ? x + len : x) : x, hz = axis === 'z' ? (hingeEnd ? z + len : z) : z;
     const piv = G(W, hx, 0, hz);
@@ -1570,13 +1573,16 @@ function buildApartment(scene, ctx) {
     }
     for (const sd of [1, -1]) { const h = G(leaf, L - 0.07, 1.0, sd * 0.04); C(h, 0.025, 0.025, 0.015, glass ? black : nickel, 0, 0, 0, 12).rotation.x = Math.PI / 2; const lv = B(h, 0.12, 0.018, 0.02, glass ? black : nickel, -0.05, -0.01, sd * 0.02); }
     const st = { open: false, v: 0, locked: lock, label };
-    ctx.interact(leaf, {
+    const def = {
       label: () => st.locked && !st.open ? 'Locked 🔒 (unlock at the keypad)' : (st.open ? 'Close ' : 'Open ') + label,
       action: () => { if (st.locked && !st.open) { Sfx.tone(300, 0.15, 'square', 0.08); return; } st.open = !st.open; Sfx.door(st.open); if (exterior && st.open) ctx.task('outside'); }
-    });
+    };
+    ctx.interact(leaf, def); cas.forEach(m => m.userData.int = def);
+    st.def = def; st.center = axis === 'x' ? V3(x + len / 2, 1, z) : V3(x, 1, z + len / 2);
     const box = new THREE.Box3();
-    ctx.addCollider(box, () => { box.setFromObject(leaf); });
-    ctx.tick(leaf, dt => { st.v += ((st.open ? 1 : 0) - st.v) * Math.min(1, dt * 5); piv.rotation.y = closed + s * 1.55 * st.v; });
+    // a door only blocks you when it's fully shut; while swinging or open you can always pass
+    ctx.addCollider(box, () => { if (!st.open && st.v < 0.05) box.setFromObject(leaf); else box.makeEmpty(); }, st);
+    ctx.tick(leaf, dt => { st.v += ((st.open ? 1 : 0) - st.v) * Math.min(1, dt * 7); piv.rotation.y = closed + s * 1.55 * st.v; });
     doors.push(st); st.leaf = leaf; if (id) A.doorById[id] = st;
     return st;
   }
@@ -2130,7 +2136,7 @@ const ctx = {
   interact(obj, def) { obj.userData.int = def; },
   tick(owner, fn) { TICKS.push({ owner, fn }); },
   onRemove(owner, fn) { CLEANUPS.push({ owner, fn }); },
-  addCollider(box, upd) { STATIC.push({ box, upd }); },
+  addCollider(box, upd, door) { STATIC.push({ box, upd, door }); },
   light(parent, color, intensity, dist, x, y, z) {
     if (lightCount >= MAX_LIGHTS) return { intensity: 0 };
     const l = new THREE.PointLight(color, intensity, dist, 1.5); l.position.set(x, y, z); parent.add(l); lightCount++;
@@ -2149,7 +2155,7 @@ const ctx = {
   give(type, d) { if (held) dropHeld(); const g = spawnItem({ id: uid(), t: type, x: P.pos.x, y: 0, z: P.pos.z, r: P.yaw, d: d || {} }); startHold(g); },
   removeItem(g) { removeItem(g); },
   sit(pos, yaw, lie) {
-    P.sit = { pos: pos.clone(), yaw, lie, prev: P.pos.clone() }; P.yaw = yaw; P.pitch = lie ? 0.9 : -0.1;
+    P.sit = { pos: pos.clone(), yaw, lie, prev: P.pos.clone(), root: arguments[3] || null }; P.yaw = yaw; P.pitch = lie ? 0.9 : -0.1;
   },
   sleep(bed) {
     if (P.needs.energy > 0.85 && !ctx.isNight()) return toast('You\'re not tired right now.');
@@ -2169,6 +2175,7 @@ const ctx = {
   stretch() { ctx.need('energy', 0.1); ctx.need('fun', 0.05); },
   laundry(n) { A.laundry.load += n; },
   startAction(a) { startAction(a); },
+  sittingOn: () => P.sit && P.sit.root,
 };
 const uid = () => Math.random().toString(36).slice(2, 9);
 
@@ -2179,7 +2186,7 @@ A.world.add(itemsGroup);
 function itemBox(g) {
   const def = CATALOG[g.userData.item.t]; if (!def.solid || def.mount !== 'floor') { g.userData.box = null; return; }
   g.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(g); if (b.max.y < 0.3) { g.userData.box = null; return; }
-  b.expandByVector(V3(-0.03, 0, -0.03)); g.userData.box = b;
+  const sh = def.shrink || 0.07; b.expandByVector(V3(-sh, 0, -sh)); g.userData.box = b;
 }
 function spawnItem(inst) {
   const def = CATALOG[inst.t]; if (!def) return null;
@@ -2202,7 +2209,7 @@ const DEFAULT_LAYOUT = {
     ['sofa', 4.65, 0, 3.55, HP], ['art_wedding', 4.165, 1.62, 2.8, HP, null, { seed: 11 }], ['art_wedding', 4.165, 1.62, 3.55, HP, null, { seed: 12 }], ['art_wedding', 4.165, 1.62, 4.3, HP, null, { seed: 13 }],
     ['picture_light', 4.165, 2.17, 2.8, HP], ['picture_light', 4.165, 2.17, 3.55, HP], ['picture_light', 4.165, 2.17, 4.3, HP],
     ['xmas_tree', 4.55, 0, 2.0, 0], ['present', 5.05, 0, 1.75, 0.3], ['present', 5.2, 0, 2.2, -0.2, '#2e5a3a'],
-    ['rug_vintage', 5.85, 0, 3.6, HP], ['coffee_marble', 5.75, 0, 3.6, HP], ['tray_trees', 5.75, 0.485, 3.32, 0], ['albums', 5.75, 0.485, 3.8, 0.5],
+    ['rug_vintage', 5.9, 0, 3.6, HP], ['coffee_marble', 5.9, 0, 3.6, HP], ['tray_trees', 5.9, 0.485, 3.32, 0], ['albums', 5.9, 0.485, 3.8, 0.5],
     ['media_console', 7.32, 0, 3.85, -HP], ['tv', 7.535, 1.55, 3.85, -HP], ['speaker', 7.32, 0.63, 3.2, -HP], ['record_player', 7.32, 0.63, 3.85, -HP], ['mini_tree', 7.32, 0.63, 4.5, 0], ['basket', 4.45, 0, 5.0, 0],
     ['bistro_table', 6.95, 0, 1.95, 0], ['armchair', 6.2, 0, 2.0, HP], ['armchair', 6.9, 0, 2.62, PI], ['candle', 6.88, 0.735, 1.88, 0], ['mini_tree', 7.05, 0.735, 2.02, 0], ['wine', 6.83, 0.735, 2.08, 0],
     ['clothes_pile', 6.4, 0, 4.9, 0.6],
@@ -2216,7 +2223,7 @@ const DEFAULT_LAYOUT = {
     ['lamp_table', 4.62, 0.935, 9.7, 0, null, { on: true }], ['stand_mixer', 5.1, 0.935, 9.62, PI], ['fruit_bowl', 2.22, 0.935, 8.9, 0], ['plant_small', 2.22, 0.935, 8.05, 0],
     // bedroom
     ['bed', 1.14, 0, 1.41, HP], ['nightstand', 0.27, 0, 0.31, HP], ['nightstand', 0.27, 0, 2.51, HP], ['lamp_table', 0.27, 0.63, 0.31, 0, null, { on: true }], ['lamp_table', 0.27, 0.63, 2.51, 0],
-    ['desk', 2.3, 0, 3.065, PI], ['monitor', 2.3, 0.76, 3.0, PI], ['plant_small', 2.75, 0.76, 3.2, 0], ['office_chair', 2.3, 0, 2.55, 0],
+    ['desk', 2.3, 0, 3.065, PI], ['monitor', 2.3, 0.76, 3.0, PI], ['plant_small', 2.75, 0.76, 3.2, 0], ['office_chair', 2.3, 0, 2.97, 0],
     ['art_monet', 0.06, 1.75, 1.41, HP], ['arched_cabinet', 3.56, 0, 0.27, 0], ['dresser', 3.8, 0, 2.3, -HP],
     ['art_photo', 4.04, 1.45, 1.85, -HP, null, { seed: 21 }], ['art_photo', 4.04, 1.45, 2.3, -HP, null, { seed: 22 }], ['art_photo', 4.04, 1.45, 2.75, -HP, null, { seed: 23 }],
     ['art_photo', 4.04, 1.9, 1.85, -HP, null, { seed: 24 }], ['art_photo', 4.04, 1.9, 2.3, -HP, null, { seed: 25 }], ['art_photo', 4.04, 1.9, 2.75, -HP, null, { seed: 26 }],
@@ -2279,10 +2286,21 @@ function updateAction(dt) {
 
 // ---- player ----
 function blocked(x, z, feet) {
-  const r = 0.2, y0 = feet + 0.3, y1 = feet + (P.crouch ? 1.1 : 1.75);
-  for (const c of STATIC) { const b = c.box; if (b.isEmpty()) continue; if (b.max.y > y0 && b.min.y < y1 && x + r > b.min.x && x - r < b.max.x && z + r > b.min.z && z - r < b.max.z) return true; }
-  for (const g of itemsGroup.children) { const b = g.userData.box; if (!b) continue; if (b.max.y > y0 && b.min.y < y1 && x + r > b.min.x && x - r < b.max.x && z + r > b.min.z && z - r < b.max.z) return true; }
-  return false;
+  const r = 0.19, y0 = feet + 0.3, y1 = feet + (P.crouch ? 1.1 : 1.75);
+  for (const c of STATIC) { const b = c.box; if (b.isEmpty()) continue; if (b.max.y > y0 && b.min.y < y1 && x + r > b.min.x && x - r < b.max.x && z + r > b.min.z && z - r < b.max.z) return c; }
+  for (const g of itemsGroup.children) { const b = g.userData.box; if (!b) continue; if (b.max.y > y0 && b.min.y < y1 && x + r > b.min.x && x - r < b.max.x && z + r > b.min.z && z - r < b.max.z) return g; }
+  return null;
+}
+let bumpT = 0;
+function bump(hit, dt) { // walking into a closed door opens it
+  if (!hit || !hit.door) { bumpT = 0; return; }
+  const d = hit.door; bumpT += dt;
+  if (bumpT > 0.12 && !d.open) { bumpT = 0; if (d.locked) { if (!d.toldT || performance.now() - d.toldT > 3000) { d.toldT = performance.now(); toast('🔒 The ' + d.label + ' is locked.'); } } else d.def.action(); }
+}
+// if you ever end up inside something (e.g. standing up next to furniture), nudge out to free space
+function unstick() {
+  if (!blocked(P.pos.x, P.pos.z, P.pos.y)) return;
+  for (let rad = 0.05; rad < 0.8; rad += 0.05) for (let a = 0; a < TAU; a += Math.PI / 8) { const x = P.pos.x + Math.cos(a) * rad, z = P.pos.z + Math.sin(a) * rad; if (!blocked(x, z, P.pos.y)) { P.pos.x = x; P.pos.z = z; return; } }
 }
 const keys = {}; const joy = { x: 0, y: 0 };
 const joyRun = () => Math.hypot(joy.x, joy.y) > 0.95;
@@ -2305,8 +2323,10 @@ function updatePlayer(dt) {
   const s = Math.sin(P.yaw), c = Math.cos(P.yaw);
   const vx = (mx * c + mz * s) * speed * dt, vz = (-mx * s + mz * c) * speed * dt;
   const ox = P.pos.x, oz = P.pos.z;
-  if (!blocked(P.pos.x + vx, P.pos.z, P.pos.y)) P.pos.x += vx;
-  if (!blocked(P.pos.x, P.pos.z + vz, P.pos.y)) P.pos.z += vz;
+  unstick();
+  const hx = blocked(P.pos.x + vx, P.pos.z, P.pos.y); if (!hx) P.pos.x += vx;
+  const hz = blocked(P.pos.x, P.pos.z + vz, P.pos.y); if (!hz) P.pos.z += vz;
+  if (Math.abs(vx) + Math.abs(vz) > 0) bump((hx && hx.door) ? hx : hz, dt);
   const moved = Math.hypot(P.pos.x - ox, P.pos.z - oz);
   P.vy -= 9.8 * dt; P.pos.y += P.vy * dt; if (P.pos.y <= 0) { if (P.vy < -2) Sfx.step(); P.pos.y = 0; P.vy = 0; if (keys.Space && !uiOpen() && !P.action) P.vy = 3.6; }
   if (moved > 0.001 && P.pos.y === 0) { P.bob += moved * 3.4; P.stepAcc += moved; if (P.stepAcc > (running ? 0.85 : 0.65)) { P.stepAcc = 0; Sfx.step(P.crouch || roomAt(P.pos.x, P.pos.z) === 'corridor'); } }
@@ -2435,7 +2455,13 @@ function primary() {
   Sfx.init();
   if (P.action || P.anim) return;
   if (hover && hover.int) { const d = hover.int; try { d.action && d.action(); } catch (e) { console.error(e); } return; }
+  const nd = nearDoor(); if (nd) { nd.def.action(); return; }
   if (held) return placeHeld();
+}
+function nearDoor() {
+  const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); let best = null, bd = 1.7;
+  for (const d of A.doors) { const dx = d.center.x - P.pos.x, dz = d.center.z - P.pos.z, dist = Math.hypot(dx, dz); if (dist < bd && (dx * fx + dz * fz) / (dist || 1) > 0.35) { bd = dist; best = d; } }
+  return best;
 }
 function grab() {
   if (P.action) return;
@@ -2583,6 +2609,7 @@ function updatePrompt() {
   let html = '';
   const verb = isTouch ? 'Use' : 'E';
   if (!P.action && hover && hover.int) { const lab = typeof hover.int.label === 'function' ? hover.int.label() : hover.int.label; if (lab) html = `<b>${verb}</b> ${lab}`; }
+  if (!html && !P.action && !(hover && hover.int)) { const nd = nearDoor(); if (nd) html = `<b>${verb}</b> ${nd.def.label()}`; }
   if (!P.action && !held && hover && hover.root && CATALOG[hover.root.userData.item.t].small) html += ` <b>${isTouch ? 'Grab' : 'G'}</b> pick up`;
   if (held && !P.anim) { const d = CATALOG[held.userData.item.t], i = held.userData.item; html += (html ? ' · ' : '') + `<span class="nm">${d.name}</span>${i.use ? ` <b>${isTouch ? 'Eat/Drink' : 'F'}</b> ${i.useLabel || (i.t === 'mug' ? 'drink' : 'eat')}` : ''} <b>${isTouch ? 'Use' : 'Click'}</b> set down <b>${isTouch ? 'Grab' : 'Q'}</b> drop`; }
   if (!html && P.sit && !P.action) html = P.sit.lie ? 'Resting… move to get up' : 'Move to stand up';
@@ -2634,7 +2661,7 @@ function frame(now) {
 P.pos.set(A.spawn.x, 0, A.spawn.z); P.yaw = A.spawn.yaw; P.day = P.dayTarget = dayFactor();
 updateHud(); renderTasks();
 requestAnimationFrame(frame);
-window.__game = { probe() { camera.updateMatrixWorld(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
+window.__game = { blocked, probe() { camera.updateMatrixWorld(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
 
 </script>
 
