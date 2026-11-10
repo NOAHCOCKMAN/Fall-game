@@ -132,8 +132,8 @@ function buildApartment(scene, ctx) {
   const scon = G(W, 4.6, 2.0, 1.385, Math.PI); B(scon, 0.12, 0.2, 0.1, black, 0, -0.1, 0.05); const sconG = B(scon, 0.08, 0.12, 0.02, E(0xffd9a0, 0), 0, -0.06, 0.1); A.lights.balcony.mats.push(sconG.material);
 
   // ---------- doors ----------
-  const doors = [];
-  function makeDoor({ x, z, axis, len, hingeEnd = false, open: openSign, label = 'door', exterior = false, glass = false, lock = false }) {
+  const doors = []; A.doorById = {};
+  function makeDoor({ id, x, z, axis, len, hingeEnd = false, open: openSign, label = 'door', exterior = false, glass = false, lock = false }) {
     const H = 2.05, t = 0.04;
     // casing trims
     const casing = glass ? M(0x2b2f33, 0.5) : trim;
@@ -174,13 +174,13 @@ function buildApartment(scene, ctx) {
     const box = new THREE.Box3();
     ctx.addCollider(box, () => { box.setFromObject(leaf); });
     ctx.tick(leaf, dt => { st.v += ((st.open ? 1 : 0) - st.v) * Math.min(1, dt * 5); piv.rotation.y = closed + s * 1.55 * st.v; });
-    doors.push(st); st.leaf = leaf;
+    doors.push(st); st.leaf = leaf; if (id) A.doorById[id] = st;
     return st;
   }
-  const front = makeDoor({ x: 7.6, z: 7.05, axis: 'z', len: 0.9, hingeEnd: true, open: -1, label: 'front door', exterior: true, lock: true });
-  makeDoor({ x: 3.15, z: 4.4, axis: 'x', len: 0.8, hingeEnd: false, open: -1, label: 'bedroom door' });
-  makeDoor({ x: 2.9, z: 5.55, axis: 'z', len: 0.78, hingeEnd: false, open: -1, label: 'bathroom door' });
-  makeDoor({ x: 0.95, z: 3.4, axis: 'x', len: 0.75, hingeEnd: false, open: 1, label: 'bathroom door' });
+  const front = makeDoor({ id: 'front', x: 7.6, z: 7.05, axis: 'z', len: 0.9, hingeEnd: true, open: -1, label: 'front door', exterior: true, lock: true });
+  makeDoor({ id: 'bedroom', x: 3.15, z: 4.4, axis: 'x', len: 0.8, hingeEnd: false, open: -1, label: 'bedroom door' });
+  makeDoor({ id: 'bathK', x: 2.9, z: 5.55, axis: 'z', len: 0.78, hingeEnd: false, open: -1, label: 'bathroom door' });
+  makeDoor({ id: 'bathB', x: 0.95, z: 3.4, axis: 'x', len: 0.75, hingeEnd: false, open: 1, label: 'bathroom door' });
   makeDoor({ x: 0.95, z: 6.5, axis: 'x', len: 0.75, hingeEnd: false, open: 1, label: 'closet door' });
   makeDoor({ x: 5.62, z: 8.9, axis: 'x', len: 0.71, hingeEnd: false, open: -1, label: 'laundry closet' });
   makeDoor({ x: 6.6, z: 8.9, axis: 'x', len: 0.75, hingeEnd: true, open: 1, label: 'mechanical closet' });
@@ -492,11 +492,11 @@ function buildApartment(scene, ctx) {
     B(vg, 0.42, 0.01, 0.3, basin, sx, 0.78, 0.3); B(vg, 0.44, 0.08, 0.02, basin, sx, 0.79, 0.15); B(vg, 0.44, 0.08, 0.02, basin, sx, 0.79, 0.45); B(vg, 0.02, 0.08, 0.3, basin, sx - 0.21, 0.79, 0.3); B(vg, 0.02, 0.08, 0.3, basin, sx + 0.21, 0.79, 0.3);
     const bf = G(vg, sx, 0.9, 0.06); C(bf, 0.02, 0.025, 0.2, nickel, 0, 0, 0, 10); B(bf, 0.025, 0.025, 0.14, nickel, 0, 0.17, 0.06);
     const bwater = C(vg, 0.006, 0.006, 0.17, M(0xcfe8ff, 0.05, 0, { transparent: true, opacity: 0.6 }), sx, 0.79, 0.19, 6); bwater.visible = false;
-    const bs = { on: false }; ctx.interact(bf, { label: () => bs.on ? 'Turn off faucet' : 'Wash your hands 🧼', action: () => { bs.on = !bs.on; Sfx.click(); if (bs.on) { bs.s = Sfx.loop('water', V3(0.4, 0.9, 4.55 - sx), 0.1); ctx.task('hands'); } else bs.s && bs.s.stop(); bwater.visible = bs.on; } });
+    const bs = { on: false }; ctx.interact(bf, { label: () => bs.on ? 'Turn off faucet' : 'Wash your hands 🧼', action: () => { bs.on = !bs.on; Sfx.click(); if (bs.on) { bs.s = Sfx.loop('water', V3(0.4, 0.9, 4.55 - sx), 0.1); ctx.task('hands'); ctx.need('hygiene', 0.05); } else bs.s && bs.s.stop(); bwater.visible = bs.on; } });
     const mir = plane(vg, 0.8, 0.95, mirrorM, sx, 1.55, 0.016); mirrors.push(mir);
     B(vg, 0.84, 0.03, 0.02, black, sx, 1.06, 0.01); B(vg, 0.84, 0.03, 0.02, black, sx, 2.0, 0.01); B(vg, 0.03, 0.97, 0.02, black, sx - 0.41, 1.06, 0.01); B(vg, 0.03, 0.97, 0.02, black, sx + 0.41, 1.06, 0.01);
     B(vg, 0.6, 0.06, 0.06, nickel, sx, 2.1, 0.03); const bar = B(vg, 0.55, 0.04, 0.02, E(0xfff6e6, 0), sx, 2.11, 0.065); A.lights.bath.mats.push(bar.material);
-    ctx.interact(mir, { label: () => 'Look in the mirror' + (A.fog > 0.3 ? ' (wipe off the steam)' : ''), action: () => { if (A.fog > 0.3) { A.fog = 0; ctx.msg('You wipe the fog off the mirror.'); } else ctx.msg('Looking sharp. 😎'); } });
+    ctx.interact(mir, { label: () => A.fog > 0.3 ? 'Wipe the steam off the mirror' : 'Brush your teeth 🪥', action: () => { if (A.fog > 0.3) { A.fog = 0; ctx.msg('You wipe the fog off the mirror.'); return; } ctx.startAction({ label: 'Brushing teeth', dur: 4, sound: 'brush', done: () => { ctx.need('hygiene', 0.25); ctx.task('teeth'); ctx.msg('Minty fresh. ✨'); } }); } });
   }
   C(vg, 0.03, 0.03, 0.1, M(0xf2f2f2), -0.9, 0.9, 0.2, 10); C(vg, 0.03, 0.035, 0.12, M(0x2a9df4, 0.3), 0.92, 0.9, 0.2, 10);
   col(0.06, 0, 3.54, 0.66, 0.95, 5.56);
@@ -508,9 +508,12 @@ function buildApartment(scene, ctx) {
   const seat = T(TL, 0.15, 0.025, por, 0, 0.41, 0.2); seat.rotation.x = Math.PI / 2; seat.scale.y = 1.25;
   const waterT = C(TL, 0.13, 0.13, 0.005, M(0x9fd3ec, 0.05, 0, { transparent: true, opacity: 0.7 }), 0, 0.33, 0.2, 18); waterT.scale.z = 1.25;
   const tlid = G(TL, 0, 0.43, 0.01); const lidM = C(tlid, 0.17, 0.17, 0.02, por, 0, 0, 0.19, 20); lidM.scale.z = 1.3;
-  hinge(ctx, tlid, 'x', -1.6, 'toilet lid', 'click');
+  const lidSt = { open: false, v: 0 }; ctx.tick(tlid, dt => { lidSt.v = lerp(lidSt.v, lidSt.open ? 1 : 0, Math.min(1, dt * 6)); tlid.rotation.x = -1.6 * lidSt.v; });
   const handle = B(TL, 0.06, 0.015, 0.02, nickel, 0.17, 0.72, 0.01);
-  const fl = { t: 0 }; ctx.interact(handle, { label: 'Flush 🚽', action: () => { if (fl.t > 0) return; fl.t = 2.5; Sfx.flush(); ctx.task('flush'); } });
+  const fl = { t: 0 }; const flush = () => { if (fl.t > 0) return; fl.t = 2.5; Sfx.flush(); ctx.task('flush'); };
+  ctx.interact(handle, { label: 'Flush 🚽', action: flush });
+  const useToilet = { label: () => 'Use the toilet 🚽', action: () => { const p = V3(0, 0.45, 0.15); TL.localToWorld(p); lidSt.open = true; Sfx.click(); ctx.startAction({ label: 'Using the toilet', dur: 3.5, sit: { pos: p, yaw: Math.PI / 2 + Math.PI }, done: () => { ctx.need('bladder', 1); ctx.task('toilet'); flush(); lidSt.open = false; ctx.msg('Ahh, much better. Don\'t forget to wash your hands!'); } }); } };
+  ctx.interact(bowl, useToilet); ctx.interact(tlid, useToilet); ctx.interact(seat, useToilet);
   ctx.tick(TL, (dt, t) => { if (fl.t > 0) { fl.t -= dt; waterT.rotation.y += dt * 8; waterT.scale.x = 0.7 + Math.sin(t * 20) * 0.1; } else waterT.scale.x = 1; });
   col(0.06, 0, 5.74, 0.85, 0.8, 6.26);
   // towel bar on the south wall, toilet paper
@@ -538,9 +541,10 @@ function buildApartment(scene, ctx) {
   for (let i = 0; i < NP; i++) { wp[i * 3] = wcx + rand(-0.12, 0.12); wp[i * 3 + 1] = Math.random() * 1.9; wp[i * 3 + 2] = wcz + rand(-0.12, 0.12); wv[i] = rand(3, 5); }
   const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(wp, 3));
   const pts = new THREE.Points(pg, new THREE.PointsMaterial({ color: 0xcfe8ff, size: 0.025, transparent: true, opacity: 0.7, depthWrite: false })); pts.visible = false; SH.add(pts); pts.userData.noRay = true;
-  ctx.interact(knobS, { label: () => shSt.on ? 'Turn off shower' : 'Turn on shower 🚿', action: () => { shSt.on = !shSt.on; Sfx.click(); if (shSt.on) { shSt.s = Sfx.loop('shower', V3(wcx, 1.2, wcz), 0.2); ctx.task('shower'); } else shSt.s && shSt.s.stop(); } });
+  ctx.interact(knobS, { label: () => shSt.on ? 'Turn off shower' : 'Turn on shower 🚿', action: () => { shSt.on = !shSt.on; Sfx.click(); if (shSt.on) { shSt.s = Sfx.loop('shower', V3(wcx, 1.2, wcz), 0.2); ctx.msg('Open the glass door and step in.'); } else shSt.s && shSt.s.stop(); } });
   ctx.tick(SH, dt => {
     shSt.v += ((shSt.open ? 1 : 0) - shSt.v) * Math.min(1, dt * 5); gp1.position.x = sx0 + gw / 2 + shSt.v * (gw - 0.08);
+    if (shSt.on) { const pp = ctx.playerPos(); const inside = pp.x > sx0 && pp.x < sx1 && pp.z > sz0 && pp.z < sz1; ctx.flags.showering = inside; if (inside) { ctx.need('hygiene', dt / 12); if (!shSt.told) { shSt.told = true; ctx.task('shower'); ctx.msg('🚿 Ahh, hot water. Stay under it to get clean.'); } } else shSt.told = false; } else ctx.flags.showering = false;
     pts.visible = shSt.on; if (shSt.on) { for (let i = 0; i < NP; i++) { wp[i * 3 + 1] -= wv[i] * dt; if (wp[i * 3 + 1] < 0.08) { wp[i * 3 + 1] = 1.9; wp[i * 3] = wcx + rand(-0.04, 0.04); wp[i * 3 + 2] = wcz + rand(-0.04, 0.04); } wp[i * 3] += (wp[i * 3] - wcx) * dt * 1.2; wp[i * 3 + 2] += (wp[i * 3 + 2] - wcz) * dt * 1.2; } pg.attributes.position.needsUpdate = true; A.fog = Math.min(1, A.fog + dt / 20); }
     mirrorM.color.setRGB(0.79 + A.fog * 0.15, 0.83 + A.fog * 0.12, 0.86 + A.fog * 0.1); mirrorM.roughness = 0.08 + A.fog * 0.7; mirrorM.metalness = 0.55 - A.fog * 0.5;
   });

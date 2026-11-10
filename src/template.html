@@ -120,7 +120,42 @@ body.build .bonly { display: inline-block !important; }
 body.touch #prompt { bottom: calc(210px + env(safe-area-inset-bottom, 0px)); font-size: 13px; }
 body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)); }
 .touchonly { display: none; } body.touch .touchonly { display: block; } body.touch .deskonly { display: none; }
-@media (max-width: 640px) { .stats { display: none; } #panel { top: calc(56px + env(safe-area-inset-top, 0px)); bottom: calc(180px + env(safe-area-inset-bottom, 0px)); } .card-big { padding: 20px; } }
+
+.stats { display: flex; flex-direction: column; align-items: stretch; gap: 5px; padding: 9px 12px; font-size: 12px; color: var(--muted); min-width: 150px; }
+.mood { font-family: var(--display); font-weight: 700; color: var(--ink); font-size: 13px; }
+.need { display: grid; grid-template-columns: 18px 1fr; gap: 6px; align-items: center; }
+.need .bar { height: 7px; }
+.need.low .bar i { background: var(--bad); animation: pulse 1s infinite alternate; }
+#n_energy { background: #8fd1c8; } #n_hygiene { background: #9cc0f0; } #n_bladder { background: #e8d27a; } #n_fun { background: #e39ad0; }
+@keyframes pulse { to { opacity: .45; } }
+.floater { position: absolute; left: 50%; top: 44%; transform: translateX(-50%); font-family: var(--display); font-weight: 800; font-size: 18px; color: var(--ok); text-shadow: 0 2px 8px rgba(0,0,0,.5); animation: floatup 1.4s ease-out forwards; pointer-events: none; }
+@keyframes floatup { from { opacity: 1; transform: translate(-50%, 0); } to { opacity: 0; transform: translate(-50%, -60px); } }
+#action { position: absolute; left: 50%; top: calc(50% + 34px); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+#actionRing { --p: 0deg; width: 46px; height: 46px; border-radius: 50%; background: conic-gradient(var(--accent) var(--p), rgba(255,255,255,.18) 0); -webkit-mask: radial-gradient(circle, transparent 15px, #000 16px); mask: radial-gradient(circle, transparent 15px, #000 16px); }
+#actionLabel { font-weight: 600; font-size: 14px; text-shadow: 0 1px 6px rgba(0,0,0,.6); }
+#vignette { position: fixed; inset: 0; pointer-events: none; z-index: 1; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.85) 100%); opacity: .15; transition: opacity 1s; }
+#wet { position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: 0; transition: opacity .8s; background: radial-gradient(circle at 20% 30%, rgba(200,230,255,.25) 0 3px, transparent 4px) 0 0/90px 110px, radial-gradient(circle at 70% 60%, rgba(200,230,255,.22) 0 2px, transparent 3px) 0 0/70px 80px, linear-gradient(rgba(220,235,245,.18), rgba(220,235,245,.08)); }
+#toast.warn { border-color: var(--bad); }
+#phone { background: rgba(10, 8, 6, .35); }
+.phonebody { position: relative; width: min(330px, 92vw); height: min(640px, 86vh); border-radius: 42px; background: #111; padding: 14px; box-shadow: 0 30px 80px rgba(0,0,0,.6), inset 0 0 0 2px #333; display: flex; flex-direction: column; }
+.phonetop { display: flex; justify-content: space-between; padding: 6px 18px 10px; font-size: 13px; font-weight: 600; }
+#phoneScreen { flex: 1; overflow: auto; border-radius: 30px; padding: 16px 14px; background: linear-gradient(160deg, #3b2a20, #1d1714 60%); }
+#phoneScreen h3 { font-family: var(--display); margin: 2px 0 6px; font-size: 22px; }
+#phoneScreen .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+.weather { display: grid; gap: 2px; padding: 14px; border-radius: 18px; background: rgba(255,255,255,.08); margin-bottom: 14px; }
+.weather strong { font-family: var(--display); font-size: 28px; } .weather span { color: var(--muted); font-size: 13px; }
+.apps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.apps button { background: none; border: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; color: var(--ink); }
+.apps i { font-style: normal; font-size: 26px; width: 58px; height: 58px; display: grid; place-items: center; border-radius: 16px; background: rgba(255,255,255,.12); }
+.row { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; background: rgba(255,255,255,.07); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; }
+.row i { font-style: normal; font-size: 24px; } .row span { display: grid; } .row small { color: var(--muted); font-size: 12px; }
+.row:hover { background: rgba(242,153,74,.18); }
+.msg { background: rgba(255,255,255,.07); border-radius: 14px; padding: 9px 12px; margin-bottom: 8px; font-size: 13px; } .msg small { color: var(--muted); margin-left: 6px; } .msg p { margin: 4px 0 0; }
+.pill2 { margin-top: 14px; padding: 10px 12px; border-radius: 14px; background: rgba(242,153,74,.2); font-size: 13px; line-height: 1.5; }
+.backbtn { margin-top: 6px; background: none; border: 0; color: var(--accent); font-weight: 600; padding: 6px 0; }
+.homebar { align-self: center; width: 120px; height: 6px; border-radius: 3px; background: #ddd; border: 0; margin-top: 10px; }
+#phoneBadge { position: absolute; top: 18px; right: 70px; width: 10px; height: 10px; border-radius: 50%; background: var(--bad); }
+@media (max-width: 640px) { .stats { min-width: 110px; padding: 6px 8px; } .mood { font-size: 11px; } #panel { top: calc(56px + env(safe-area-inset-top, 0px)); bottom: calc(180px + env(safe-area-inset-bottom, 0px)); } .card-big { padding: 20px; } }
 @media (prefers-reduced-motion: reduce) { #toast, #fade, #cross { transition: none; } }
 </style>
 
@@ -134,32 +169,40 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
       <span id="clock" class="pill glass"></span>
     </div>
     <div class="pillrow">
-      <div class="stats glass"><span>Hunger</span><div class="bar"><i id="hungerBar"></i></div><span>Energy</span><div class="bar"><i id="energyBar"></i></div></div>
+      <div class="stats glass"><span id="mood" class="mood">🙂 Good</span>
+        <div class="need" title="Hunger"><span>🍽</span><div class="bar"><i id="n_hunger"></i></div></div>
+        <div class="need" title="Energy"><span>⚡</span><div class="bar"><i id="n_energy"></i></div></div>
+        <div class="need" title="Hygiene"><span>🧼</span><div class="bar"><i id="n_hygiene"></i></div></div>
+        <div class="need" title="Bladder"><span>🚽</span><div class="bar"><i id="n_bladder"></i></div></div>
+        <div class="need" title="Fun"><span>🎉</span><div class="bar"><i id="n_fun"></i></div></div>
+      </div>
       <button id="taskChip" class="pill glass hudbtn">✓ 0/0</button>
     </div>
   </div>
   <div id="prompt" class="glass" hidden></div>
   <div id="toast" class="glass"></div>
-  <div id="hint" class="glass"><kbd>E</kbd> use · <kbd>G</kbd> pick up · <kbd>B</kbd> build · <kbd>Tab</kbd> catalog · <kbd>N</kbd> day/night · <kbd>T</kbd> to-dos · <kbd>Esc</kbd> menu</div>
+  <div id="hint" class="glass"><kbd>E</kbd> use · <kbd>G</kbd> pick up · <kbd>F</kbd> eat/drink · <kbd>Tab</kbd> phone · <kbd>T</kbd> to-dos · <kbd>Esc</kbd> menu</div>
+  <div id="action" hidden><div id="actionRing"></div><span id="actionLabel"></span></div>
 </div>
+<div id="vignette"></div><div id="wet"></div>
 <div id="fade"></div>
 
 <div id="start" class="overlay">
   <div class="card-big glass">
     <h1>Fall <em>Apartment</em></h1>
-    <p class="lede">Your place, rebuilt room by room from your video. Walk through it, open every door and drawer, brew espresso, cook on the stove, do the laundry, step out on the balcony to the fall trees, then redecorate it however you like and save your layouts.</p>
-    <ul class="keys touchonly"><li><kbd>Stick</kbd>walk</li><li><kbd>Drag</kbd>look around</li><li><kbd>Use</kbd>or tap things</li><li><kbd>Grab</kbd>carry small items</li><li><kbd>Build</kbd>decorate mode</li><li><kbd>Catalog</kbd>add furniture</li></ul>
+    <p class="lede">Your apartment, room by room. Live a day in it: keep yourself fed, rested and clean, cook and brew coffee, do the laundry, order delivery to your door, open packages, and look after Maple the cat. Time passes, the sun sets over the fall trees, and there are 31 things to do.</p>
+    <ul class="keys touchonly"><li><kbd>Stick</kbd>walk</li><li><kbd>Drag</kbd>look around</li><li><kbd>Use</kbd>or tap things</li><li><kbd>Grab</kbd>carry small items</li><li><kbd>Phone</kbd>order food &amp; more</li><li><kbd>Eat/Drink</kbd>what you hold</li></ul>
     <ul class="keys deskonly">
       <li><kbd>WASD</kbd>walk · <kbd>Shift</kbd>run</li>
       <li><kbd>Mouse</kbd>look around</li>
       <li><kbd>E</kbd>/click use things</li>
-      <li><kbd>G</kbd>pick up · <kbd>F</kbd>use held</li>
-      <li><kbd>B</kbd>build &amp; decorate mode</li>
-      <li><kbd>Tab</kbd>furniture catalog</li>
-      <li><kbd>R</kbd>/<kbd>Q</kbd>rotate · <kbd>X</kbd>delete</li>
-      <li><kbd>V</kbd>recolor · <kbd>Z</kbd>undo</li>
-      <li><kbd>N</kbd>day / night · <kbd>L</kbd>lights</li>
+      <li><kbd>G</kbd>pick up · <kbd>Q</kbd>drop</li>
+      <li><kbd>F</kbd>eat, drink or throw</li>
+      <li><kbd>Tab</kbd>your phone</li>
+      <li><kbd>T</kbd>to-do list</li>
+      <li><kbd>L</kbd>room lights</li>
       <li><kbd>Space</kbd>jump · <kbd>C</kbd>crouch</li>
+      <li><kbd>Esc</kbd>pause</li>
     </ul>
     <div class="btns"><button id="enter" class="primary">Walk in</button></div>
   </div>
@@ -171,8 +214,7 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
       <h2>Paused</h2>
       <div class="menu-list">
         <button id="resume" class="primary">Resume</button>
-        <button id="mBuild" class="ghostbtn">Toggle build &amp; decorate mode</button>
-        <button id="mLayouts" class="ghostbtn">Saved layouts</button>
+        <button id="mPhone" class="ghostbtn">Open phone</button>
         <button id="mTasks" class="ghostbtn">Things to do</button>
         <button class="ghostbtn" data-open="settings">Settings</button>
         <button class="ghostbtn" data-open="help">Controls</button>
@@ -184,16 +226,14 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
       <label class="row" for="invert">Invert look up/down <input id="invert" type="checkbox"></label>
       <label class="row" for="quality">Graphics quality <select id="quality"><option value="high">High</option><option value="med">Medium</option><option value="low">Low (faster)</option></select></label>
       <label class="row" for="mute">Mute sound <input id="mute" type="checkbox"></label>
-      <div class="btns" style="margin-top:16px"><button class="ghostbtn" data-open="main">Back</button><button id="resetTasks" class="ghostbtn">Reset to-do list</button></div>
+      <div class="btns" style="margin-top:16px"><button class="ghostbtn" data-open="main">Back</button><button id="resetTasks" class="ghostbtn">Start a fresh day 1</button></div>
     </div>
     <div class="msec" data-sec="help" hidden>
       <h2>Controls</h2>
       <ul class="keys">
         <li><kbd>WASD</kbd>walk</li><li><kbd>Shift</kbd>run</li><li><kbd>Space</kbd>jump</li><li><kbd>C</kbd>crouch</li>
-        <li><kbd>E</kbd>use / open / sit</li><li><kbd>G</kbd>pick up small things</li><li><kbd>F</kbd>drink / eat held</li><li><kbd>Right-click</kbd>cancel</li>
-        <li><kbd>B</kbd>build mode</li><li><kbd>Tab</kbd>catalog &amp; styles</li><li><kbd>R</kbd><kbd>Q</kbd>rotate (Shift 90°)</li><li><kbd>Wheel</kbd>rotate held</li>
-        <li><kbd>X</kbd>delete</li><li><kbd>C</kbd>duplicate (build)</li><li><kbd>V</kbd>recolor</li><li><kbd>Z</kbd>undo</li>
-        <li><kbd>P</kbd>grid snap (build)</li><li><kbd>N</kbd>day / night</li><li><kbd>L</kbd>room lights</li><li><kbd>M</kbd>mute</li>
+        <li><kbd>E</kbd>use / open / sit</li><li><kbd>G</kbd>pick up small things</li><li><kbd>F</kbd>eat, drink, throw</li><li><kbd>Q</kbd>drop · <kbd>R</kbd>turn</li>
+        <li><kbd>Tab</kbd>phone</li><li><kbd>T</kbd>to-do list</li><li><kbd>L</kbd>room lights</li><li><kbd>M</kbd>mute</li>
       </ul>
       <p class="lede" style="font-size:14px">If the mouse won't lock in your browser, click-and-drag to look and click on things to use them.</p>
       <div class="btns"><button class="ghostbtn" data-open="main">Back</button></div>
@@ -208,35 +248,18 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
   </div>
 </div>
 
-<aside id="panel" class="glass" hidden>
-  <div class="phead"><h2 style="margin:0">Decorate</h2><button id="closePanel" class="x" aria-label="Close catalog">×</button></div>
-  <div class="tabs"><button data-tab="items" class="on">Add items</button><button data-tab="room">Walls &amp; floors</button><button data-tab="layouts">Layouts</button></div>
-  <div class="tab" id="tab-items"><div class="chips" id="cats"></div><div id="grid"></div></div>
-  <div class="tab" id="tab-room" hidden>
-    <label class="sec-label" for="roomSel" style="display:block;margin-top:0">Room</label>
-    <select id="roomSel" style="width:100%"></select>
-    <div class="sec-label">Wall paint</div>
-    <div id="swatches"></div>
-    <input id="wallColor" type="color" aria-label="Custom wall color">
-    <div class="sec-label">Flooring</div>
-    <div class="chips" id="floors"></div>
+<div id="phone" class="overlay" hidden>
+  <div class="phonebody">
+    <div class="phonetop"><span id="phoneTime"></span><span>📶 🔋</span></div>
+    <div id="phoneScreen"></div>
+    <button id="closePhone" class="homebar" aria-label="Close phone"></button>
+    <span id="phoneBadge" hidden></span>
   </div>
-  <div class="tab" id="tab-layouts" hidden>
-    <div class="sec-label" style="margin-top:0">Save this decoration</div>
-    <div class="saverow"><input id="layoutName" type="text" placeholder="e.g. Cozy winter living room" maxlength="40"><button id="saveLayout" class="primary" style="font-size:14px;padding:8px 14px">Save</button></div>
-    <ul id="layoutList"></ul>
-    <div class="sec-label">Start over</div>
-    <div class="btns"><button id="resetLayout" class="ghostbtn">Reset to my real apartment</button><button id="emptyLayout" class="ghostbtn">Start from an empty apartment</button></div>
-    <div class="sec-label">Share or back up</div>
-    <textarea id="io" placeholder="Layout code appears here. Paste a code to import it."></textarea>
-    <div class="btns" style="margin-top:8px"><button id="exportLayout" class="ghostbtn">Copy layout code</button><button id="importLayout" class="ghostbtn">Import pasted code</button></div>
-  </div>
-</aside>
+</div>
 
 <div class="touchui">
   <div id="stick"><div id="knob"></div></div>
-  <div id="ttop"><button id="tMenu">Menu</button><button id="tBuild">Build</button><button id="tCrouch">Crouch</button><button id="tCat" class="bonly">Catalog</button><button id="tUndo" class="bonly">Undo</button></div>
-  <div id="tbuild" class="bonly"><button id="tRot">Rotate</button><button id="tDel">Delete</button><button id="tDup">Copy</button><button id="tColor">Color</button><button id="tCancel">Cancel</button></div>
+  <div id="ttop"><button id="tMenu">Menu</button><button id="tPhone">Phone</button><button id="tCrouch">Crouch</button></div>
   <div id="tbtns">
     <button id="tGrab">Grab</button><button id="tUseHeld">Eat / drink</button><button id="tJump">Jump</button>
     <button id="tUse" style="grid-column: span 3">Use</button>

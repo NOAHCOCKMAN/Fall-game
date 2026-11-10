@@ -261,6 +261,12 @@ const Sfx = {
   pop() { this.tone(500, 0.12, 'sine', 0.25, 600); },
   drawer() { this.noise(0.25, 0.12, 700, 1.5, 'bandpass', -200); },
   flush() { this.noise(2.2, 0.35, 900, 0.7, 'bandpass', -600); this.noise(1.2, 0.2, 2500, 1, 'highpass', 0, 0.3); },
+  step(soft) { this.noise(0.07, soft ? 0.05 : 0.09, soft ? 260 : 380 + Math.random() * 120, 1.2, 'lowpass'); },
+  meow() { if (!this.ctx) return; const c = this.ctx, t = c.currentTime; const o = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain(); o.type = 'sawtooth'; o.frequency.setValueAtTime(520, t); o.frequency.linearRampToValueAtTime(780, t + 0.15); o.frequency.linearRampToValueAtTime(480, t + 0.6); f.type = 'bandpass'; f.frequency.setValueAtTime(900, t); f.frequency.linearRampToValueAtTime(1600, t + 0.2); f.frequency.linearRampToValueAtTime(700, t + 0.6); f.Q.value = 3; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.65); o.connect(f); f.connect(g); g.connect(this.master); o.start(t); o.stop(t + 0.7); },
+  doorbell() { this.tone(988, 0.9, 'sine', 0.18); this.tone(784, 1.2, 'sine', 0.18, 0, 0.45); },
+  knock() { for (let i = 0; i < 3; i++) this.noise(0.09, 0.5, 180, 1, 'lowpass', 0, i * 0.18); },
+  crunch() { for (let i = 0; i < 3; i++) this.noise(0.06, 0.12, 2500 + Math.random() * 1500, 1.5, 'bandpass', 0, i * 0.09); },
+  sip() { this.noise(0.25, 0.08, 900, 3, 'bandpass', 300); },
   chime() { [659, 784, 988].forEach((f, i) => this.tone(f, 0.5, 'sine', 0.12, 0, i * 0.12)); },
   splash() { this.noise(0.3, 0.25, 1800, 0.8, 'bandpass', -900); },
   loop(kind, pos = null, vol = 0.2) {
@@ -277,6 +283,8 @@ const Sfx = {
     else if (kind === 'washer') { mkNoise('lowpass', 250, 1); mkOsc('sine', 48, 0.6); }
     else if (kind === 'boil') mkNoise('bandpass', 600, 2);
     else if (kind === 'fire') { mkNoise('lowpass', 800, 0.5); }
+    else if (kind === 'purr') { const f = mkNoise('lowpass', 160, 1); const lfo = c.createOscillator(), lg = c.createGain(); lfo.frequency.value = 24; lg.gain.value = 0.5; lfo.connect(lg); lg.connect(g.gain); lfo.start(); nodes.push(lfo); }
+    else if (kind === 'brush') { const f = mkNoise('highpass', 3000, 0.7); const lfo = c.createOscillator(), lg = c.createGain(); lfo.frequency.value = 5; lg.gain.value = 0.6; lfo.connect(lg); lg.connect(g.gain); lfo.start(); nodes.push(lfo); }
     const h = {
       pos, base: vol, gain: g, stopped: false,
       stop() { if (this.stopped) return; this.stopped = true; g.gain.setTargetAtTime(0, c.currentTime, 0.1); setTimeout(() => { nodes.forEach(n => { try { n.stop(); } catch (e) { } }); g.disconnect(); }, 600); Sfx.loops.delete(this); },

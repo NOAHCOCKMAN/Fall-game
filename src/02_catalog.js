@@ -379,6 +379,7 @@ def('tv', 'Wall TV 55"', 'Electronics', { mount: 'wall', solid: false }, (ctx, i
   ctx.onRemove(g, () => { st.mus && st.mus.stop(); st.fire && st.fire.stop(); });
   ctx.tick(g, (dt, t) => {
     if (!ctx.power() && st.ch) { st.ch = 0; st.mus && st.mus.stop(); st.fire && st.fire.stop(); }
+    if (st.ch && ctx.flags) ctx.flags.tvT = performance.now();
     if (st.ch === 0) { if (sm.map !== getTex('tvoff')) { sm.map = getTex('tvoff'); sm.needsUpdate = true; } return; }
     if (sm.map !== tex) { sm.map = tex; sm.needsUpdate = true; }
     st.acc += dt; if (st.acc > 0.05) { st.acc = 0; tvDraw(tex.userData.ctx, 512, 288, st.ch, t); tex.needsUpdate = true; }
@@ -452,7 +453,7 @@ def('speaker', 'Smart speaker', 'Electronics', { mount: 'surface', solid: false,
   const st = { on: false };
   ctx.interact(g, { label: () => st.on ? 'Stop music' : 'Play music ♫', action: () => { st.on = !st.on; if (st.on) { st.m = Sfx.music(() => g.getWorldPosition(V3()), 0); ctx.task('music'); } else { st.m && st.m.stop(); } } });
   ctx.onRemove(g, () => st.m && st.m.stop());
-  ctx.tick(g, (dt, t) => { ring.material.emissiveIntensity = st.on ? 1 + Math.sin(t * 6) : 0; });
+  ctx.tick(g, (dt, t) => { ring.material.emissiveIntensity = st.on ? 1 + Math.sin(t * 6) : 0; if (st.on && ctx.flags) ctx.flags.musicT = performance.now(); });
   return g;
 });
 def('record_player', 'Record player', 'Electronics', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
@@ -462,7 +463,7 @@ def('record_player', 'Record player', 'Electronics', { mount: 'surface', solid: 
   const st = { on: false };
   ctx.interact(g, { label: () => st.on ? 'Lift needle' : 'Play a record', action: () => { st.on = !st.on; if (st.on) { st.m = Sfx.music(() => g.getWorldPosition(V3()), 1); ctx.task('music'); } else st.m && st.m.stop(); Sfx.noise(0.3, 0.05, 2000, 1); } });
   ctx.onRemove(g, () => st.m && st.m.stop());
-  ctx.tick(g, dt => { if (st.on) plat.rotation.y += dt * 3.5; });
+  ctx.tick(g, dt => { if (st.on) { plat.rotation.y += dt * 3.5; if (ctx.flags) ctx.flags.musicT = performance.now(); } });
   return g;
 });
 def('fireplace', 'Electric fireplace', 'Electronics', { color: '#f1ece2', colorable: true }, (ctx, it) => {
@@ -768,4 +769,50 @@ def('basketball', 'Mini hoop', 'Fun', { mount: 'wall', solid: false }, (ctx, it)
 def('hair_dryer', 'Hair dryer', 'Fun', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
   const g = new THREE.Group(); C(g, 0.035, 0.04, 0.18, M(0x1f1f22, 0.4), 0, 0.04, 0, 12).rotation.z = Math.PI / 2; B(g, 0.03, 0.12, 0.03, M(0x1f1f22), 0, 0, 0);
   ctx.interact(g, { label: 'Use hair dryer', action: () => { Sfx.noise(2, 0.15, 1500, 0.5); ctx.msg('Fwoooosh. Great hair day.'); } }); return g;
+});
+
+// ================= LIFE: food delivery, packages, pet things =================
+def('pizza', 'Pizza box', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
+  const g = new THREE.Group(), card = M(0xd8b98a, 0.9); B(g, 0.38, 0.03, 0.38, card, 0, 0, 0);
+  const lid = G(g, 0, 0.045, -0.19); B(lid, 0.38, 0.012, 0.38, card, 0, 0, 0.19); B(lid, 0.18, 0.002, 0.08, M(0xb3141f), 0, 0.012, 0.19);
+  const slices = []; for (let i = 0; i < 8; i++) { const sl = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.012, 6, 1, false, i / 8 * TAU, TAU / 8), M(0xe0a23e, 0.7)); sl.position.y = 0.036; g.add(sl); slices.push(sl); for (let k = 0; k < 2; k++) { const a = (i + 0.5) / 8 * TAU, r = 0.06 + k * 0.05; S(sl, 0.012, M(0x9c2a1e, 0.6), Math.sin(a) * r, 0.008, Math.cos(a) * r, 6, 4).scale.y = 0.4; } }
+  const d = it.d || (it.d = {}); if (d.left == null) d.left = 8;
+  const st = hinge(ctx, lid, 'x', -1.7, 'pizza box', 'click');
+  ctx.tick(g, () => slices.forEach((sl, i) => sl.visible = i < d.left));
+  it.use = () => { d.left--; ctx.eat(0.18); ctx.task('eat'); if (d.left <= 0) { ctx.msg('That was the last slice. 🍕'); return 'consume'; } ctx.msg('🍕 So good. ' + d.left + ' slice' + (d.left === 1 ? '' : 's') + ' left.'); return 'keep'; };
+  it.useLabel = 'eat a slice'; return g;
+});
+def('takeout', 'Takeout bag', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
+  const g = new THREE.Group(); B(g, 0.26, 0.3, 0.16, M(0xc9a27a, 0.95), 0, 0, 0); B(g, 0.26, 0.04, 0.16, M(0xa98a62, 0.95), 0, 0.3, 0);
+  const lbl = (it.d && it.d.label) || 'Thai food';
+  const tex = canvasTex(128, 64, (c) => { c.fillStyle = '#f6efe2'; c.fillRect(0, 0, 128, 64); c.fillStyle = '#b3141f'; c.font = 'bold 18px sans-serif'; c.textAlign = 'center'; c.fillText(lbl.toUpperCase(), 64, 38); });
+  plane(g, 0.2, 0.1, M(0xffffff, 0.8, 0, { map: tex }), 0, 0.18, 0.081);
+  it.use = () => { ctx.eat(0.75); ctx.need('fun', 0.05); ctx.task('eat'); ctx.msg('Delicious ' + lbl.toLowerCase() + '. Totally worth it. 🥡'); return 'consume'; }; it.useLabel = 'eat';
+  return g;
+});
+def('package', 'Package', 'Fun', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
+  const g = new THREE.Group(), card = M(0xc49a6c, 0.95); B(g, 0.45, 0.3, 0.35, card, 0, 0, 0);
+  const tape = B(g, 0.06, 0.002, 0.36, M(0xd9c79a, 0.4), 0, 0.3, 0);
+  const flaps = []; for (const s of [-1, 1]) { const f = G(g, s * 0.225, 0.3, 0); B(f, 0.225, 0.01, 0.35, card, -s * 0.1125, 0, 0); flaps.push([f, s]); }
+  const d = it.d || (it.d = {});
+  const gifts = ['a cozy throw blanket', 'new candles for the living room', 'a cat toy (Maple will love it)', 'a cookbook', 'string lights', 'fuzzy socks', 'a fall wreath', 'a coffee sampler'];
+  ctx.interact(g, { label: () => d.opened ? 'Break down the box ♻️' : 'Open package 📦', action: () => { if (!d.opened) { d.opened = true; d.what = gifts[(Math.random() * gifts.length) | 0]; Sfx.noise(0.5, 0.25, 2500, 0.8, 'bandpass', -1500); ctx.msg('📦 It\'s ' + d.what + '!'); ctx.need('fun', 0.15); ctx.task('package'); } else { Sfx.noise(0.3, 0.2, 500, 1); ctx.removeItem(g); } } });
+  ctx.tick(g, dt => { tape.visible = !d.opened; flaps.forEach(([f, s]) => f.rotation.z = lerp(f.rotation.z, d.opened ? s * 2.2 : 0, dt * 6)); });
+  return g;
+});
+def('cat_bowl', 'Pet food bowl', 'Fun', { solid: false, small: false }, (ctx, it) => {
+  const g = new THREE.Group(); C(g, 0.11, 0.13, 0.05, M(0xf1ece2, 0.3), 0, 0, 0, 20); C(g, 0.09, 0.09, 0.005, M(0x9aa0a6), 0, 0.046, 0, 20);
+  const kib = []; for (let i = 0; i < 18; i++) kib.push(S(g, 0.012, M(0x8a5a32, 0.8), rand(-0.06, 0.06), 0.055, rand(-0.06, 0.06), 5, 4));
+  B(g, 0.14, 0.24, 0.07, M(0x3f7d6f, 0.7), 0.24, 0, -0.04); B(g, 0.1, 0.06, 0.005, M(0xf2c418), 0.24, 0.14, -0.004);
+  const st = it.d || (it.d = {}); if (st.food == null) st.food = 0.6;
+  ctx.catBowl = { g, st };
+  ctx.interact(g, { label: () => st.food > 0.15 ? 'Bowl has food (' + Math.round(st.food * 100) + '%)' : 'Fill Maple\'s bowl 🐟', action: () => { if (st.food <= 0.95) { st.food = 1; Sfx.noise(0.6, 0.25, 3000, 1); ctx.msg('Kibble time! Maple heard that…'); ctx.task('feedcat'); ctx.cat && ctx.cat.call(); } } });
+  ctx.tick(g, () => kib.forEach((k, i) => k.visible = i / kib.length < st.food));
+  return g;
+});
+def('cat_toy', 'Toy mouse', 'Fun', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
+  const g = new THREE.Group(); const b = S(g, 0.035, M(0x9a9a9a, 1), 0, 0.03, 0, 10, 8); b.scale.set(0.8, 0.7, 1.4);
+  S(g, 0.015, M(0xe3b8b8), 0.02, 0.06, 0.03, 6, 4); S(g, 0.015, M(0xe3b8b8), -0.02, 0.06, 0.03, 6, 4);
+  const t = C(g, 0.003, 0.003, 0.12, M(0xd94f70), 0, 0.03, -0.1, 4); t.rotation.x = Math.PI / 2;
+  it.use = () => 'throw'; it.useLabel = 'throw it for Maple'; return g;
 });
