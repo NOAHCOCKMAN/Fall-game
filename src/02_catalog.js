@@ -420,7 +420,13 @@ def('laptop', 'Laptop', 'Electronics', { mount: 'surface', solid: false, small: 
   const lid = G(g, 0, 0.019, -0.11); B(lid, 0.32, 0.008, 0.22, al, 0, 0, 0.11);
   const scr = plane(lid, 0.29, 0.19, E(0x6c8fd6, 0.8), 0, -0.001, 0.11, Math.PI / 2); markDyn(scr);
   const st = hinge(ctx, lid, 'x', -1.9, 'laptop', 'click', (o) => { if (o) ctx.task('computer'); });
-  ctx.tick(lid, () => { scr.visible = st.v > 0.3; });
+  const workHit = B(g, 0.3, 0.05, 0.2, new THREE.MeshBasicMaterial({ visible: false }), 0, 0.03, 0.08); markDyn(workHit);
+  ctx.interact(workHit, { label: () => st.open ? 'Do some work 💻 (+$25)' : '', action: () => {
+    if (!st.open) return;
+    ctx.startAction({ label: 'Knocking out some work', dur: 7, done: () => { ctx.earn(25, 'work'); ctx.task('work'); ctx.need('fun', -0.05); ctx.msg('💻 Inbox zero-ish. +$25.'); } });
+  } });
+  workHit.visible = false;
+  ctx.tick(lid, () => { scr.visible = st.v > 0.3; workHit.visible = st.open; });
   return g;
 });
 def('espresso', 'Espresso machine', 'Kitchen', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
@@ -518,6 +524,7 @@ def('wine', 'Wine & glasses', 'Kitchen', { mount: 'surface', solid: false, small
 
 // ================= DECOR =================
 def('flowers', 'Potted kalanchoe', 'Plants', { mount: 'surface', solid: false, small: true, color: '#e05a8a', colorable: true }, (ctx, it) => {
+  it.handLabel = 'snap a photo for Lilah 📸'; it.handUse = () => { Sfx.click(); ctx.flowerPhoto && ctx.flowerPhoto(); };
   const g = new THREE.Group(); pot(g, 0.08, 0.12, M(0xf2ede4, 0.4)); leafy(g, 22, 0.1, 0.1, 0x4f7a3a, 0.12, 0.05);
   const fc = M(it.c || '#e05a8a', 0.7); for (let i = 0; i < 26; i++) { const a = Math.random() * TAU, r = Math.random() * 0.1; S(g, 0.014, fc, Math.cos(a) * r, 0.2 + Math.random() * 0.08, Math.sin(a) * r, 6, 4); }
   ctx.interact(g, { label: 'Water the flowers 💧', action: () => { ctx.water(g); } }); return g;
@@ -598,15 +605,25 @@ function puzzlePicture() {
   return (_pzPic = c);
 }
 def('present', 'Wrapped present', 'Holiday', { mount: 'surface', solid: false, small: true, color: '#b3141f', colorable: true }, (ctx, it) => {
-  const d = it.d || (it.d = {}); const kind = d.toy || (it.c === '#2e5a3a' ? 'globe' : 'puzzle'); d.toy = kind;
+  const d = it.d || (it.d = {}); const kind = d.toy || (it.c === '#2e5a3a' ? 'globe' : it.c === '#2e3a46' ? 'simon' : 'puzzle'); d.toy = kind;
   const g = new THREE.Group(), wrap = M(it.c || '#b3141f', 0.6), gold = M(0xd4af37, 0.3, 0.6);
   B(g, 0.25, 0.18, 0.25, wrap, 0, 0, 0); B(g, 0.04, 0.182, 0.252, gold, 0, 0, 0); B(g, 0.252, 0.182, 0.04, gold, 0, 0, 0);
   const lid = G(g, 0, 0.18, 0); B(lid, 0.27, 0.05, 0.27, wrap, 0, 0, 0); markMoves(lid); B(lid, 0.04, 0.052, 0.272, gold, 0, 0, 0); B(lid, 0.272, 0.052, 0.04, gold, 0, 0, 0);
   for (const s of [-1, 1]) { const bow = T(lid, 0.035, 0.012, gold, s * 0.035, 0.065, 0); bow.rotation.set(0, Math.PI / 2, s * 0.5); bow.scale.set(1, 0.7, 1); }
   const toy = G(g, 0, 0.2, 0); toy.visible = false; markDyn(toy);
   const st = { open: false, rise: 0, shake: 0, closeAt: 0 };
-  let tiles = [], snow = [], tune = null;
-  if (kind === 'puzzle') {
+  let tiles = [], snow = [], tune = null, pads = [];
+  if (kind === 'simon') {
+    // a chunky lights-and-sounds memory toy: four glowing quarter pads on a round base
+    C(toy, 0.115, 0.13, 0.045, M(0x23262b, 0.5), 0, 0, 0, 28);
+    const PADCOLS = [0x2fae4e, 0xd93a35, 0xe8c431, 0x3a7fd9];
+    for (let i = 0; i < 4; i++) {
+      const pm = new THREE.MeshStandardMaterial({ color: PADCOLS[i], roughness: 0.35, emissive: PADCOLS[i], emissiveIntensity: 0 });
+      const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.022, 14, 1, false, i / 4 * TAU + 0.06, TAU / 4 - 0.12), pm);
+      pad.position.y = 0.05; toy.add(pad); pads.push(pm);
+    }
+    C(toy, 0.028, 0.028, 0.026, M(0xf4f1ea, 0.4), 0, 0.048, 0, 16);
+  } else if (kind === 'puzzle') {
     // wooden tray with 8 picture tiles that match your progress in the puzzle
     const wood = M(0xa4764d, 0.6); B(toy, 0.21, 0.015, 0.21, wood, 0, 0, 0); for (const [w, dd, x, z] of [[0.21, 0.012, 0, -0.099], [0.21, 0.012, 0, 0.099], [0.012, 0.21, -0.099, 0], [0.012, 0.21, 0.099, 0]]) B(toy, w, 0.03, dd, wood, x, 0, z);
     const pic = new THREE.CanvasTexture(puzzlePicture()); pic.colorSpace = THREE.SRGBColorSpace;
@@ -628,18 +645,20 @@ def('present', 'Wrapped present', 'Holiday', { mount: 'surface', solid: false, s
   }
   const setTiles = () => { if (!tiles.length) return; const pz = d.pz; for (let n = 1; n <= 8; n++) { const i = pz ? pz.indexOf(n) : n - 1; tiles[n - 1].position.set(((i % 3) - 1) * 0.062, 0.015, (Math.floor(i / 3) - 1) * 0.062); } };
   setTiles();
-  const openBox = () => { st.open = true; Sfx.chime(); Sfx.noise(0.5, 0.18, 2600, 0.8, 'bandpass', -1500); ctx.task('gift'); if (!d.seen) { d.seen = true; ctx.msg(kind === 'puzzle' ? '🧩 A sliding block puzzle! Right-click to play.' : '❄️ A snow globe! Right-click to shake it.'); } };
+  const openBox = () => { st.open = true; Sfx.chime(); Sfx.noise(0.5, 0.18, 2600, 0.8, 'bandpass', -1500); ctx.task('gift'); if (!d.seen) { d.seen = true; ctx.msg(kind === 'puzzle' ? '🧩 A sliding block puzzle! Right-click to play.' : kind === 'simon' ? '🔴 A lights memory game! Right-click to play.' : '❄️ A snow globe! Right-click to shake it.'); } };
   const closeBox = () => { st.open = false; Sfx.noise(0.25, 0.12, 900, 1); };
   ctx.interact(g, {
-    label: () => !st.open ? 'Open present 🎁' : st.rise < 0.9 ? '' : kind === 'puzzle' ? (d.pz ? 'Keep playing the sliding puzzle 🧩' : 'Play the sliding puzzle 🧩') : 'Shake the snow globe ❄️',
+    label: () => !st.open ? 'Open present 🎁' : st.rise < 0.9 ? '' : kind === 'puzzle' ? (d.pz ? 'Keep playing the sliding puzzle 🧩' : 'Play the sliding puzzle 🧩') : kind === 'simon' ? 'Play the memory game 🔴🟢' : 'Shake the snow globe ❄️',
     action: () => {
       if (!st.open) return openBox();
       if (st.rise < 0.9) return;
       if (kind === 'puzzle') ctx.puzzle(d, (moves, secs) => { setTiles(); ctx.need('fun', 0.25); ctx.msg('🎉 Solved in ' + moves + ' moves (' + Math.round(secs) + 's)! Back in the box it goes.'); st.closeAt = performance.now() + 1400; }, setTiles);
+      else if (kind === 'simon') ctx.simon(d, (round) => { ctx.need('fun', 0.22); ctx.task('simon'); ctx.msg('🏆 You beat all ' + round + ' rounds! Back in the box it goes.'); st.closeAt = performance.now() + 1400; }, (i) => { pads.forEach((pm, k) => pm.emissiveIntensity = k === i ? 1.6 : 0); });
       else { st.shake = 1; Sfx.noise(0.4, 0.2, 3000, 1.2, 'bandpass', -1800); snow.forEach(f => { f.userData.v = 0.5 + Math.random() * 0.6; f.userData.h = Math.random() * 0.3; }); ctx.need('fun', 0.05); }
     },
     altLabel: () => st.open && st.rise > 0.9 ? (kind === 'globe' ? 'wind it up ♪' : 'close the box') : '',
     alt: () => {
+      if (kind === 'simon') { closeBox(); return; }
       if (kind === 'globe') { if (tune) return; const notes = [784, 659, 698, 784, 880, 784, 659, 587, 523]; notes.forEach((f, i) => Sfx.tone(f, 0.5, 'sine', 0.07, 0, i * 0.32)); notes.forEach((f, i) => Sfx.tone(f * 2, 0.25, 'triangle', 0.02, 0, i * 0.32)); tune = setTimeout(() => tune = null, notes.length * 320); ctx.need('fun', 0.03); }
       else closeBox();
     }

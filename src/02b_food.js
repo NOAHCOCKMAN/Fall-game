@@ -621,6 +621,20 @@ def('meal', 'Takeout meal', 'Kitchen', { mount: 'surface', solid: false, small: 
   return g;
 });
 
+def('groceries', 'Bag of groceries', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
+  const g = new THREE.Group(), paper = M(0xc9a27a, 0.95);
+  B(g, 0.3, 0.38, 0.22, paper, 0, 0, 0); B(g, 0.3, 0.025, 0.22, M(0xa9875f, 0.95), 0, 0.38, 0);
+  const bag = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.3, 8), FM(0xc89a5e, 0.85)); bag.position.set(-0.07, 0.5, 0); bag.rotation.z = 0.25; g.add(bag); // baguette
+  const greens = FM(0x4f8a2e, 0.8); for (let i = 0; i < 3; i++) { const l = fmesh(g, ballGeo(0.05, 7, 5), greens, 0.07 + i * 0.015, 0.42, -0.04 + i * 0.03); l.scale.set(0.6, 1.4, 0.6); l.rotation.z = -0.3 + i * 0.25; }
+  fmesh(g, ballGeo(0.045, 10, 8), FM(0xf08a1c, 0.8), 0.02, 0.4, 0.06);
+  it.handLabel = 'put the groceries away';
+  it.handUse = () => {
+    const p = ctx.playerPos(); if (Math.hypot(p.x - 2.65, p.z - 7.27) > 2.4) return ctx.msg('Take the bag to the fridge to put it away.');
+    Sfx.noise(0.5, 0.2, 2200, 0.8, 'bandpass', -1200); ctx.task('groceries'); ctx.restock && ctx.restock(); ctx.msg('🧺 Fridge and fruit bowl restocked.');
+    ctx.removeHeld && ctx.removeHeld();
+  };
+  return g;
+});
 def('pizza', 'Pizza box', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
   const g = new THREE.Group(), card = M(0xd8b98a, 0.9); B(g, 0.38, 0.03, 0.38, card, 0, 0, 0);
   const lid = G(g, 0, 0.045, -0.19); B(lid, 0.38, 0.012, 0.38, card, 0, 0, 0.19); B(lid, 0.18, 0.002, 0.08, M(0xb3141f), 0, 0.012, 0.19);

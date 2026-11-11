@@ -182,6 +182,32 @@ body.touch.hasbig #prompt { display: none !important; }
 .pztile span { position: absolute; left: 6px; top: 4px; font: 700 12px var(--display); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
 #pzBoard.solved .pztile { border-color: transparent; border-radius: 0; box-shadow: none; } #pzBoard.solved .pztile span { opacity: 0; }
 .pzmsg { color: var(--muted); font-size: 14px; text-align: center; margin: 12px 0; min-height: 1.4em; } .pzhint { color: var(--muted); font-size: 12px; align-self: center; }
+/* cash + driving */
+#cashChip { font-family: var(--display); font-weight: 800; color: #b6e3a8; }
+#driveHud { position: absolute; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); padding: 9px 16px; font-family: var(--display); font-weight: 700; font-size: 16px; z-index: 3; }
+body.touch #driveHud { bottom: auto; top: calc(64px + env(safe-area-inset-top, 0px)); }
+/* simon */
+#sBoard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: min(320px, 72vw, 46vh); aspect-ratio: 1; margin: 0 auto; }
+.spad { border: 0; border-radius: 18px; opacity: .45; transition: opacity .08s, transform .08s; box-shadow: inset 0 -6px 14px rgba(0,0,0,.35); touch-action: none; }
+.spad.g { background: #2fae4e; border-top-left-radius: 50%; } .spad.r { background: #d93a35; border-top-right-radius: 50%; }
+.spad.y { background: #e8c431; border-bottom-left-radius: 50%; } .spad.b { background: #3a7fd9; border-bottom-right-radius: 50%; }
+.spad.lit { opacity: 1; transform: scale(1.04); box-shadow: 0 0 26px currentColor; }
+#sRound { color: var(--muted); font-size: 14px; }
+/* texting */
+.weather { grid-template-columns: 1fr auto; align-items: center; } .weather .cash { color: #b6e3a8; }
+.thread { max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 4px 2px 10px; }
+.bub { max-width: 82%; padding: 8px 12px; border-radius: 16px; font-size: 14px; line-height: 1.35; position: relative; }
+.bub small { display: block; font-size: 10px; opacity: .55; margin-top: 2px; }
+.bub.them { align-self: flex-start; background: rgba(255,255,255,.12); border-bottom-left-radius: 4px; }
+.bub.me { align-self: flex-end; background: #2e7dd1; color: #fff; border-bottom-right-radius: 4px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 2px; }
+.chip { background: rgba(255,255,255,.1); border: 1px solid var(--line); border-radius: 999px; padding: 8px 13px; font-size: 13px; }
+.chip:active, .chip:hover { background: rgba(242,153,74,.25); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); margin-left: 6px; }
+/* guide */
+.guide details { background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; margin-bottom: 8px; }
+.guide summary { cursor: pointer; font-family: var(--display); font-weight: 700; }
+.guide ol { margin: 8px 0 2px 18px; padding: 0; color: var(--muted); font-size: 13.5px; line-height: 1.55; }
 #enter:disabled { opacity: .6; cursor: progress; }
 @media (max-width: 640px) { .stats { min-width: 110px; padding: 6px 8px; } .mood { font-size: 11px; } #panel { top: calc(56px + env(safe-area-inset-top, 0px)); bottom: calc(180px + env(safe-area-inset-bottom, 0px)); } .card-big { padding: 20px; } }
 @media (prefers-reduced-motion: reduce) { #toast, #fade, #cross { transition: none; } }
@@ -204,12 +230,14 @@ body.touch.hasbig #prompt { display: none !important; }
         <div class="need" title="Bladder"><span>🚽</span><div class="bar"><i id="n_bladder"></i></div></div>
         <div class="need" title="Fun"><span>🎉</span><div class="bar"><i id="n_fun"></i></div></div>
       </div>
+      <button id="cashChip" class="pill glass hudbtn">$85</button>
       <button id="taskChip" class="pill glass hudbtn">✓ 0/0</button>
     </div>
   </div>
   <div id="prompt" class="glass" hidden></div>
   <div id="bigRow" hidden><button id="bigAct" class="hudbtn"></button><button id="bigAlt" class="hudbtn" hidden></button></div>
   <pre id="perfHud" hidden></pre>
+  <div id="driveHud" class="glass" hidden></div>
   <div id="toast" class="glass"></div>
   <div id="hint" class="glass"><kbd>Right-click</kbd> use · <kbd>Left-click</kbd> eat / hit · <kbd>E</kbd> pick up · <kbd>Q</kbd> drop · <kbd>Esc</kbd> menu &amp; phone</div>
   <div id="action" hidden><div id="actionRing"></div><span id="actionLabel"></span></div>
@@ -220,7 +248,7 @@ body.touch.hasbig #prompt { display: none !important; }
 <div id="start" class="overlay">
   <div class="card-big glass">
     <h1>Fall <em>Apartment</em></h1>
-    <p class="lede">Your apartment, room by room. Live a day in it: keep yourself fed, rested and clean, cook and brew coffee, do the laundry, order delivery to your door, and open packages. Time passes, the sun sets over the fall trees, and there are 31 things to do.</p>
+    <p class="lede">Your apartment, room by room. Live a day in it: keep yourself fed, rested and clean, cook and brew coffee, do the laundry, order delivery to your door, and open packages. Time passes, the sun sets over Mooresville, and there are 38 things to do — cook, text, drive your Corolla to the Harris Teeter or the BP, and meet the neighbors.</p>
     <ul class="keys touchonly"><li><kbd>Stick</kbd>walk (push to the edge to sprint)</li><li><kbd>Drag</kbd>look around</li><li><kbd>Use</kbd>or tap things</li><li><kbd>Grab / Drop</kbd>carry small items</li><li><kbd>Eat / Hit</kbd>bite, sip or punch</li><li><kbd>Sneak</kbd>walk quietly</li><li><kbd>Phone</kbd>order food &amp; more</li></ul>
     <ul class="keys deskonly">
       <li><kbd>W A S D</kbd>move</li>
@@ -235,6 +263,7 @@ body.touch.hasbig #prompt { display: none !important; }
       <li><kbd>Esc</kbd>pause menu (phone, to-dos)</li>
       <li><kbd>F1</kbd>hide HUD</li>
       <li><kbd>F3</kbd>performance stats</li>
+      <li><kbd>In the car</kbd>W/S gas · A/D steer · Space brake · E out</li>
     </ul>
     <div class="btns"><button id="enter" class="primary">Walk in</button></div>
   </div>
@@ -250,6 +279,7 @@ body.touch.hasbig #prompt { display: none !important; }
         <button id="mTasks" class="ghostbtn">Things to do</button>
         <button class="ghostbtn" data-open="settings">Settings</button>
         <button class="ghostbtn" data-open="help">Controls</button>
+        <button class="ghostbtn" data-open="guide">Area guide</button>
       </div>
     </div>
     <div class="msec" data-sec="settings" hidden>
@@ -260,6 +290,40 @@ body.touch.hasbig #prompt { display: none !important; }
       <label class="row" for="mute">Mute sound <input id="mute" type="checkbox"></label>
       <label class="row" for="perfToggle">Show performance stats (F3) <input id="perfToggle" type="checkbox"></label>
       <div class="btns" style="margin-top:16px"><button class="ghostbtn" data-open="main">Back</button><button id="resetTasks" class="ghostbtn">Start a fresh day 1</button></div>
+    </div>
+    <div class="msec" data-sec="guide" hidden>
+      <h2>Area guide</h2>
+      <div class="guide">
+        <details open><summary>🏠 Your apartment (3rd floor)</summary><ol>
+          <li>Cook on the stove — knobs on the front turn the burners on.</li>
+          <li>Open the presents under the tree: a sliding puzzle, a memory game and a snow globe.</li>
+          <li>Work on the laptop at the desk for +$25.</li>
+          <li>Order delivery on your phone — the dasher comes to your door; say hi and pay.</li>
+        </ol></details>
+        <details><summary>🚪 The hallway</summary><ol>
+          <li>Knock on 2B across the hall and say hi to Marcus.</li>
+          <li>Take the STAIRS door at the end of the hall down to the parking lot.</li>
+        </ol></details>
+        <details><summary>🅿 Parking lot</summary><ol>
+          <li>Your red Corolla is parked by the stair door — right-click it to drive.</li>
+          <li>W/S gas &amp; reverse, A/D steer, Space brake, left-click horn, right-click radio, E to get out.</li>
+        </ol></details>
+        <details><summary>🛒 Harris Teeter (next door)</summary><ol>
+          <li>Follow Caspian Pl, then Town Center Dr to the plaza — or walk the sidewalk.</li>
+          <li>Groceries $12 (put them away at your fridge), flowers for Lilah $6, energy drink $3.</li>
+          <li>Say hi to Dana at the register.</li>
+        </ol></details>
+        <details><summary>⛽ BP &amp; the garage (down River Hwy)</summary><ol>
+          <li>Take Caspian Pl to River Hwy, turn right and cross over — the BP is down the road.</li>
+          <li>Park at a pump and right-click it to fill the tank ($18). Snacks inside.</li>
+          <li>Pull around back: Ray at River Hwy Auto &amp; Tire does a $20 check-up.</li>
+        </ol></details>
+        <details><summary>💵 Money</summary><ol>
+          <li>You start with $85 (top-right). Deliveries, gas and groceries cost cash.</li>
+          <li>Earn $25 any time: open the laptop on the desk and "Do some work".</li>
+        </ol></details>
+      </div>
+      <div class="btns"><button class="ghostbtn" data-open="main">Back</button></div>
     </div>
     <div class="msec" data-sec="help" hidden>
       <h2>Controls</h2>
@@ -276,6 +340,7 @@ body.touch.hasbig #prompt { display: none !important; }
       <li><kbd>Esc</kbd>pause menu (phone, to-dos)</li>
       <li><kbd>F1</kbd>hide HUD</li>
       <li><kbd>F3</kbd>performance stats</li>
+      <li><kbd>In the car</kbd>W/S gas · A/D steer · Space brake · E out</li>
       </ul>
       <ul class="keys touchonly"><li><kbd>Stick</kbd>walk, push to the edge to sprint</li><li><kbd>Drag</kbd>look</li><li><kbd>Tap</kbd>or <kbd>Use</kbd>use / interact</li><li><kbd>Grab / Drop</kbd>pick up or drop</li><li><kbd>Eat / Hit</kbd>bite, sip or punch</li><li><kbd>Jump</kbd> · <kbd>Sneak</kbd></li></ul>
       <p class="lede" style="font-size:14px">If the mouse won't lock in your browser, click-and-drag to look and click on things to use them.</p>
@@ -290,6 +355,14 @@ body.touch.hasbig #prompt { display: none !important; }
     <div id="pzBoard"></div>
     <p id="pzMsg" class="pzmsg"></p>
     <div class="btns"><button id="pzShuffle" class="ghostbtn">Shuffle</button><span class="pzhint">Close any time; your progress stays in the box.</span></div>
+  </div>
+</div>
+
+<div id="simon" class="overlay" hidden>
+  <div class="card-big glass pzcard">
+    <div class="pzhead"><h2>Memory lights 🔴🟢</h2><span id="sRound"></span><button id="sClose" class="x" aria-label="Put the toy down">×</button></div>
+    <div id="sBoard"><button class="spad g" aria-label="Green"></button><button class="spad r" aria-label="Red"></button><button class="spad y" aria-label="Yellow"></button><button class="spad b" aria-label="Blue"></button></div>
+    <p id="sMsg" class="pzmsg"></p>
   </div>
 </div>
 

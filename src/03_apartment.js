@@ -108,7 +108,7 @@ function buildApartment(scene, ctx) {
   // laundry & mechanical closets
   wall(5.55, 8.9, 5.55, 10); wall(6.4, 8.9, 6.4, 10); wall(5.55, 8.9, 6.4, 8.9, [doorOp(5.62, 6.33)]); wall(6.4, 8.9, 7.6, 8.9, [doorOp(6.6, 7.35)]);
   // building corridor outside the front door
-  wall(9.8, 5.5, 9.8, 10.5, [doorOp(7.0, 7.95)]); wall(7.6, 5.5, 9.8, 5.5); wall(7.6, 10.5, 9.8, 10.5); wall(7.6, 10, 7.6, 10.5);
+  wall(9.8, 5.5, 9.8, 10.5, [doorOp(7.0, 7.95)]); wall(7.6, 5.5, 9.8, 5.5, [doorOp(8.2, 9.2)]); wall(7.6, 10.5, 9.8, 10.5); wall(7.6, 10, 7.6, 10.5);
 
   // ---------- floors & ceilings ----------
   function floorPlane(rect, mat, y = 0) {
@@ -194,7 +194,6 @@ function buildApartment(scene, ctx) {
   makeDoor({ x: 6.6, z: 8.9, axis: 'x', len: 0.75, hingeEnd: true, open: 1, label: 'mechanical closet' });
   makeDoor({ x: 5.0, z: 1.45, axis: 'x', len: 0.7, hingeEnd: false, open: -1, label: 'balcony door', glass: true, exterior: true });
   makeDoor({ x: 5.7, z: 1.45, axis: 'x', len: 0.7, hingeEnd: true, open: -1, label: 'balcony door', glass: true, exterior: true });
-  makeDoor({ x: 9.8, z: 7.0, axis: 'z', len: 0.95, open: -1, label: "neighbor's door", lock: true });
   // peephole / unit number (corridor side)
   B(W, 0.01, 0.12, 0.2, M(0xb08d57, 0.3, 0.8), 7.675, 1.75, 7.5);
   // smart lock keypad (interior)
@@ -684,11 +683,10 @@ function buildOutdoor(A, scene) {
   const BO = A.outdoor;
   const blk = (x0, y0, z0, x1, y1, z1) => B(BO, x1 - x0, y1 - y0, z1 - z0, fac(x1 - x0, y1 - y0), (x0 + x1) / 2, y0, (z0 + z1) / 2);
   // the rest of our building wrapped around this unit (facade faces north, toward the lot)
-  blk(-16, GY, -0.06, 26, -0.02, 16);                // floors below
+  blk(-16, GY, -0.06, 7.67, -0.02, 16); blk(9.87, GY, -0.06, 26, -0.02, 16); blk(7.67, GY, 5.43, 9.87, -0.02, 16); // floors below (stair shaft open)
   blk(-16, WALL_H + 0.02, -0.06, 26, WALL_H + 3.4, 16); // floor above
   blk(-16, -0.02, -0.06, -0.07, WALL_H + 0.03, 16);  // neighbor to the west
-  blk(9.87, -0.02, -0.06, 26, WALL_H + 0.03, 16);    // neighbor to the east
-  blk(7.67, -0.02, -0.06, 9.87, WALL_H + 0.03, 5.43); // between balcony wall and corridor
+  blk(9.87, -0.02, -0.06, 26, WALL_H + 0.03, 5.5); blk(9.87, -0.02, 10.5, 26, WALL_H + 0.03, 16); blk(14.1, -0.02, 5.5, 26, WALL_H + 0.03, 10.5); // east neighbor (2B carved out)
   blk(-0.07, -0.02, 10.07, 7.6, WALL_H + 0.03, 16); blk(7.6, -0.02, 10.57, 9.87, WALL_H + 0.03, 16);
   const roof = new THREE.Mesh(new THREE.ConeGeometry(30, 4, 4, 1), M(0x4a4f55, 0.8)); roof.scale.set(1, 1, 0.38); roof.rotation.y = Math.PI / 4; roof.position.set(5, WALL_H + 3.4 + 2, 8); BO.add(roof);
   // recessed balconies on the other floors, like ours

@@ -38,7 +38,7 @@ const saved = store.get('state', null);
 const P = {
   pos: V3(), vy: 0, yaw: 0, pitch: -0.05, eye: 1.62, crouch: false, sit: null, day: 1, dayTarget: 1, bob: 0, stepAcc: 0, caffeine: 0,
   needs: Object.assign({ hunger: 0.7, energy: 0.75, hygiene: 0.65, bladder: 0.7, fun: 0.6 }, saved && saved.needs),
-  minutes: saved ? saved.minutes : 9 * 60, dayNum: saved ? saved.dayNum : 1, action: null, anim: null,
+  minutes: saved ? saved.minutes : 9 * 60, dayNum: saved ? saved.dayNum : 1, action: null, anim: null, cash: saved && saved.cash != null ? saved.cash : 85, drive: null, chew: 0, shake: 0,
 };
 const flags = { tvT: 0, musicT: 0, showering: false };
 let held = null, heldSet = new Set(), hover = null, placeTarget = null;
@@ -80,6 +80,13 @@ const ctx = {
   toggleBurner(b, on) { if (b.toggle) b.toggle(on); else b.on = on; },
   bite(g) { bite(g); },
   puzzle(d, onSolve, onChange) { openPuzzle(d, onSolve, onChange); },
+  simon(d, onWin, onPad) { openSimon(d, onWin, onPad); },
+  spend(n, what) { if (P.cash < n) { toast('💸 Not enough cash for ' + (what || 'that') + ' ($' + n + '). Do some work on the laptop.'); Sfx.tone(240, 0.2, 'square', 0.05); return false; } P.cash -= n; updateCash(); toast('💵 -$' + n + (what ? ' · ' + what : '')); return true; },
+  earn(n, what) { P.cash += n; updateCash(); Sfx.chime(); },
+  restock() { A.refillDishes && A.refillDishes(); itemsGroup.children.forEach(g => g.userData.refill && g.userData.refill()); },
+  removeHeld() { if (held) { const g = held; held = null; heldSet.clear(); helper.visible = false; camera.remove(g); removeItem(g); } },
+  flowerPhoto() { sendText('Lilah', '📷 [photo of a fall bouquet]'); completeTask('text'); setTimeout(() => {}, 0); queueReply('Lilah', ['WAIT. Are those for me??', 'Okay you\'re the best husband. Love you ❤️'], 1.5); ctx.need('fun', 0.1); toast('📸 Sent to Lilah.'); },
+  enterCar() { enterCar(); },
   removeItem(g) { removeItem(g); },
   sit(pos, yaw, lie) {
     P.sit = { pos: pos.clone(), yaw, lie, prev: P.pos.clone(), root: arguments[3] || null }; P.yaw = yaw; P.pitch = lie ? 0.9 : -0.1;
@@ -109,6 +116,7 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 // ---- build apartment and items ----
 const A = buildApartment(scene, ctx);
 A.world.add(itemsGroup);
+buildWorld(scene, ctx, A);
 for (let i = 0; i < POOL_SIZE; i++) { const l = new THREE.PointLight(0xffffff, 0, 8, 1.5); l.userData.src = null; scene.add(l); POOL.push(l); } // fixed count: shaders never recompile
 const _lp = V3();
 function updateLightPool(dt) {
@@ -164,7 +172,7 @@ const DEFAULT_LAYOUT = {
     // living room: sofa on the half wall, TV on the east wall, tree by the sofa, bistro set top right
     ['sofa', 4.65, 0, 3.55, HP], ['art_wedding', 4.165, 1.62, 2.8, HP, null, { seed: 11 }], ['art_wedding', 4.165, 1.62, 3.55, HP, null, { seed: 12 }], ['art_wedding', 4.165, 1.62, 4.3, HP, null, { seed: 13 }],
     ['picture_light', 4.165, 2.17, 2.8, HP], ['picture_light', 4.165, 2.17, 3.55, HP], ['picture_light', 4.165, 2.17, 4.3, HP],
-    ['xmas_tree', 4.55, 0, 2.0, 0], ['present', 5.05, 0, 1.75, 0.3], ['present', 5.2, 0, 2.2, -0.2, '#2e5a3a'],
+    ['xmas_tree', 4.55, 0, 2.0, 0], ['present', 5.05, 0, 1.75, 0.3], ['present', 5.2, 0, 2.2, -0.2, '#2e5a3a'], ['present', 5.55, 0, 1.45, 0.9, '#2e3a46'],
     ['rug_vintage', 5.9, 0, 3.6, HP], ['coffee_marble', 5.9, 0, 3.6, HP], ['tray_trees', 5.9, 0.485, 3.32, 0], ['albums', 5.9, 0.485, 3.8, 0.5],
     ['media_console', 7.32, 0, 3.85, -HP], ['tv', 7.535, 1.55, 3.85, -HP], ['speaker', 7.32, 0.63, 3.2, -HP], ['record_player', 7.32, 0.63, 3.85, -HP], ['mini_tree', 7.32, 0.63, 4.5, 0], ['basket', 4.45, 0, 5.0, 0],
     ['bistro_table', 6.95, 0, 1.95, 0], ['armchair', 6.2, 0, 2.0, HP], ['armchair', 6.9, 0, 2.62, PI], ['candle', 6.88, 0.735, 1.88, 0], ['mini_tree', 7.05, 0.735, 2.02, 0], ['wine', 6.83, 0.735, 2.08, 0],
@@ -179,7 +187,7 @@ const DEFAULT_LAYOUT = {
     ['lamp_table', 4.62, 0.935, 9.7, 0, null, { on: true }], ['stand_mixer', 5.1, 0.935, 9.62, PI], ['fruit_bowl', 2.22, 0.935, 8.9, 0], ['plant_small', 2.22, 0.935, 8.05, 0],
     // bedroom
     ['bed', 1.14, 0, 1.41, HP], ['nightstand', 0.27, 0, 0.31, HP], ['nightstand', 0.27, 0, 2.51, HP], ['lamp_table', 0.27, 0.63, 0.31, 0, null, { on: true }], ['lamp_table', 0.27, 0.63, 2.51, 0],
-    ['desk', 2.3, 0, 3.065, PI], ['monitor', 2.3, 0.76, 3.0, PI], ['plant_small', 2.75, 0.76, 3.2, 0], ['office_chair', 2.3, 0, 2.97, 0],
+    ['desk', 2.3, 0, 3.065, PI], ['monitor', 2.3, 0.76, 3.0, PI], ['laptop', 1.85, 0.76, 3.05, PI + 0.25], ['plant_small', 2.75, 0.76, 3.2, 0], ['office_chair', 2.3, 0, 2.97, 0],
     ['art_monet', 0.06, 1.75, 1.41, HP], ['arched_cabinet', 2.78, 0, 0.27, 0], ['dresser', 3.8, 0, 1.7, -HP],
     ['art_photo', 4.04, 1.45, 1.25, -HP, null, { seed: 21 }], ['art_photo', 4.04, 1.45, 1.7, -HP, null, { seed: 22 }], ['art_photo', 4.04, 1.45, 2.15, -HP, null, { seed: 23 }],
     ['art_photo', 4.04, 1.9, 1.25, -HP, null, { seed: 24 }], ['art_photo', 4.04, 1.9, 1.7, -HP, null, { seed: 25 }], ['art_photo', 4.04, 1.9, 2.15, -HP, null, { seed: 26 }],
@@ -199,7 +207,7 @@ camera.layers.enable(LAYER_MERGED);
 const optStats = optimizeStatic({
   roots: [A.world, A.outdoor],
   tickOwners: TICKS.map(t => t.owner).filter(o => o !== A.world && o !== itemsGroup),
-  registry: [...Object.values(A.lights).flatMap(L => L.mats), ...A.streetLamps, A.sky.material],
+  registry: [...Object.values(A.lights).flatMap(L => L.mats), ...A.streetLamps, ...(A.glowMats || []), A.sky.material],
   isItemContainer: (o) => { const d = CATALOG[o.userData.item.t]; return d.small || d.removable; },
 });
 console.info('static merge', optStats);
@@ -325,6 +333,7 @@ function moveAndSlide(vx, vz, dt) {
 const keys = {}; const joy = { x: 0, y: 0 };
 const joyRun = () => Math.hypot(joy.x, joy.y) > 0.95;
 function updatePlayer(dt) {
+  if (P.drive) return updateCar(dt);
   let mx = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0) + joy.x;
   let mz = (keys.KeyS || keys.ArrowDown ? 1 : 0) - (keys.KeyW || keys.ArrowUp ? 1 : 0) + joy.y;
   const anyMove = Math.abs(mx) + Math.abs(mz) > 0.15 || keys.Space;
@@ -346,32 +355,35 @@ function updatePlayer(dt) {
   const doorHit = moveAndSlide(vx, vz, dt);
   if (Math.abs(vx) + Math.abs(vz) > 0) bump(doorHit, dt); else bumpT = 0;
   const moved = Math.hypot(P.pos.x - ox, P.pos.z - oz);
-  P.vy -= 9.8 * dt; P.pos.y += P.vy * dt; if (P.pos.y <= 0) { if (P.vy < -2) Sfx.step(); P.pos.y = 0; P.vy = 0; if (keys.Space && !uiOpen() && !P.action) P.vy = 3.6; }
-  if (moved > 0.001 && P.pos.y === 0) { P.bob += moved * 3.4; P.stepAcc += moved; if (P.stepAcc > (running ? 0.85 : 0.65)) { P.stepAcc = 0; Sfx.step(P.crouch || roomAt(P.pos.x, P.pos.z) === 'corridor'); } }
+  const gy = A.groundAt ? A.groundAt(P.pos.x, P.pos.z, P.pos.y) : 0;
+  P.vy -= 9.8 * dt; P.pos.y += P.vy * dt; if (P.pos.y <= gy) { if (P.vy < -2) Sfx.step(); P.pos.y = gy; P.vy = 0; if (keys.Space && !uiOpen() && !P.action) P.vy = 3.6; }
+  if (P.pos.y > gy + 0.02 && P.vy === 0) P.pos.y = Math.max(gy, P.pos.y - 6 * dt); // walking down a ramp keeps your feet on it
+  if (moved > 0.001 && Math.abs(P.pos.y - gy) < 0.03) { P.bob += moved * 3.4; P.stepAcc += moved; if (P.stepAcc > (running ? 0.85 : 0.65)) { P.stepAcc = 0; Sfx.step(P.crouch || roomAt(P.pos.x, P.pos.z) === 'corridor'); } }
   P.eye = lerp(P.eye, P.crouch ? 1.38 : 1.62, dt * 10);
   const fov = lerp(camera.fov, running && moved > 0.01 ? 75 : 70, dt * 6); if (Math.abs(fov - camera.fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
   camera.position.set(P.pos.x, P.pos.y + P.eye + Math.sin(P.bob) * 0.03, P.pos.z);
   camera.rotation.set(P.pitch + (P.chew > 0 ? Math.sin(P.chew * 26) * 0.004 * P.chew : 0) + (P.shake > 0 ? (Math.random() - 0.5) * P.shake * 0.06 : 0), P.yaw, Math.sin(P.bob * 0.5) * 0.004);
   if (P.shake > 0) P.shake -= dt;
-  if (P.pos.z < 1.4 && P.pos.x > 4.1 && P.pos.x < 7.6) completeTask('outside');
+  if (P.pos.z < 1.4 && P.pos.x > 4.1 && P.pos.x < 7.6 && P.pos.y > -0.5) completeTask('outside');
 }
 
 // ---- input ----
 let skipMoves = 0, locked = false, dragging = false, dragDist = 0, lastMouse = null; const mouseNDC = new THREE.Vector2(0, 0); let mouseInCanvas = false;
 const EL = { menu: $('#menu'), start: $('#start'), tasks: $('#tasks'), phone: $('#phone'), prompt: $('#prompt'), vignette: $('#vignette'), wet: $('#wet'), action: $('#action'), perf: $('#perfHud') };
-const uiOpen = () => !EL.menu.hidden || !EL.start.hidden || !EL.tasks.hidden || !EL.phone.hidden || !$('#puzzle').hidden;
+const uiOpen = () => !EL.menu.hidden || !EL.start.hidden || !EL.tasks.hidden || !EL.phone.hidden || !$('#puzzle').hidden || !$('#simon').hidden;
+const uiFreezes = () => !EL.menu.hidden || !EL.start.hidden || !EL.tasks.hidden || !$('#puzzle').hidden || !$('#simon').hidden; // the phone keeps time moving
 const tryLock = () => { if (isTouch) return; try { const p = canvas.requestPointerLock(); p && p.catch && p.catch(() => { }); } catch (e) { } };
 // mouse: right click = use / interact, left click = hit, bite or the aimed thing's grab action
 canvas.addEventListener('mousedown', (e) => {
   Sfx.init();
-  if (e.button === 2) { primary(); return; }
+  if (e.button === 2) { primary(); if (!locked && !uiOpen()) tryLock(); return; }
   if (e.button !== 0) return;
   if (locked) { leftAction(); return; }
   dragging = true; dragDist = 0; lastMouse = [e.clientX, e.clientY];
 });
 addEventListener('mouseup', (e) => {
   if (!dragging || e.button !== 0) return; dragging = false;
-  if (dragDist < 6 && e.target === canvas) { if (!hover && !held) { tryLock(); return; } leftAction(); }
+  if (dragDist < 6 && e.target === canvas) { if (hover || held) leftAction(); if (!uiOpen()) tryLock(); }
 });
 addEventListener('mousemove', (e) => {
   const rect = canvas.getBoundingClientRect(); mouseNDC.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1); mouseInCanvas = e.target === canvas;
@@ -400,6 +412,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyW' && !e.repeat) { const now = e.timeStamp; if (now - lastW < 300) P.sprintLatch = true; lastW = now; } // double-tap W to sprint
   keys[e.code] = true;
   if (e.code === 'F1') { toggleHud(); return; }
+  if (!$('#simon').hidden) { if (e.code === 'Escape') closeSimon(); return; }
   if (!$('#puzzle').hidden) { const b = Puzzle.blank(), dir = { ArrowUp: 3, KeyW: 3, ArrowDown: -3, KeyS: -3, ArrowLeft: 1, KeyA: 1, ArrowRight: -1, KeyD: -1 }[e.code]; if (e.code === 'Escape') { closePuzzle(); return; } if (dir !== undefined) { e.preventDefault(); const i = b + dir; if (i >= 0 && i < 9 && (Math.abs(dir) === 3 || Math.floor(i / 3) === Math.floor(b / 3))) slidePz(i); } return; }
   if (e.code === 'Escape') { if (!$('#phone').hidden) { closePhone(); return; } if (!$('#tasks').hidden) { $('#tasks').hidden = true; return; } if (!$('#menu').hidden) { closeMenu(); return; } if (!locked && $('#start').hidden) openMenu(); return; }
   if (uiOpen() || e.repeat) return;
@@ -424,7 +437,7 @@ function hitList(maxDist, opts = NOOPTS) {
   const out = [];
   for (const h of frameHits) {
     if (h.distance > maxDist) break;
-    const o = h.object; if (o.isPoints || o.isSprite || o.userData.noRay || heldSet.has(o)) continue;
+    const o = h.object; if (o.isPoints || o.isSprite || o.userData.noRay || heldSet.has(o) || (P.drive && driveSet.has(o))) continue;
     let vis = true, p = o; while (p) { if (!p.visible) { vis = false; break; } p = p.parent; } if (!vis) continue;
     const ghost = o.material && (o.material.visible === false || (o.material.transparent && o.material.opacity < 0.35));
     if (ghost && (opts.solidOnly || !findIntDeep(o))) continue;
@@ -524,6 +537,7 @@ const labelOf = (d, k = 'label') => { const v = d && d[k]; return typeof v === '
 function freshAim() { camera.updateMatrixWorld(); castFrame(); updateHover(); } // clicks use exactly what the crosshair is on right now
 function primary() {
   Sfx.init();
+  if (P.drive) { freshAim(); if (hover && hover.int && hover.int.cook) { try { hover.int.action(); } catch (e) { console.error(e); } return; } return carRadio(); }
   if (P.action || P.anim) return;
   freshAim();
   if (hover && hover.int) { const d = hover.int; try { d.action && d.action(); } catch (e) { console.error(e); } return; }
@@ -534,6 +548,7 @@ function primary() {
 let handHintT = 0;
 function leftAction() {
   Sfx.init();
+  if (P.drive) return carHorn();
   if (P.action || P.anim) return;
   freshAim();
   if (held && held.userData.item.food) return bite(held); // food in hand: left click always takes a bite
@@ -549,6 +564,7 @@ function leftAction() {
 }
 // E: pick up the item you're looking at
 function pickUp() {
+  if (P.drive) return exitCar();
   if (P.action || P.anim) return;
   freshAim();
   if (held) return toast('Your hands are full — right-click a surface to set it down, or press Q to drop it.');
@@ -668,6 +684,127 @@ function slidePz(i) {
   } else renderPz();
 }
 
+// ---- driving the Corolla ----
+const CAR_R = 1.12; const driveSet = new Set();
+function carHit(x, z) {
+  const y0 = A.GY + 0.28, y1 = A.GY + 1.25;
+  for (const c of STATIC) {
+    const b = c.box; if (!b || b.isEmpty() || b.max.y <= y0 || b.min.y >= y1) continue;
+    const qx = clamp(x, b.min.x, b.max.x), qz = clamp(z, b.min.z, b.max.z);
+    if ((x - qx) ** 2 + (z - qz) ** 2 < CAR_R * CAR_R) return true;
+  }
+  return false;
+}
+function enterCar() {
+  const car = A.car; if (!car || P.drive || P.action) return;
+  if (held) dropHeld();
+  P.drive = { car }; P.sit = null; P.yaw = car.g.rotation.y; P.pitch = -0.04;
+  driveSet.clear(); car.g.traverse(o => driveSet.add(o)); car.st.driving = true;
+  car.st.snd = Sfx.loop('hum', () => car.g.position, 0.06);
+  document.body.classList.add('driving');
+  if (isTouch) { $('#tUse').textContent = 'Exit'; $('#tUseHeld').textContent = 'Horn'; $('#tGrab').textContent = 'Radio'; }
+  $('#driveHud').hidden = false;
+  toast(isTouch ? '🚗 Stick: drive & steer · Exit when stopped' : '🚗 W/S gas & reverse · A/D steer · left-click horn · right-click radio · E to get out');
+  completeTask('drive'); Sfx.door(false);
+}
+function exitCar() {
+  const car = P.drive && P.drive.car; if (!car) return;
+  if (Math.abs(car.st.sp) > 2) return toast('Slow down to get out.');
+  car.st.sp = 0; car.st.snd && car.st.snd.stop(); car.st.snd = null;
+  if (car.st.radio) { car.st.radio.stop(); car.st.radio = null; }
+  P.drive = null; driveSet.clear(); car.st.driving = false; document.body.classList.remove('driving');
+  if (isTouch) { $('#tUse').textContent = 'Use'; $('#tUseHeld').textContent = 'Eat / Hit'; $('#tGrab').textContent = 'Grab / Drop'; }
+  $('#driveHud').hidden = true;
+  const g = car.g, side = _fwd.set(-1.6, 0, 0).applyAxisAngle(V3(0, 1, 0), g.rotation.y);
+  let ex = g.position.x + side.x, ez = g.position.z + side.z;
+  if (carHit(ex, ez)) { ex = g.position.x - side.x; ez = g.position.z - side.z; }
+  P.pos.set(ex, A.groundAt(ex, ez, A.GY + 1), ez); P.vy = 0; Sfx.door(true);
+}
+function carHorn() { Sfx.tone(392, 0.45, 'square', 0.18); Sfx.tone(494, 0.45, 'square', 0.14); completeTask('horn'); }
+function carRadio() {
+  const car = P.drive && P.drive.car; if (!car) return;
+  if (car.st.radio) { car.st.radio.stop(); car.st.radio = null; toast('📻 Radio off.'); }
+  else { car.st.radio = Sfx.music(() => car.g.position, 0); toast('📻 Lo-fi on the radio.'); completeTask('music'); }
+}
+const _fwd = V3();
+let fuelWarned = false, lastHudTxt = '';
+function updateCar(dt) {
+  const car = P.drive.car, st = car.st, g = car.g;
+  let th = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0) - joy.y;
+  let steer = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0) + joy.x;
+  if (uiOpen() || P.action) { th = 0; steer = 0; }
+  const area = A.areaAt(g.position.x, g.position.z, A.GY);
+  const onRoad = area && area.id !== 'outside';
+  const maxF = st.fuel <= 0 ? 2.2 : onRoad ? 16 : 6.5;
+  const target = th > 0 ? th * maxF : th * 5;
+  st.sp += clamp(target - st.sp, -1, 1) * (th !== 0 ? 9 : 4.5) * dt;
+  if (th === 0 && Math.abs(st.sp) < 0.25) st.sp = 0;
+  if (keys.Space) st.sp *= Math.max(0, 1 - 3.5 * dt);
+  const dir = Math.abs(st.sp) > 0.05 ? Math.sign(st.sp) : 0;
+  g.rotation.y -= steer * clamp(0.55 + Math.abs(st.sp) * 0.13, 0, 1.7) * dir * dt;
+  _fwd.set(-Math.sin(g.rotation.y), 0, -Math.cos(g.rotation.y));
+  const step = st.sp * dt, nx = g.position.x + _fwd.x * step, nz = g.position.z + _fwd.z * step;
+  const noseX = nx + _fwd.x * 1.9 * dir, noseZ = nz + _fwd.z * 1.9 * dir;
+  if (carHit(nx, nz) || carHit(noseX, noseZ)) { if (Math.abs(st.sp) > 3) { Sfx.thud(); P.shake = 0.25; } st.sp = -st.sp * 0.22; }
+  else { g.position.x = clamp(nx, -235, 275); g.position.z = clamp(nz, -255, 25); }
+  g.position.y = Math.min(A.groundAt(g.position.x, g.position.z, A.GY + 1), A.GY + 0.25);
+  st.fuel = Math.max(0, st.fuel - Math.abs(step) * 0.00045);
+  if (st.fuel < 0.15 && !fuelWarned && st.fuel > 0) { fuelWarned = true; toast('⛽ Low fuel! The BP is east on River Hwy, across the highway.'); }
+  if (st.fuel <= 0 && Math.abs(st.sp) > 2.3) toast('⛽ Running on fumes…');
+  car.wheels.forEach((w, i) => { w.rotation.x -= st.sp * dt / 0.32; if (i === 0 || i === 2) w.rotation.y = -steer * 0.4; });
+  if (car.steer) car.steer.rotation.y = -steer * 0.55;
+  if (st.snd) st.snd.setVol(0.05 + Math.abs(st.sp) / 16 * 0.22);
+  const night = ctx.isNight(); st.lights.forEach((m, i) => m.emissiveIntensity = night ? (i < 2 ? 3 : 1.6) : (keys.Space && i >= 2 ? 2 : 0));
+  // camera: driver seat, free look
+  _cs.set(-0.42, 1.14, -0.12).applyAxisAngle(_up, g.rotation.y).add(g.position);
+  camera.position.copy(_cs); camera.rotation.set(P.pitch + (P.shake > 0 ? (Math.random() - 0.5) * P.shake * 0.05 : 0), P.yaw, 0);
+  if (P.shake > 0) P.shake -= dt;
+  P.pos.set(g.position.x, g.position.y + 0.4, g.position.z); // keep ticks/lights centred on the car
+  const mph = Math.abs(st.sp * 2.237) | 0, txt = mph + ' mph · ⛽ ' + Math.round(st.fuel * 100) + '%' + (st.radio ? ' · 📻' : '');
+  if (txt !== lastHudTxt) { lastHudTxt = txt; $('#driveHud').textContent = txt; }
+}
+const _cs = V3(), _up = V3(0, 1, 0);
+
+// ---- Simon says: the memory toy in the navy present ----
+const Simon = { d: null, onWin: null, onPad: null, seq: [], at: 0, mode: 'idle', t: 0, round: 0, GOAL: 6 };
+const SIMON_FREQ = [329.6, 392, 493.9, 587.3];
+function simonBeep(i, dur = 0.32) { Sfx.tone(SIMON_FREQ[i], dur, 'triangle', 0.14); Simon.onPad && Simon.onPad(i); const pads = document.querySelectorAll('.spad'); pads.forEach((p, k) => p.classList.toggle('lit', k === i)); clearTimeout(Simon.litT); Simon.litT = setTimeout(() => { pads.forEach(p => p.classList.remove('lit')); Simon.onPad && Simon.onPad(-1); }, dur * 1000 * 0.75); }
+function openSimon(d, onWin, onPad) {
+  Object.assign(Simon, { d, onWin, onPad, seq: [], at: 0, mode: 'watch', t: 0, round: 0 });
+  $('#simon').hidden = false; unlock();
+  $('#sMsg').textContent = 'Watch the lights, then repeat them. Reach round ' + Simon.GOAL + ' to win!';
+  simonNext();
+}
+function simonNext() {
+  Simon.seq.push((Math.random() * 4) | 0); Simon.round = Simon.seq.length; Simon.at = 0; Simon.mode = 'watch';
+  $('#sRound').textContent = 'Round ' + Simon.round + ' / ' + Simon.GOAL;
+  let i = 0; clearInterval(Simon.player);
+  Simon.player = setInterval(() => { if ($('#simon').hidden) return clearInterval(Simon.player); if (i >= Simon.seq.length) { clearInterval(Simon.player); Simon.mode = 'input'; $('#sMsg').textContent = 'Your turn!'; return; } simonBeep(Simon.seq[i++]); }, 560);
+}
+function simonPress(i) {
+  if (Simon.mode !== 'input') return;
+  simonBeep(i, 0.22);
+  if (i !== Simon.seq[Simon.at++]) {
+    Simon.mode = 'watch'; $('#sMsg').textContent = '❌ Oops — watch it again…'; Sfx.tone(140, 0.5, 'sawtooth', 0.12);
+    const seq = Simon.seq; Simon.seq = seq; Simon.at = 0;
+    setTimeout(() => { if ($('#simon').hidden) return; let k = 0; clearInterval(Simon.player); Simon.player = setInterval(() => { if (k >= seq.length) { clearInterval(Simon.player); Simon.mode = 'input'; $('#sMsg').textContent = 'Your turn!'; return; } simonBeep(seq[k++]); }, 560); }, 900);
+    return;
+  }
+  if (Simon.at === Simon.seq.length) {
+    if (Simon.round >= Simon.GOAL) {
+      Simon.mode = 'idle'; $('#sMsg').textContent = '🏆 You win!'; Sfx.chime(); setTimeout(() => Sfx.chime(), 250);
+      const cb = Simon.onWin, r = Simon.round; Simon.d.best = Math.max(Simon.d.best || 0, r);
+      setTimeout(() => { closeSimon(); cb && cb(r); }, 1200);
+      return;
+    }
+    Simon.mode = 'watch'; $('#sMsg').textContent = '✔ Nice!'; setTimeout(() => { if (!$('#simon').hidden) simonNext(); }, 700);
+  }
+}
+function closeSimon() { if ($('#simon').hidden) return; clearInterval(Simon.player); clearTimeout(Simon.litT); Simon.onPad && Simon.onPad(-1); $('#simon').hidden = true; Simon.d = null; tryLock(); }
+document.querySelectorAll('.spad').forEach((p, i) => p.addEventListener('pointerdown', (e) => { e.preventDefault(); simonPress(i); }));
+$('#sClose').onclick = closeSimon;
+$('#simon').addEventListener('pointerdown', (e) => { if (e.target === $('#simon')) closeSimon(); });
+
 // ---- tasks ----
 const TASKS = [
   ['coffee', 'Brew an espresso at the coffee bar'], ['cook', 'Cook something on the stove'], ['bake', 'Bake cookies in the oven'], ['tea', 'Boil the kettle for tea'], ['microwave', 'Heat leftovers in the microwave'],
@@ -676,6 +813,8 @@ const TASKS = [
   ['tv', 'Watch TV from the couch'], ['music', 'Put on some music'], ['tree', 'Switch the tree lights'], ['gift', 'Open a present'], ['plants', 'Water a plant'],
   ['outside', 'Step out onto the balcony'], ['shower', 'Take a shower'], ['teeth', 'Brush your teeth'], ['toilet', 'Use the toilet'], ['hands', 'Wash your hands'], ['outfit', 'Pick an outfit in the closet'],
   ['sleep', 'Sleep in your bed'], ['lights', 'Flip a light switch'], ['breaker', 'Flip the main breaker'], ['computer', 'Use the computer'], ['read', 'Look through the wedding album'],
+  ['simon', 'Beat the memory game from under the tree'], ['text', 'Text somebody back'], ['work', 'Do some work on the laptop'], ['neighbor', 'Say hi to Marcus in 2B'], ['paydriver', 'Pay a delivery driver at the door'],
+  ['drive', 'Take the Corolla for a drive'], ['horn', 'Honk the horn'], ['groceries', 'Buy groceries at Harris Teeter & put them away'], ['fuel', 'Fill up the tank at the BP'], ['garage', 'Get a check-up at the garage behind the BP'],
 ];
 const done = new Set(store.get('tasks', []));
 function completeTask(id) { if (done.has(id)) return; done.add(id); store.set('tasks', [...done]); const t = TASKS.find(t => t[0] === id); if (t) { toast('✅ ' + t[1] + '  (' + done.size + '/' + TASKS.length + ')', 'task'); Sfx.chime(); } updateHud(); }
@@ -684,37 +823,85 @@ function renderTasks() {
   $('#taskCount').textContent = done.size + ' / ' + TASKS.length;
 }
 
-// ---- phone: delivery, music, smart home, texts ----
-const orders = []; let phoneMusic = null; const texts = [];
-const FOOD = [['🍕', 'Pizza', 'pizza', null, 35], ['🍜', 'Thai food', 'takeout', 'Thai food', 40], ['🍔', 'Burgers', 'takeout', 'Burgers', 30], ['🌯', 'Burritos', 'takeout', 'Burritos', 30]];
-function addText(from, body) { texts.unshift({ from, body, time: fmtTime(P.minutes) }); if (texts.length > 12) texts.pop(); $('#phoneBadge').hidden = false; Sfx.tone(1320, 0.08, 'sine', 0.1); Sfx.tone(1760, 0.1, 'sine', 0.1, 0, 0.1); }
+// ---- phone: contacts, texting, delivery, music, smart home ----
+const orders = []; let phoneMusic = null;
+const FOOD = [['🍕', 'Pizza', 'pizza', null, 35, 14], ['🍜', 'Thai food', 'takeout', 'Thai food', 40, 16], ['🍔', 'Burgers', 'takeout', 'Burgers', 30, 13], ['🌯', 'Burritos', 'takeout', 'Burritos', 30, 11]];
+const CONTACTS = [
+  { n: 'Lilah', e: '❤️', sub: 'Wife', chips: ['Love you ❤️', 'Want Thai tonight? 🍜', 'Come look at the tree with me 🎄', 'How\'s your day going?'], replies: [['Love you more!! See you at 6 ❤️'], ['YES. Extra spring rolls please 🥢'], ['Omw!! Put the fireplace on 🔥'], ['Long, but better now 😊 Miss you']] },
+  { n: 'Joe', e: '🏀', sub: 'Little brother', chips: ['Game night Friday?', 'You seen the Hornets score? 😬', 'Come see the new place, man'], replies: [['BET. I\'m bringing the switch 🎮'], ['Bro don\'t even start 💀'], ['Pull up this weekend, I\'ll bring wings']] },
+  { n: 'Mom', e: '🌼', sub: 'Mom', chips: ['Hi Mom ❤️', 'The tree looks great, sending pics!', 'Dinner Sunday still on?'], replies: [['Hi sweetheart! Eat something green today 🥦'], ['Send them!! Dad says hi 👋'], ['Of course! Bring Lilah, I\'m making the roast']] },
+  { n: 'Marcus', e: '🏠', sub: 'Neighbor in 2B', needsMet: true, chips: ['Hey, it\'s your neighbor in 2A 👋', 'Panthers game this Sunday?', 'You need anything from Harris Teeter?'], replies: [['Hey! Knock any time, door\'s usually open'], ['I\'ve got the big TV. You bring the chips 🏈'], ['You\'re a legend — grab me some of that salsa']] },
+  { n: 'DoorDash', e: '🛵', sub: 'Delivery updates', chips: ['Where\'s my order? 👀'], replies: [['Your dasher is on the way! 🛵']] },
+  { n: 'Amazon', e: '📦', sub: 'Deliveries', chips: ['Where\'s my package? 📦'], replies: [['Out for delivery — it\'ll be at your door soon!']] },
+  { n: 'Avalon Lake Norman', e: '🏢', sub: 'Leasing office', chips: ['When is rent due again?', 'The hallway light is out'], replies: [['Rent is due the 1st! Pay online any time 🙂'], ['Maintenance will stop by tomorrow — thanks for the heads up!']] },
+];
+const threads = store.get('threads', null) || {
+  Lilah: [{ m: 0, b: 'Made it to work. The tree better be lit when I\'m home 🎄', t: '8:40 AM' }],
+  Joe: [{ m: 0, b: 'yo send pics of the new place', t: '8:15 AM' }],
+  Mom: [{ m: 0, b: 'How\'s the new place? Send pics of the tree! 🎄', t: '8:02 AM' }],
+};
+const unread = new Set(store.get('unread', []));
+const pendingReplies = [];
+const totalMin = () => P.dayNum * 1440 + P.minutes;
+function saveThreads() { const trim = {}; for (const k in threads) trim[k] = threads[k].slice(-30); store.set('threads', trim); store.set('unread', [...unread]); }
+function addText(from, body) {
+  (threads[from] = threads[from] || []).push({ m: 0, b: body, t: fmtTime(P.minutes) });
+  unread.add(from); saveThreads(); $('#phoneBadge').hidden = false;
+  Sfx.tone(1320, 0.08, 'sine', 0.1); Sfx.tone(1760, 0.1, 'sine', 0.1, 0, 0.1);
+  if ($('#phone').hidden) toast('💬 ' + from + ': ' + (body.length > 44 ? body.slice(0, 44) + '…' : body));
+  else if (phoneView === 't:' + from) phoneApp(phoneView); else if (phoneView === 'msgs') phoneApp('msgs');
+}
+function sendText(to, body) {
+  (threads[to] = threads[to] || []).push({ m: 1, b: body, t: fmtTime(P.minutes) }); saveThreads(); completeTask('text');
+  Sfx.noise(0.06, 0.15, 3200, 2);
+}
+function queueReply(name, lines, delayMin = 2) { pendingReplies.push({ name, lines: [].concat(lines), at: totalMin() + delayMin + Math.random() * 2 }); }
 function togglePhone() { $('#phone').hidden ? openPhone() : closePhone(); }
 function openPhone(app = 'home') { $('#phone').hidden = false; unlock(); phoneApp(app); Sfx.click(); }
 function closePhone() { $('#phone').hidden = true; tryLock(); }
-const back = () => `<button class="backbtn" data-back="1">← Home</button>`;
+const back = (to = 'home', lbl = '← Home') => `<button class="backbtn" data-back="${to}">${lbl}</button>`;
+const esc = (t) => t.replace(/</g, '&lt;');
+let phoneView = 'home';
 function phoneApp(app) {
+  phoneView = app;
   const scr = $('#phoneScreen'); $('#phoneTime').textContent = fmtTime(P.minutes);
   if (app === 'home') {
-    scr.innerHTML = `<div class="weather"><strong>${ctx.isNight() ? '🌙' : '☀️'} ${ctx.isNight() ? 49 : 61}°F</strong><span>Lake Norman · ${ctx.isNight() ? 'Clear night' : 'Crisp and sunny'}</span></div>
-      <div class="apps"><button data-app="food"><i>🛵</i>Food</button><button data-app="music"><i>🎧</i>Music</button><button data-app="home2"><i>🏠</i>Home</button><button data-app="msgs"><i>💬</i>Messages</button><button data-app="todo"><i>✅</i>To-dos</button></div>
+    scr.innerHTML = `<div class="weather"><strong>${ctx.isNight() ? '🌙' : '☀️'} ${ctx.isNight() ? 49 : 61}°F</strong><span>Lake Norman · ${ctx.isNight() ? 'Clear night' : 'Crisp and sunny'}</span><strong class="cash">💵 $${P.cash}</strong></div>
+      <div class="apps"><button data-app="food"><i>🛵</i>Food</button><button data-app="music"><i>🎧</i>Music</button><button data-app="home2"><i>🏠</i>Home</button><button data-app="msgs"><i>💬</i>Messages${unread.size ? '<em class="dot"></em>' : ''}</button><button data-app="todo"><i>☑️</i>To-dos</button></div>
       ${orders.length ? `<div class="pill2">🛵 ${orders.map(o => o.name + ' arriving ' + fmtTime(o.eta)).join('<br>')}</div>` : ''}`;
   } else if (app === 'food') {
-    scr.innerHTML = `<h3>Order delivery</h3><p class="sub">Left at your front door.</p>` + FOOD.map((f, i) => `<button class="row" data-order="${i}"><i>${f[0]}</i><span><b>${f[1]}</b><small>About ${f[4]} min</small></span></button>`).join('') + back();
+    scr.innerHTML = `<h3>Order delivery · 💵 $${P.cash}</h3><p class="sub">A dasher brings it to your door — say hi and pay there.</p>` + FOOD.map((f, i) => `<button class="row" data-order="${i}"><i>${f[0]}</i><span><b>${f[1]} · $${f[5]}</b><small>About ${f[4]} min</small></span></button>`).join('') + back();
   } else if (app === 'music') {
-    scr.innerHTML = `<h3>Music</h3><p class="sub">${phoneMusic ? '▶ Playing: lo-fi fall beats' : 'Nothing playing'}</p><button class="row" data-music="1"><i>${phoneMusic ? '⏸' : '▶'}</i><span><b>${phoneMusic ? 'Pause' : 'Play lo-fi fall beats'}</b><small>Through your headphones</small></span></button>` + back();
+    scr.innerHTML = `<h3>Music</h3><p class="sub">${phoneMusic ? '▶ Playing: lo-fi fall beats' : 'Nothing playing'}</p><button class="row" data-music="1"><i>${phoneMusic ? '⏸' : '▶'}</i><span><b>${phoneMusic ? 'Pause' : 'Play lo-fi fall beats'}</b></span></button>` + back();
   } else if (app === 'home2') {
     const anyOn = Object.values(A.lights).some(L => L.on);
     scr.innerHTML = `<h3>Smart home</h3><button class="row" data-home="lights"><i>💡</i><span><b>${anyOn ? 'All lights off' : 'All lights on'}</b><small>Every room</small></span></button>
       <button class="row" data-home="lock"><i>${A.doorById.front.locked ? '🔓' : '🔒'}</i><span><b>${A.doorById.front.locked ? 'Unlock' : 'Lock'} front door</b><small>Currently ${A.doorById.front.locked ? 'locked' : 'unlocked'}</small></span></button>
       <button class="row" data-home="warm"><i>🌡</i><span><b>Thermostat ${A.temp}°F</b><small>Tap to warm up 1°</small></span></button>` + back();
   } else if (app === 'msgs') {
-    $('#phoneBadge').hidden = true;
-    scr.innerHTML = `<h3>Messages</h3>` + (texts.length ? texts.map(t => `<div class="msg"><b>${t.from}</b><small>${t.time}</small><p>${t.body}</p></div>`).join('') : '<p class="sub">No messages yet.</p>') + back();
+    const rows = CONTACTS.filter(c => !c.needsMet || store.get('metMarcus', false)).map(c => {
+      const th = threads[c.n] || [], last = th[th.length - 1];
+      return `<button class="row" data-thread="${c.n}"><i>${c.e}</i><span><b>${c.n}${unread.has(c.n) ? ' <em class="dot"></em>' : ''}</b><small>${last ? (last.m ? 'You: ' : '') + esc(last.b).slice(0, 38) : c.sub}</small></span></button>`;
+    }).join('');
+    scr.innerHTML = `<h3>Messages</h3>` + rows + back();
+  } else if (app.startsWith('t:')) {
+    const name = app.slice(2); unread.delete(name); saveThreads(); if (![...unread].length) $('#phoneBadge').hidden = true;
+    const c = CONTACTS.find(k => k.n === name), th = threads[name] || [];
+    scr.innerHTML = `<h3>${c ? c.e + ' ' : ''}${name}</h3><div class="thread">` +
+      th.slice(-14).map(m => `<div class="bub ${m.m ? 'me' : 'them'}">${esc(m.b)}<small>${m.t}</small></div>`).join('') +
+      `</div><div class="chips">` + (c ? c.chips.map((ch, i) => `<button class="chip" data-chip="${i}">${esc(ch)}</button>`).join('') : '') + `</div>` + back('msgs', '← Messages');
+    const tEl = scr.querySelector('.thread'); if (tEl) tEl.scrollTop = 1e6;
+    scr.querySelectorAll('[data-chip]').forEach(b2 => b2.onclick = () => {
+      const i = +b2.dataset.chip; sendText(name, c.chips[i]);
+      queueReply(name, c.replies[i] || c.replies[0], 1 + Math.random() * 2);
+      phoneApp(app);
+    });
   } else if (app === 'todo') {
-    scr.innerHTML = `<h3>To-dos · ${done.size}/${TASKS.length}</h3>` + TASKS.filter(t => !done.has(t[0])).slice(0, 8).map(t => `<div class="msg"><p>☐ ${t[1]}</p></div>`).join('') + back();
+    scr.innerHTML = `<h3>To-dos · ${done.size}/${TASKS.length}</h3>` + TASKS.filter(t => !done.has(t[0])).slice(0, 9).map(t => `<div class="msg"><p>☐ ${t[1]}</p></div>`).join('') + back();
   }
   scr.querySelectorAll('[data-app]').forEach(b => b.onclick = () => { Sfx.click(); phoneApp(b.dataset.app); });
-  scr.querySelectorAll('[data-order]').forEach(b => b.onclick = () => { const f = FOOD[+b.dataset.order]; orders.push({ name: f[1], type: f[2], label: f[3], eta: (P.minutes + f[4]) % 1440, left: f[4] }); toast('🛵 ' + f[1] + ' ordered! Arrives in about ' + f[4] + ' minutes.'); completeTask('order'); Sfx.chime(); phoneApp('home'); });
+  scr.querySelectorAll('[data-thread]').forEach(b => b.onclick = () => { Sfx.click(); phoneApp('t:' + b.dataset.thread); });
+  scr.querySelectorAll('[data-order]').forEach(b => b.onclick = () => { const f = FOOD[+b.dataset.order]; orders.push({ name: f[1], type: f[2], label: f[3], eta: (P.minutes + f[4]) % 1440, left: f[4], cost: f[5] }); toast('🛵 ' + f[1] + ' ordered ($' + f[5] + ' at the door). About ' + f[4] + ' min.'); addText('DoorDash', 'Order confirmed: ' + f[1] + ' · $' + f[5] + '. Your dasher will be there around ' + fmtTime((P.minutes + f[4]) % 1440) + '.'); completeTask('order'); phoneApp('home'); });
   scr.querySelectorAll('[data-music]').forEach(b => b.onclick = () => { if (phoneMusic) { phoneMusic.stop(); phoneMusic = null; } else { phoneMusic = Sfx.music(null, 0); completeTask('music'); } phoneApp('music'); });
   scr.querySelectorAll('[data-home]').forEach(b => b.onclick = () => {
     const k = b.dataset.home;
@@ -723,21 +910,59 @@ function phoneApp(app) {
     if (k === 'warm') { A.temp = Math.min(78, A.temp + 1); }
     Sfx.beep(1, 1800); phoneApp('home2');
   });
-  scr.querySelectorAll('[data-back]').forEach(b => b.onclick = () => phoneApp('home'));
+  scr.querySelectorAll('[data-back]').forEach(b => b.onclick = () => phoneApp(b.dataset.back));
 }
 
-// ---- random life events ----
+// ---- random life events + the delivery driver ----
 let nextPackage = 60 * (2 + Math.random() * 3), nextText = 40;
 function spawnAtDoor(type, d) { return spawnItem({ id: uid(), t: type, x: 8.05 + Math.random() * 0.2, y: 0, z: 7.3 + Math.random() * 0.4, r: Math.random() * 3, d }); }
+let driver = null;
+function removeDriver() { if (!driver) return; TICKS = TICKS.filter(t => t.owner !== driver.p.g); driver.p.g.parent && driver.p.g.parent.remove(driver.p.g); driver = null; }
+function makeDriver(o) {
+  const p = makePerson({ shirt: 0xd93a35, pants: 0x222831, skin: [0xe2b08a, 0xc98a5e, 0x8a5a3a][(Math.random() * 3) | 0], hair: 0x241a10, hat: 0xd93a35 });
+  p.g.position.set(8.7, 0, 5.75); A.world.add(p.g);
+  const bag = G(p.g, 0.3, 0.9, 0.18); B(bag, 0.24, 0.26, 0.16, M(0xc9a27a, 0.95), 0, 0, 0); B(bag, 0.24, 0.03, 0.16, M(0xa9875f, 0.95), 0, 0.26, 0);
+  const D = { p, o, bag, state: 'in', path: [[8.7, 6.7], [8.22, 7.42]], waitMin: 0, rung: false };
+  ctx.interact(p.g, {
+    reach: 2.8, cook: true,
+    label: () => D.state === 'wait' ? 'Say hi & pay $' + o.cost + ' for the ' + o.name.toLowerCase() + ' 💵' : '',
+    action: () => {
+      if (D.state !== 'wait') return;
+      const paid = P.cash >= o.cost; if (paid) { P.cash -= o.cost; updateCash(); toast('💵 -$' + o.cost + ' · ' + o.name); } else toast('💳 Covered by app credit (cash is low).');
+      p.say(['Enjoy! Stay warm out there.', 'Have a good one!', 'Careful, it\'s hot!'][(Math.random() * 3) | 0]);
+      spawnAtDoor(o.type, o.label ? { label: o.label } : {});
+      addText('DoorDash', 'Delivered! Enjoy your ' + o.name.toLowerCase() + '. 🛵');
+      completeTask('paydriver'); ctx.need('fun', 0.05);
+      D.state = 'out'; D.path = [[8.7, 6.4], [8.7, 5.7]];
+    }
+  });
+  ctx.tick(p.g, (dt, t) => {
+    if (D.state === 'in') { if (walkPerson(p, dt, t, D.path, 1.25)) { D.state = 'wait'; p.g.rotation.y = Math.PI / 2 + 0.2; Sfx.doorbell(); setTimeout(() => Sfx.knock(), 1100); toast('🛎 The dasher is at your door with the ' + o.name.toLowerCase() + ' — say hi and pay!'); } }
+    else if (D.state === 'wait') { animPerson(p, dt, t, 0); bag.position.y = 0.9 + Math.sin(t * 2) * 0.01; }
+    else if (D.state === 'out') { if (walkPerson(p, dt, t, D.path, 1.5)) removeDriver(); }
+  });
+  return D;
+}
 function updateEvents(gameMin) {
   for (let i = orders.length - 1; i >= 0; i--) {
     const o = orders[i]; o.left -= gameMin;
-    if (o.left <= 0) { orders.splice(i, 1); spawnAtDoor(o.type, o.label ? { label: o.label } : {}); Sfx.doorbell(); setTimeout(() => Sfx.knock(), 1200); toast('🔔 Ding-dong! Your ' + o.name.toLowerCase() + ' order is outside the front door.'); addText('DoorDash', 'Your ' + o.name + ' was left at your door. Enjoy!'); }
+    if (o.left <= 0) {
+      orders.splice(i, 1);
+      if (!driver) { driver = makeDriver(o); addText('DoorDash', 'Your dasher is at the door! 🛵'); }
+      else { spawnAtDoor(o.type, o.label ? { label: o.label } : {}); Sfx.doorbell(); toast('🔔 Your ' + o.name.toLowerCase() + ' order was left at the front door.'); addText('DoorDash', 'Your ' + o.name + ' was left at your door. Enjoy!'); }
+    }
   }
+  if (driver && driver.state === 'wait') { driver.waitMin += gameMin; if (driver.waitMin > 120) { spawnAtDoor(driver.o.type, driver.o.label ? { label: driver.o.label } : {}); addText('DoorDash', 'We left your order at the door — no charge this time. 💙'); driver.state = 'out'; driver.path = [[8.7, 6.4], [8.7, 5.7]]; } }
+  for (let i = pendingReplies.length - 1; i >= 0; i--) { const r = pendingReplies[i]; if (totalMin() >= r.at) { pendingReplies.splice(i, 1); addText(r.name, r.lines[(Math.random() * r.lines.length) | 0]); } }
   nextPackage -= gameMin;
   if (nextPackage <= 0) { nextPackage = 60 * (5 + Math.random() * 6); if (hour() > 8 && hour() < 20) { spawnAtDoor('package', {}); Sfx.knock(); toast('📦 *knock knock* A package was left at your door.'); addText('Amazon', 'Delivered: your package is at the front door.'); } }
   nextText -= gameMin;
-  if (nextText <= 0) { nextText = 60 * (2 + Math.random() * 4); const m = [['Mom', 'How\'s the new place? Send pics of the tree! 🎄'], ['Lilah', 'Did you remember to water the plants? 🪴'], ['Lilah', 'Want to order Thai tonight?'], ['Joe', 'Game night this weekend?'], ['Avalon Lake Norman', 'Reminder: the fitness center is open 24/7.'], ['Lilah', 'Can you start the laundry? 🧺']][(Math.random() * 6) | 0]; addText(m[0], m[1]); toast('💬 New message from ' + m[0] + (isTouch ? ' (tap Phone)' : ' (Esc → Open phone)')); }
+  if (nextText <= 0) {
+    nextText = 60 * (2 + Math.random() * 4);
+    const pool = [['Mom', 'How are you two doing? Send pics! 🎄'], ['Lilah', 'Did you remember to water the plants? 🪴'], ['Lilah', 'Want to order Thai tonight?'], ['Joe', 'Game night this weekend?'], ['Avalon Lake Norman', 'Reminder: the fitness center is open 24/7.'], ['Lilah', 'Can you start the laundry? 🧺'], ['Joe', 'bro the Hornets are COOKING rn 🏀']];
+    if (store.get('metMarcus', false)) pool.push(['Marcus', 'Heard you moving furniture — need a hand?'], ['Marcus', 'Grabbing wings later if you want in 🍗']);
+    const m = pool[(Math.random() * pool.length) | 0]; addText(m[0], m[1]);
+  }
 }
 
 // ---- toast / fade ----
@@ -753,6 +978,7 @@ document.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openMenu
 $('#mTasks').onclick = () => { $('#menu').hidden = true; renderTasks(); $('#tasks').hidden = false; };
 $('#mPhone').onclick = () => { $('#menu').hidden = true; openPhone(); };
 $('#taskChip').onclick = () => { renderTasks(); $('#tasks').hidden = false; unlock(); };
+$('#cashChip').onclick = () => { openPhone(); };
 $('#closeTasks').onclick = () => { $('#tasks').hidden = true; tryLock(); };
 $('#closePhone').onclick = closePhone;
 $('#sens').value = settings.sens; $('#sens').oninput = (e) => { settings.sens = +e.target.value; store.set('settings', settings); };
@@ -792,6 +1018,16 @@ function updateHud() {
   for (const k of NEEDS) { const el = $('#n_' + k); if (el) { el.style.width = (P.needs[k] * 100) + '%'; el.parentNode.parentNode.classList.toggle('low', P.needs[k] < 0.2); } }
   const m = mood(); $('#mood').textContent = m[0] + ' ' + m[1];
   $('#taskChip').textContent = '✓ ' + done.size + '/' + TASKS.length;
+  updateCash();
+}
+function updateCash() { const el = $('#cashChip'); if (el && el.textContent !== '$' + P.cash) el.textContent = '$' + P.cash; }
+const seenAreas = new Set(store.get('areas', []));
+let lastAreaId = null;
+function areaPulse() {
+  const a = A.areaAt && A.areaAt(P.pos.x, P.pos.z, P.pos.y);
+  if (!a) { lastAreaId = null; return a; }
+  if (a.id !== lastAreaId) { lastAreaId = a.id; if (a.tip && !seenAreas.has(a.id)) { seenAreas.add(a.id); store.set('areas', [...seenAreas]); toast(a.tip); } }
+  return a;
 }
 let lastPrompt = null;
 // big pop-up action for cooking: a tap target on phones, a large card on desktop
@@ -861,10 +1097,10 @@ function frame(now) {
   requestAnimationFrame(frame);
   const rawMs = now - last; const dt = Math.min(0.1, rawMs / 1000); last = now;
   // menus, phone and to-do list freeze the world: draw one last frame, then skip all work
-  if (uiOpen()) { if (pausedDrawn) { stats.paused = true; recordFrame(rawMs, 0, 0); return; } pausedDrawn = true; } else pausedDrawn = false;
+  if (uiFreezes()) { if (pausedDrawn) { stats.paused = true; recordFrame(rawMs, 0, 0); return; } pausedDrawn = true; } else pausedDrawn = false;
   stats.paused = false; clockT += dt;
   const pf0 = performance.now();
-  const playing = EL.start.hidden && EL.menu.hidden && EL.phone.hidden;
+  const playing = EL.start.hidden && EL.menu.hidden;
   const gameMin = playing ? dt : 0; // 1 real second = 1 game minute
   if (playing) { advanceTime(gameMin); updateNeeds(dt, gameMin); updateEvents(gameMin); }
   for (const c of STATIC) if (c.upd) c.upd();
@@ -877,8 +1113,8 @@ function frame(now) {
   for (const g of itemsGroup.children) if (g.userData.wiggle > 0) { g.userData.wiggle -= dt; g.scale.setScalar(1 + Math.sin(g.userData.wiggle * 20) * 0.03 * g.userData.wiggle); }
   updateDay(dt);
   if (P.caffeine > 0) P.caffeine -= dt;
-  if ((hudAcc += dt) > 0.4) { hudAcc = 0; updateHud(); const r = roomAt(P.pos.x, P.pos.z); $('#roomName').textContent = ROOMS[r] ? ROOMS[r].name : 'Outside'; $('#clock').textContent = (ctx.isNight() ? '🌙 ' : '☀️ ') + 'Day ' + P.dayNum + ' · ' + fmtTime(P.minutes); }
-  if ((saveAcc += dt) > 10) { saveAcc = 0; store.set('state', { needs: P.needs, minutes: P.minutes, dayNum: P.dayNum }); }
+  if ((hudAcc += dt) > 0.4) { hudAcc = 0; updateHud(); const r = roomAt(P.pos.x, P.pos.z); const area = areaPulse(); $('#roomName').textContent = A.inTower && A.inTower(P.pos.x, P.pos.z) ? 'Stairwell' : P.pos.y > -1.4 && ROOMS[r] ? ROOMS[r].name : (P.pos.y > -1.4 && P.pos.x > 9.9 && P.pos.x < 14.1 && P.pos.z > 5.5 ? "Marcus's place · 2B" : P.pos.y > -1.4 ? 'Stairwell' : area ? area.n : 'Outside'); $('#clock').textContent = (ctx.isNight() ? '🌙 ' : '☀️ ') + 'Day ' + P.dayNum + ' · ' + fmtTime(P.minutes); }
+  if ((saveAcc += dt) > 10) { saveAcc = 0; store.set('state', { needs: P.needs, minutes: P.minutes, dayNum: P.dayNum, cash: P.cash }); }
   Sfx.updateLoops(camera.position);
   const pf1 = performance.now();
   renderer.render(scene, camera);
@@ -926,4 +1162,4 @@ P.pos.set(A.spawn.x, 0, A.spawn.z); P.yaw = A.spawn.yaw; P.day = P.dayTarget = d
 updateHud(); renderTasks();
 camera.position.set(P.pos.x, P.eye, P.pos.z); camera.rotation.set(P.pitch, P.yaw, 0); camera.updateMatrixWorld();
 precompile().then(() => requestAnimationFrame(frame));
-window.__game = { STATIC_LIST: () => STATIC, moveAndSlide, dragLook, PR, POOL, SOURCES, lightStats, optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, leftAction, pickUp, bite, Crumbs, inSink, sinkBlocked: () => sinkBlocked, clock: () => clockT, FOOD: { FOOD_MODELS, FRUIT, pastaBowl, pizzaSlice }, held: () => held, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
+window.__game = { STATIC_LIST: () => STATIC, moveAndSlide, dragLook, PR, POOL, SOURCES, lightStats, optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, leftAction, pickUp, bite, Crumbs, simonPress, SimonState: () => ({ mode: Simon.mode, seq: Simon.seq.slice(), at: Simon.at, round: Simon.round }), enterCar, exitCar, held: () => held, inSink, sinkBlocked: () => sinkBlocked, clock: () => clockT, FOOD: { FOOD_MODELS, FRUIT, pastaBowl, pizzaSlice }, held: () => held, camera, ctx, renderer, scene, keys, openPhone, advanceTime };

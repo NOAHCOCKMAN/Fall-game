@@ -187,6 +187,32 @@ body.touch.hasbig #prompt { display: none !important; }
 .pztile span { position: absolute; left: 6px; top: 4px; font: 700 12px var(--display); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
 #pzBoard.solved .pztile { border-color: transparent; border-radius: 0; box-shadow: none; } #pzBoard.solved .pztile span { opacity: 0; }
 .pzmsg { color: var(--muted); font-size: 14px; text-align: center; margin: 12px 0; min-height: 1.4em; } .pzhint { color: var(--muted); font-size: 12px; align-self: center; }
+/* cash + driving */
+#cashChip { font-family: var(--display); font-weight: 800; color: #b6e3a8; }
+#driveHud { position: absolute; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); padding: 9px 16px; font-family: var(--display); font-weight: 700; font-size: 16px; z-index: 3; }
+body.touch #driveHud { bottom: auto; top: calc(64px + env(safe-area-inset-top, 0px)); }
+/* simon */
+#sBoard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: min(320px, 72vw, 46vh); aspect-ratio: 1; margin: 0 auto; }
+.spad { border: 0; border-radius: 18px; opacity: .45; transition: opacity .08s, transform .08s; box-shadow: inset 0 -6px 14px rgba(0,0,0,.35); touch-action: none; }
+.spad.g { background: #2fae4e; border-top-left-radius: 50%; } .spad.r { background: #d93a35; border-top-right-radius: 50%; }
+.spad.y { background: #e8c431; border-bottom-left-radius: 50%; } .spad.b { background: #3a7fd9; border-bottom-right-radius: 50%; }
+.spad.lit { opacity: 1; transform: scale(1.04); box-shadow: 0 0 26px currentColor; }
+#sRound { color: var(--muted); font-size: 14px; }
+/* texting */
+.weather { grid-template-columns: 1fr auto; align-items: center; } .weather .cash { color: #b6e3a8; }
+.thread { max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 4px 2px 10px; }
+.bub { max-width: 82%; padding: 8px 12px; border-radius: 16px; font-size: 14px; line-height: 1.35; position: relative; }
+.bub small { display: block; font-size: 10px; opacity: .55; margin-top: 2px; }
+.bub.them { align-self: flex-start; background: rgba(255,255,255,.12); border-bottom-left-radius: 4px; }
+.bub.me { align-self: flex-end; background: #2e7dd1; color: #fff; border-bottom-right-radius: 4px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 2px; }
+.chip { background: rgba(255,255,255,.1); border: 1px solid var(--line); border-radius: 999px; padding: 8px 13px; font-size: 13px; }
+.chip:active, .chip:hover { background: rgba(242,153,74,.25); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); margin-left: 6px; }
+/* guide */
+.guide details { background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; margin-bottom: 8px; }
+.guide summary { cursor: pointer; font-family: var(--display); font-weight: 700; }
+.guide ol { margin: 8px 0 2px 18px; padding: 0; color: var(--muted); font-size: 13.5px; line-height: 1.55; }
 #enter:disabled { opacity: .6; cursor: progress; }
 @media (max-width: 640px) { .stats { min-width: 110px; padding: 6px 8px; } .mood { font-size: 11px; } #panel { top: calc(56px + env(safe-area-inset-top, 0px)); bottom: calc(180px + env(safe-area-inset-bottom, 0px)); } .card-big { padding: 20px; } }
 @media (prefers-reduced-motion: reduce) { #toast, #fade, #cross { transition: none; } }
@@ -212,12 +238,14 @@ body.touch.hasbig #prompt { display: none !important; }
         <div class="need" title="Bladder"><span>🚽</span><div class="bar"><i id="n_bladder"></i></div></div>
         <div class="need" title="Fun"><span>🎉</span><div class="bar"><i id="n_fun"></i></div></div>
       </div>
+      <button id="cashChip" class="pill glass hudbtn">$85</button>
       <button id="taskChip" class="pill glass hudbtn">✓ 0/0</button>
     </div>
   </div>
   <div id="prompt" class="glass" hidden></div>
   <div id="bigRow" hidden><button id="bigAct" class="hudbtn"></button><button id="bigAlt" class="hudbtn" hidden></button></div>
   <pre id="perfHud" hidden></pre>
+  <div id="driveHud" class="glass" hidden></div>
   <div id="toast" class="glass"></div>
   <div id="hint" class="glass"><kbd>Right-click</kbd> use · <kbd>Left-click</kbd> eat / hit · <kbd>E</kbd> pick up · <kbd>Q</kbd> drop · <kbd>Esc</kbd> menu &amp; phone</div>
   <div id="action" hidden><div id="actionRing"></div><span id="actionLabel"></span></div>
@@ -228,7 +256,7 @@ body.touch.hasbig #prompt { display: none !important; }
 <div id="start" class="overlay">
   <div class="card-big glass">
     <h1>Fall <em>Apartment</em></h1>
-    <p class="lede">Your apartment, room by room. Live a day in it: keep yourself fed, rested and clean, cook and brew coffee, do the laundry, order delivery to your door, and open packages. Time passes, the sun sets over the fall trees, and there are 31 things to do.</p>
+    <p class="lede">Your apartment, room by room. Live a day in it: keep yourself fed, rested and clean, cook and brew coffee, do the laundry, order delivery to your door, and open packages. Time passes, the sun sets over Mooresville, and there are 38 things to do — cook, text, drive your Corolla to the Harris Teeter or the BP, and meet the neighbors.</p>
     <ul class="keys touchonly"><li><kbd>Stick</kbd>walk (push to the edge to sprint)</li><li><kbd>Drag</kbd>look around</li><li><kbd>Use</kbd>or tap things</li><li><kbd>Grab / Drop</kbd>carry small items</li><li><kbd>Eat / Hit</kbd>bite, sip or punch</li><li><kbd>Sneak</kbd>walk quietly</li><li><kbd>Phone</kbd>order food &amp; more</li></ul>
     <ul class="keys deskonly">
       <li><kbd>W A S D</kbd>move</li>
@@ -243,6 +271,7 @@ body.touch.hasbig #prompt { display: none !important; }
       <li><kbd>Esc</kbd>pause menu (phone, to-dos)</li>
       <li><kbd>F1</kbd>hide HUD</li>
       <li><kbd>F3</kbd>performance stats</li>
+      <li><kbd>In the car</kbd>W/S gas · A/D steer · Space brake · E out</li>
     </ul>
     <div class="btns"><button id="enter" class="primary">Walk in</button></div>
   </div>
@@ -258,6 +287,7 @@ body.touch.hasbig #prompt { display: none !important; }
         <button id="mTasks" class="ghostbtn">Things to do</button>
         <button class="ghostbtn" data-open="settings">Settings</button>
         <button class="ghostbtn" data-open="help">Controls</button>
+        <button class="ghostbtn" data-open="guide">Area guide</button>
       </div>
     </div>
     <div class="msec" data-sec="settings" hidden>
@@ -268,6 +298,40 @@ body.touch.hasbig #prompt { display: none !important; }
       <label class="row" for="mute">Mute sound <input id="mute" type="checkbox"></label>
       <label class="row" for="perfToggle">Show performance stats (F3) <input id="perfToggle" type="checkbox"></label>
       <div class="btns" style="margin-top:16px"><button class="ghostbtn" data-open="main">Back</button><button id="resetTasks" class="ghostbtn">Start a fresh day 1</button></div>
+    </div>
+    <div class="msec" data-sec="guide" hidden>
+      <h2>Area guide</h2>
+      <div class="guide">
+        <details open><summary>🏠 Your apartment (3rd floor)</summary><ol>
+          <li>Cook on the stove — knobs on the front turn the burners on.</li>
+          <li>Open the presents under the tree: a sliding puzzle, a memory game and a snow globe.</li>
+          <li>Work on the laptop at the desk for +$25.</li>
+          <li>Order delivery on your phone — the dasher comes to your door; say hi and pay.</li>
+        </ol></details>
+        <details><summary>🚪 The hallway</summary><ol>
+          <li>Knock on 2B across the hall and say hi to Marcus.</li>
+          <li>Take the STAIRS door at the end of the hall down to the parking lot.</li>
+        </ol></details>
+        <details><summary>🅿 Parking lot</summary><ol>
+          <li>Your red Corolla is parked by the stair door — right-click it to drive.</li>
+          <li>W/S gas &amp; reverse, A/D steer, Space brake, left-click horn, right-click radio, E to get out.</li>
+        </ol></details>
+        <details><summary>🛒 Harris Teeter (next door)</summary><ol>
+          <li>Follow Caspian Pl, then Town Center Dr to the plaza — or walk the sidewalk.</li>
+          <li>Groceries $12 (put them away at your fridge), flowers for Lilah $6, energy drink $3.</li>
+          <li>Say hi to Dana at the register.</li>
+        </ol></details>
+        <details><summary>⛽ BP &amp; the garage (down River Hwy)</summary><ol>
+          <li>Take Caspian Pl to River Hwy, turn right and cross over — the BP is down the road.</li>
+          <li>Park at a pump and right-click it to fill the tank ($18). Snacks inside.</li>
+          <li>Pull around back: Ray at River Hwy Auto &amp; Tire does a $20 check-up.</li>
+        </ol></details>
+        <details><summary>💵 Money</summary><ol>
+          <li>You start with $85 (top-right). Deliveries, gas and groceries cost cash.</li>
+          <li>Earn $25 any time: open the laptop on the desk and "Do some work".</li>
+        </ol></details>
+      </div>
+      <div class="btns"><button class="ghostbtn" data-open="main">Back</button></div>
     </div>
     <div class="msec" data-sec="help" hidden>
       <h2>Controls</h2>
@@ -284,6 +348,7 @@ body.touch.hasbig #prompt { display: none !important; }
       <li><kbd>Esc</kbd>pause menu (phone, to-dos)</li>
       <li><kbd>F1</kbd>hide HUD</li>
       <li><kbd>F3</kbd>performance stats</li>
+      <li><kbd>In the car</kbd>W/S gas · A/D steer · Space brake · E out</li>
       </ul>
       <ul class="keys touchonly"><li><kbd>Stick</kbd>walk, push to the edge to sprint</li><li><kbd>Drag</kbd>look</li><li><kbd>Tap</kbd>or <kbd>Use</kbd>use / interact</li><li><kbd>Grab / Drop</kbd>pick up or drop</li><li><kbd>Eat / Hit</kbd>bite, sip or punch</li><li><kbd>Jump</kbd> · <kbd>Sneak</kbd></li></ul>
       <p class="lede" style="font-size:14px">If the mouse won't lock in your browser, click-and-drag to look and click on things to use them.</p>
@@ -298,6 +363,14 @@ body.touch.hasbig #prompt { display: none !important; }
     <div id="pzBoard"></div>
     <p id="pzMsg" class="pzmsg"></p>
     <div class="btns"><button id="pzShuffle" class="ghostbtn">Shuffle</button><span class="pzhint">Close any time; your progress stays in the box.</span></div>
+  </div>
+</div>
+
+<div id="simon" class="overlay" hidden>
+  <div class="card-big glass pzcard">
+    <div class="pzhead"><h2>Memory lights 🔴🟢</h2><span id="sRound"></span><button id="sClose" class="x" aria-label="Put the toy down">×</button></div>
+    <div id="sBoard"><button class="spad g" aria-label="Green"></button><button class="spad r" aria-label="Red"></button><button class="spad y" aria-label="Yellow"></button><button class="spad b" aria-label="Blue"></button></div>
+    <p id="sMsg" class="pzmsg"></p>
   </div>
 </div>
 
@@ -1087,7 +1160,13 @@ def('laptop', 'Laptop', 'Electronics', { mount: 'surface', solid: false, small: 
   const lid = G(g, 0, 0.019, -0.11); B(lid, 0.32, 0.008, 0.22, al, 0, 0, 0.11);
   const scr = plane(lid, 0.29, 0.19, E(0x6c8fd6, 0.8), 0, -0.001, 0.11, Math.PI / 2); markDyn(scr);
   const st = hinge(ctx, lid, 'x', -1.9, 'laptop', 'click', (o) => { if (o) ctx.task('computer'); });
-  ctx.tick(lid, () => { scr.visible = st.v > 0.3; });
+  const workHit = B(g, 0.3, 0.05, 0.2, new THREE.MeshBasicMaterial({ visible: false }), 0, 0.03, 0.08); markDyn(workHit);
+  ctx.interact(workHit, { label: () => st.open ? 'Do some work 💻 (+$25)' : '', action: () => {
+    if (!st.open) return;
+    ctx.startAction({ label: 'Knocking out some work', dur: 7, done: () => { ctx.earn(25, 'work'); ctx.task('work'); ctx.need('fun', -0.05); ctx.msg('💻 Inbox zero-ish. +$25.'); } });
+  } });
+  workHit.visible = false;
+  ctx.tick(lid, () => { scr.visible = st.v > 0.3; workHit.visible = st.open; });
   return g;
 });
 def('espresso', 'Espresso machine', 'Kitchen', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
@@ -1185,6 +1264,7 @@ def('wine', 'Wine & glasses', 'Kitchen', { mount: 'surface', solid: false, small
 
 // ================= DECOR =================
 def('flowers', 'Potted kalanchoe', 'Plants', { mount: 'surface', solid: false, small: true, color: '#e05a8a', colorable: true }, (ctx, it) => {
+  it.handLabel = 'snap a photo for Lilah 📸'; it.handUse = () => { Sfx.click(); ctx.flowerPhoto && ctx.flowerPhoto(); };
   const g = new THREE.Group(); pot(g, 0.08, 0.12, M(0xf2ede4, 0.4)); leafy(g, 22, 0.1, 0.1, 0x4f7a3a, 0.12, 0.05);
   const fc = M(it.c || '#e05a8a', 0.7); for (let i = 0; i < 26; i++) { const a = Math.random() * TAU, r = Math.random() * 0.1; S(g, 0.014, fc, Math.cos(a) * r, 0.2 + Math.random() * 0.08, Math.sin(a) * r, 6, 4); }
   ctx.interact(g, { label: 'Water the flowers 💧', action: () => { ctx.water(g); } }); return g;
@@ -1265,15 +1345,25 @@ function puzzlePicture() {
   return (_pzPic = c);
 }
 def('present', 'Wrapped present', 'Holiday', { mount: 'surface', solid: false, small: true, color: '#b3141f', colorable: true }, (ctx, it) => {
-  const d = it.d || (it.d = {}); const kind = d.toy || (it.c === '#2e5a3a' ? 'globe' : 'puzzle'); d.toy = kind;
+  const d = it.d || (it.d = {}); const kind = d.toy || (it.c === '#2e5a3a' ? 'globe' : it.c === '#2e3a46' ? 'simon' : 'puzzle'); d.toy = kind;
   const g = new THREE.Group(), wrap = M(it.c || '#b3141f', 0.6), gold = M(0xd4af37, 0.3, 0.6);
   B(g, 0.25, 0.18, 0.25, wrap, 0, 0, 0); B(g, 0.04, 0.182, 0.252, gold, 0, 0, 0); B(g, 0.252, 0.182, 0.04, gold, 0, 0, 0);
   const lid = G(g, 0, 0.18, 0); B(lid, 0.27, 0.05, 0.27, wrap, 0, 0, 0); markMoves(lid); B(lid, 0.04, 0.052, 0.272, gold, 0, 0, 0); B(lid, 0.272, 0.052, 0.04, gold, 0, 0, 0);
   for (const s of [-1, 1]) { const bow = T(lid, 0.035, 0.012, gold, s * 0.035, 0.065, 0); bow.rotation.set(0, Math.PI / 2, s * 0.5); bow.scale.set(1, 0.7, 1); }
   const toy = G(g, 0, 0.2, 0); toy.visible = false; markDyn(toy);
   const st = { open: false, rise: 0, shake: 0, closeAt: 0 };
-  let tiles = [], snow = [], tune = null;
-  if (kind === 'puzzle') {
+  let tiles = [], snow = [], tune = null, pads = [];
+  if (kind === 'simon') {
+    // a chunky lights-and-sounds memory toy: four glowing quarter pads on a round base
+    C(toy, 0.115, 0.13, 0.045, M(0x23262b, 0.5), 0, 0, 0, 28);
+    const PADCOLS = [0x2fae4e, 0xd93a35, 0xe8c431, 0x3a7fd9];
+    for (let i = 0; i < 4; i++) {
+      const pm = new THREE.MeshStandardMaterial({ color: PADCOLS[i], roughness: 0.35, emissive: PADCOLS[i], emissiveIntensity: 0 });
+      const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.022, 14, 1, false, i / 4 * TAU + 0.06, TAU / 4 - 0.12), pm);
+      pad.position.y = 0.05; toy.add(pad); pads.push(pm);
+    }
+    C(toy, 0.028, 0.028, 0.026, M(0xf4f1ea, 0.4), 0, 0.048, 0, 16);
+  } else if (kind === 'puzzle') {
     // wooden tray with 8 picture tiles that match your progress in the puzzle
     const wood = M(0xa4764d, 0.6); B(toy, 0.21, 0.015, 0.21, wood, 0, 0, 0); for (const [w, dd, x, z] of [[0.21, 0.012, 0, -0.099], [0.21, 0.012, 0, 0.099], [0.012, 0.21, -0.099, 0], [0.012, 0.21, 0.099, 0]]) B(toy, w, 0.03, dd, wood, x, 0, z);
     const pic = new THREE.CanvasTexture(puzzlePicture()); pic.colorSpace = THREE.SRGBColorSpace;
@@ -1295,18 +1385,20 @@ def('present', 'Wrapped present', 'Holiday', { mount: 'surface', solid: false, s
   }
   const setTiles = () => { if (!tiles.length) return; const pz = d.pz; for (let n = 1; n <= 8; n++) { const i = pz ? pz.indexOf(n) : n - 1; tiles[n - 1].position.set(((i % 3) - 1) * 0.062, 0.015, (Math.floor(i / 3) - 1) * 0.062); } };
   setTiles();
-  const openBox = () => { st.open = true; Sfx.chime(); Sfx.noise(0.5, 0.18, 2600, 0.8, 'bandpass', -1500); ctx.task('gift'); if (!d.seen) { d.seen = true; ctx.msg(kind === 'puzzle' ? '🧩 A sliding block puzzle! Right-click to play.' : '❄️ A snow globe! Right-click to shake it.'); } };
+  const openBox = () => { st.open = true; Sfx.chime(); Sfx.noise(0.5, 0.18, 2600, 0.8, 'bandpass', -1500); ctx.task('gift'); if (!d.seen) { d.seen = true; ctx.msg(kind === 'puzzle' ? '🧩 A sliding block puzzle! Right-click to play.' : kind === 'simon' ? '🔴 A lights memory game! Right-click to play.' : '❄️ A snow globe! Right-click to shake it.'); } };
   const closeBox = () => { st.open = false; Sfx.noise(0.25, 0.12, 900, 1); };
   ctx.interact(g, {
-    label: () => !st.open ? 'Open present 🎁' : st.rise < 0.9 ? '' : kind === 'puzzle' ? (d.pz ? 'Keep playing the sliding puzzle 🧩' : 'Play the sliding puzzle 🧩') : 'Shake the snow globe ❄️',
+    label: () => !st.open ? 'Open present 🎁' : st.rise < 0.9 ? '' : kind === 'puzzle' ? (d.pz ? 'Keep playing the sliding puzzle 🧩' : 'Play the sliding puzzle 🧩') : kind === 'simon' ? 'Play the memory game 🔴🟢' : 'Shake the snow globe ❄️',
     action: () => {
       if (!st.open) return openBox();
       if (st.rise < 0.9) return;
       if (kind === 'puzzle') ctx.puzzle(d, (moves, secs) => { setTiles(); ctx.need('fun', 0.25); ctx.msg('🎉 Solved in ' + moves + ' moves (' + Math.round(secs) + 's)! Back in the box it goes.'); st.closeAt = performance.now() + 1400; }, setTiles);
+      else if (kind === 'simon') ctx.simon(d, (round) => { ctx.need('fun', 0.22); ctx.task('simon'); ctx.msg('🏆 You beat all ' + round + ' rounds! Back in the box it goes.'); st.closeAt = performance.now() + 1400; }, (i) => { pads.forEach((pm, k) => pm.emissiveIntensity = k === i ? 1.6 : 0); });
       else { st.shake = 1; Sfx.noise(0.4, 0.2, 3000, 1.2, 'bandpass', -1800); snow.forEach(f => { f.userData.v = 0.5 + Math.random() * 0.6; f.userData.h = Math.random() * 0.3; }); ctx.need('fun', 0.05); }
     },
     altLabel: () => st.open && st.rise > 0.9 ? (kind === 'globe' ? 'wind it up ♪' : 'close the box') : '',
     alt: () => {
+      if (kind === 'simon') { closeBox(); return; }
       if (kind === 'globe') { if (tune) return; const notes = [784, 659, 698, 784, 880, 784, 659, 587, 523]; notes.forEach((f, i) => Sfx.tone(f, 0.5, 'sine', 0.07, 0, i * 0.32)); notes.forEach((f, i) => Sfx.tone(f * 2, 0.25, 'triangle', 0.02, 0, i * 0.32)); tune = setTimeout(() => tune = null, notes.length * 320); ctx.need('fun', 0.03); }
       else closeBox();
     }
@@ -2059,6 +2151,20 @@ def('meal', 'Takeout meal', 'Kitchen', { mount: 'surface', solid: false, small: 
   return g;
 });
 
+def('groceries', 'Bag of groceries', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
+  const g = new THREE.Group(), paper = M(0xc9a27a, 0.95);
+  B(g, 0.3, 0.38, 0.22, paper, 0, 0, 0); B(g, 0.3, 0.025, 0.22, M(0xa9875f, 0.95), 0, 0.38, 0);
+  const bag = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.3, 8), FM(0xc89a5e, 0.85)); bag.position.set(-0.07, 0.5, 0); bag.rotation.z = 0.25; g.add(bag); // baguette
+  const greens = FM(0x4f8a2e, 0.8); for (let i = 0; i < 3; i++) { const l = fmesh(g, ballGeo(0.05, 7, 5), greens, 0.07 + i * 0.015, 0.42, -0.04 + i * 0.03); l.scale.set(0.6, 1.4, 0.6); l.rotation.z = -0.3 + i * 0.25; }
+  fmesh(g, ballGeo(0.045, 10, 8), FM(0xf08a1c, 0.8), 0.02, 0.4, 0.06);
+  it.handLabel = 'put the groceries away';
+  it.handUse = () => {
+    const p = ctx.playerPos(); if (Math.hypot(p.x - 2.65, p.z - 7.27) > 2.4) return ctx.msg('Take the bag to the fridge to put it away.');
+    Sfx.noise(0.5, 0.2, 2200, 0.8, 'bandpass', -1200); ctx.task('groceries'); ctx.restock && ctx.restock(); ctx.msg('🧺 Fridge and fruit bowl restocked.');
+    ctx.removeHeld && ctx.removeHeld();
+  };
+  return g;
+});
 def('pizza', 'Pizza box', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
   const g = new THREE.Group(), card = M(0xd8b98a, 0.9); B(g, 0.38, 0.03, 0.38, card, 0, 0, 0);
   const lid = G(g, 0, 0.045, -0.19); B(lid, 0.38, 0.012, 0.38, card, 0, 0, 0.19); B(lid, 0.18, 0.002, 0.08, M(0xb3141f), 0, 0.012, 0.19);
@@ -2200,7 +2306,7 @@ function buildApartment(scene, ctx) {
   // laundry & mechanical closets
   wall(5.55, 8.9, 5.55, 10); wall(6.4, 8.9, 6.4, 10); wall(5.55, 8.9, 6.4, 8.9, [doorOp(5.62, 6.33)]); wall(6.4, 8.9, 7.6, 8.9, [doorOp(6.6, 7.35)]);
   // building corridor outside the front door
-  wall(9.8, 5.5, 9.8, 10.5, [doorOp(7.0, 7.95)]); wall(7.6, 5.5, 9.8, 5.5); wall(7.6, 10.5, 9.8, 10.5); wall(7.6, 10, 7.6, 10.5);
+  wall(9.8, 5.5, 9.8, 10.5, [doorOp(7.0, 7.95)]); wall(7.6, 5.5, 9.8, 5.5, [doorOp(8.2, 9.2)]); wall(7.6, 10.5, 9.8, 10.5); wall(7.6, 10, 7.6, 10.5);
 
   // ---------- floors & ceilings ----------
   function floorPlane(rect, mat, y = 0) {
@@ -2286,7 +2392,6 @@ function buildApartment(scene, ctx) {
   makeDoor({ x: 6.6, z: 8.9, axis: 'x', len: 0.75, hingeEnd: true, open: 1, label: 'mechanical closet' });
   makeDoor({ x: 5.0, z: 1.45, axis: 'x', len: 0.7, hingeEnd: false, open: -1, label: 'balcony door', glass: true, exterior: true });
   makeDoor({ x: 5.7, z: 1.45, axis: 'x', len: 0.7, hingeEnd: true, open: -1, label: 'balcony door', glass: true, exterior: true });
-  makeDoor({ x: 9.8, z: 7.0, axis: 'z', len: 0.95, open: -1, label: "neighbor's door", lock: true });
   // peephole / unit number (corridor side)
   B(W, 0.01, 0.12, 0.2, M(0xb08d57, 0.3, 0.8), 7.675, 1.75, 7.5);
   // smart lock keypad (interior)
@@ -2776,11 +2881,10 @@ function buildOutdoor(A, scene) {
   const BO = A.outdoor;
   const blk = (x0, y0, z0, x1, y1, z1) => B(BO, x1 - x0, y1 - y0, z1 - z0, fac(x1 - x0, y1 - y0), (x0 + x1) / 2, y0, (z0 + z1) / 2);
   // the rest of our building wrapped around this unit (facade faces north, toward the lot)
-  blk(-16, GY, -0.06, 26, -0.02, 16);                // floors below
+  blk(-16, GY, -0.06, 7.67, -0.02, 16); blk(9.87, GY, -0.06, 26, -0.02, 16); blk(7.67, GY, 5.43, 9.87, -0.02, 16); // floors below (stair shaft open)
   blk(-16, WALL_H + 0.02, -0.06, 26, WALL_H + 3.4, 16); // floor above
   blk(-16, -0.02, -0.06, -0.07, WALL_H + 0.03, 16);  // neighbor to the west
-  blk(9.87, -0.02, -0.06, 26, WALL_H + 0.03, 16);    // neighbor to the east
-  blk(7.67, -0.02, -0.06, 9.87, WALL_H + 0.03, 5.43); // between balcony wall and corridor
+  blk(9.87, -0.02, -0.06, 26, WALL_H + 0.03, 5.5); blk(9.87, -0.02, 10.5, 26, WALL_H + 0.03, 16); blk(14.1, -0.02, 5.5, 26, WALL_H + 0.03, 10.5); // east neighbor (2B carved out)
   blk(-0.07, -0.02, 10.07, 7.6, WALL_H + 0.03, 16); blk(7.6, -0.02, 10.57, 9.87, WALL_H + 0.03, 16);
   const roof = new THREE.Mesh(new THREE.ConeGeometry(30, 4, 4, 1), M(0x4a4f55, 0.8)); roof.scale.set(1, 1, 0.38); roof.rotation.y = Math.PI / 4; roof.position.set(5, WALL_H + 3.4 + 2, 8); BO.add(roof);
   // recessed balconies on the other floors, like ours
@@ -2948,6 +3052,533 @@ function optimizeStatic({ roots, tickOwners, registry, isItemContainer }) {
   return { detachable: groups.size, originals: before, mergedMeshes: drawMeshes, containers: buckets.size, sharedMaterials: canonical.size + vcMats.size, vertexColorMaterials: vcMats.size, sharedSwaps, ms: Math.round(performance.now() - t0) };
 }
 
+// ---------- people: low-poly folks you can say hi to ----------
+const _npcV = new THREE.Vector3(), _npcV2 = new THREE.Vector3();
+function makePerson(o) {
+  o = Object.assign({ shirt: 0x5b6b73, pants: 0x2e3a46, skin: 0xe2b08a, hair: 0x3a2a1a, shoes: 0x222222, hat: null, apron: null }, o);
+  const g = new THREE.Group(); markDyn(g);
+  const skin = M(o.skin, 0.6), shirt = M(o.shirt, 0.8), pants = M(o.pants, 0.8);
+  const legL = G(g, -0.09, 0.47, 0), legR = G(g, 0.09, 0.47, 0);
+  for (const l of [legL, legR]) { B(l, 0.13, 0.47, 0.15, pants, 0, -0.47, 0); B(l, 0.14, 0.09, 0.26, M(o.shoes, 0.7), 0, -0.47, 0.04); }
+  const torso = G(g, 0, 0.47, 0);
+  B(torso, 0.4, 0.52, 0.22, shirt, 0, 0.42, 0);
+  if (o.apron) { B(torso, 0.34, 0.44, 0.02, M(o.apron, 0.85), 0, 0.44, 0.125); }
+  const armL = G(torso, -0.235, 0.86, 0), armR = G(torso, 0.235, 0.86, 0);
+  for (const a of [armL, armR]) { B(a, 0.11, 0.42, 0.13, shirt, 0, -0.44, 0); S(a, 0.055, skin, 0, -0.46, 0, 8, 6); }
+  const head = G(torso, 0, 0.94, 0);
+  S(head, 0.135, skin, 0, 0.14, 0, 14, 10);
+  const hair = S(head, 0.14, M(o.hair, 0.9), 0, 0.17, -0.015, 12, 8); hair.scale.set(1, 0.72, 1);
+  if (o.hat) { C(head, 0.145, 0.145, 0.09, M(o.hat, 0.8), 0, 0.2, 0, 14); C(head, 0.145, 0.145, 0.015, M(o.hat, 0.8), 0, 0.2, 0.09, 14).position.z = 0.1; }
+  // eyes
+  for (const s of [-1, 1]) S(head, 0.014, M(0x1a1a1a, 0.4), s * 0.05, 0.16, 0.125, 6, 4);
+  // speech bubble
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const bg = cv.getContext('2d');
+  const btex = new THREE.CanvasTexture(cv); btex.colorSpace = THREE.SRGBColorSpace;
+  const bub = new THREE.Sprite(new THREE.SpriteMaterial({ map: btex, transparent: true, depthWrite: false, toneMapped: false }));
+  bub.scale.set(1.1, 0.275, 1); bub.position.set(0, 2.05, 0); bub.visible = false; g.add(bub); noRay(bub);
+  const P_ = { g, torso, head, legL, legR, armL, armR, bub, phase: Math.random() * 6, say(text, secs = 3.2) {
+    bg.clearRect(0, 0, 256, 64); bg.fillStyle = 'rgba(250,247,240,0.95)'; bg.beginPath(); bg.roundRect(4, 2, 248, 50, 22); bg.fill();
+    bg.beginPath(); bg.moveTo(118, 50); bg.lineTo(138, 50); bg.lineTo(128, 62); bg.fill();
+    bg.fillStyle = '#2a211a'; let fs = 22; bg.font = '600 ' + fs + 'px system-ui, sans-serif'; while (bg.measureText(text).width > 232 && fs > 12) { fs--; bg.font = '600 ' + fs + 'px system-ui, sans-serif'; }
+    bg.textAlign = 'center'; bg.textBaseline = 'middle'; bg.fillText(text, 128, 28); btex.needsUpdate = true;
+    bub.visible = true; P_.bubUntil = performance.now() + secs * 1000;
+  } };
+  g.userData.person = P_;
+  return P_;
+}
+// idle sway / walk cycle; call every tick with speed (m/s)
+function animPerson(P_, dt, t, speed) {
+  const w = speed > 0.05;
+  const k = w ? Math.sin((P_.phase += dt * speed * 4.4)) : 0;
+  P_.legL.rotation.x = k * 0.55; P_.legR.rotation.x = -k * 0.55;
+  P_.armL.rotation.x = -k * 0.4; P_.armR.rotation.x = k * 0.4;
+  P_.torso.position.y = 0.47 + (w ? Math.abs(Math.cos(P_.phase)) * 0.025 : Math.sin(t * 1.7 + P_.phase) * 0.008);
+  P_.head.rotation.y = w ? 0 : Math.sin(t * 0.43 + P_.phase) * 0.35;
+  if (P_.bubUntil && performance.now() > P_.bubUntil) { P_.bub.visible = false; P_.bubUntil = 0; }
+}
+// walk a person along waypoints at ground height gy(x,z); returns true when arrived
+function walkPerson(P_, dt, t, path, speed, gyFn) {
+  if (!path.length) { animPerson(P_, dt, t, 0); return true; }
+  const g = P_.g, tgt = path[0];
+  const dx = tgt[0] - g.position.x, dz = tgt[1] - g.position.z, d = Math.hypot(dx, dz);
+  if (d < 0.12) { path.shift(); animPerson(P_, dt, t, 0.1); return path.length === 0; }
+  const step = Math.min(d, speed * dt);
+  g.position.x += dx / d * step; g.position.z += dz / d * step;
+  if (gyFn) g.position.y = gyFn(g.position.x, g.position.z, g.position.y);
+  const want = Math.atan2(dx, dz); let dy = want - g.rotation.y; while (dy > Math.PI) dy -= TAU; while (dy < -Math.PI) dy += TAU;
+  g.rotation.y += clamp(dy, -4 * dt, 4 * dt);
+  animPerson(P_, dt, t, speed);
+  return false;
+}
+// a chatty NPC: rotating lines, says hi back, completes a task the first time
+function makeTalker(ctx, P_, { name, lines, task, firstLine }) {
+  let i = 0, met = false;
+  ctx.interact(P_.g, {
+    reach: 3,
+    label: () => 'Say hi to ' + name + ' 👋',
+    action: () => {
+      const line = !met && firstLine ? firstLine : lines[i++ % lines.length];
+      P_.say(line); met = true;
+      Sfx.tone(300 + Math.random() * 60, 0.14, 'sine', 0.06, 40); Sfx.tone(240, 0.12, 'sine', 0.05, -30, 0.14); // friendly mumble
+      if (task) ctx.task(task);
+    }
+  });
+  return P_;
+}
+
+// ---------- the neighborhood: stairs, parking lot, Caspian Pl → River Hwy, Harris Teeter, BP + garage ----------
+// Layout mirrors the real one: Avalon Lake Norman off Caspian Pl, Harris Teeter in the plaza next door,
+// River Hwy (NC-150) as the main road, and the BP with the auto shop behind it across the highway.
+const GY = -7.6; // ground level (the unit is on the 3rd floor)
+
+function buildWorld(scene, ctx, A) {
+  const W = G(A.world); // exterior lives inside A.world so aiming & interacting work everywhere
+  A.worldX = W; A.GY = GY; A.glowMats = A.glowMats || [];
+  const COL = (x0, y0, z0, x1, y1, z1) => ctx.addCollider(new THREE.Box3(V3(Math.min(x0, x1), y0, Math.min(z0, z1)), V3(Math.max(x0, x1), y1, Math.max(z0, z1))));
+  const conc = M(0xb9b6ae, 0.9), curb = M(0xc9c6be, 0.85), white = M(0xe8e6e0, 0.6), steel = M(0x9aa0a5, 0.4, 0.6);
+
+  // ================= stair tower: corridor (floor 3) down to the lot =================
+  // five switchback flights, each dropping 1.52 m; lane A is the west half, lane B the east half
+  const TW = { x0: 7.67, x1: 9.87, ix0: 7.77, ix1: 9.77, mid: 8.77, z0: -0.06, z1: 5.43, fz0: 0.93, fz1: 4.93, drop: 1.52 };
+  {
+    const T_ = G(W), wallM = M(0xd6cbb8, 0.92), inWall = new THREE.MeshStandardMaterial({ color: 0xd6cbb8, roughness: 0.92, side: THREE.DoubleSide });
+    const box = (x0, y0, z0, x1, y1, z1, m = inWall) => B(T_, x1 - x0, y1 - y0, z1 - z0, m, (x0 + x1) / 2, y0, (z0 + z1) / 2);
+    const top = WALL_H + 0.03;
+    // shell: west, east, north (with ground exit), south (with corridor doorway at the top)
+    box(TW.x0, GY - 0.1, TW.z0, TW.ix0, top, TW.z1); COL(TW.x0, GY, TW.z0, TW.ix0, top, TW.z1);
+    box(TW.ix1, GY - 0.1, TW.z0, TW.x1, top, TW.z1); COL(TW.ix1, GY, TW.z0, TW.x1, top, TW.z1);
+    // north wall: solid except a ground-level doorway x 8.2..9.2
+    box(TW.ix0, GY - 0.1, TW.z0, 8.2, top, TW.z0 + 0.1); box(9.2, GY - 0.1, TW.z0, TW.ix1, top, TW.z0 + 0.1); box(8.2, GY + 2.2, TW.z0, 9.2, top, TW.z0 + 0.1);
+    COL(TW.ix0, GY, TW.z0 - 0.04, 8.2, top, TW.z0 + 0.1); COL(9.2, GY, TW.z0 - 0.04, TW.ix1, top, TW.z0 + 0.1);
+    // south wall: solid except the corridor doorway (x 8.2..9.2 at floor-3 level)
+    box(TW.ix0, GY - 0.1, TW.z1, 8.2, top, TW.z1 + 0.07); box(9.2, GY - 0.1, TW.z1, TW.ix1, top, TW.z1 + 0.07); box(8.2, GY - 0.1, TW.z1, 9.2, -0.02, TW.z1 + 0.07); box(8.2, 2.2, TW.z1, 9.2, top, TW.z1 + 0.07);
+    COL(TW.ix0, GY, TW.z1, 8.2, top, TW.z1 + 0.07); COL(9.2, GY, TW.z1, TW.ix1, top, TW.z1 + 0.07); COL(8.2, GY, TW.z1, 9.2, -0.02, TW.z1 + 0.07);
+    // centre wall between the two lanes (flight region only)
+    box(TW.mid - 0.05, GY - 0.1, TW.fz0, TW.mid + 0.05, top, TW.fz1); COL(TW.mid - 0.05, GY, TW.fz0, TW.mid + 0.05, top, TW.fz1);
+    // roof
+    box(TW.x0, top, TW.z0, TW.x1, top + 0.1, TW.z1);
+    // flights: visible steps (physics is the ramp in groundAt)
+    const stepM = M(0xb9b6ae, 0.9), railM = M(0x3a3f45, 0.5, 0.5);
+    for (let i = 0; i < 5; i++) {
+      const laneA = i % 2 === 0, x0 = laneA ? TW.ix0 : TW.mid + 0.05, x1 = laneA ? TW.mid - 0.05 : TW.ix1;
+      const yTop = -i * TW.drop;
+      for (let s = 0; s < 8; s++) {
+        const f = (s + 0.5) / 8; // fraction along the flight (from its top end)
+        const z = laneA ? TW.fz1 - f * (TW.fz1 - TW.fz0) : TW.fz0 + f * (TW.fz1 - TW.fz0);
+        const y = yTop - f * TW.drop;
+        B(T_, x1 - x0 - 0.04, 0.09, 0.52, stepM, (x0 + x1) / 2, y - 0.1, z);
+      }
+      const rail = C(T_, 0.022, 0.022, Math.hypot(TW.fz1 - TW.fz0, TW.drop), railM, (x0 + x1) / 2 + (laneA ? -0.42 : 0.42), yTop - TW.drop / 2 + 0.85, (TW.fz0 + TW.fz1) / 2, 8);
+      rail.rotation.x = Math.PI / 2 + Math.atan2(TW.drop, TW.fz1 - TW.fz0) * (laneA ? -1 : 1);
+    }
+    // landings
+    for (const y of [0, -3.04, -6.08]) B(T_, TW.ix1 - TW.ix0, 0.12, TW.z1 - TW.fz1 + 0.06, stepM, (TW.ix0 + TW.ix1) / 2, y - 0.13, (TW.fz1 + TW.z1) / 2);
+    for (const y of [-1.52, -4.56, -7.6]) if (y !== -7.6) B(T_, TW.ix1 - TW.ix0, 0.12, TW.fz0 - TW.z0 - 0.06, stepM, (TW.ix0 + TW.ix1) / 2, y - 0.13, (TW.z0 + TW.fz0) / 2);
+    // landing lights (always on) + floor tags
+    for (const [y, n] of [[2.25, '3'], [-0.8, '2'], [-3.84, '1'], [-6.6, 'G']]) {
+      plane(T_, 0.5, 0.22, E(0xfff3dc, 1.4), TW.mid, y, TW.z0 + 0.12);
+      const t = canvasTex(64, 64, (g) => { g.fillStyle = '#2e3a46'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#fff'; g.font = 'bold 44px system-ui'; g.textAlign = 'center'; g.fillText(n, 32, 48); });
+      plane(T_, 0.28, 0.28, M(0xffffff, 0.8, 0, { map: t }), TW.mid, y - 0.5, TW.z0 + 0.12);
+    }
+    const sgn = canvasTex(128, 48, (g) => { g.fillStyle = '#2e3a46'; g.fillRect(0, 0, 128, 48); g.fillStyle = '#fff'; g.font = 'bold 22px system-ui'; g.textAlign = 'center'; g.fillText('STAIRS ▾', 64, 32); });
+    plane(T_, 0.6, 0.22, M(0xffffff, 0.8, 0, { map: sgn }), 8.7, 2.25, TW.z1 + 0.085, 0, Math.PI);
+  }
+  // ground height: ramps inside the tower, 0 in the home/corridor/neighbor floor, GY outside
+  const FLOORS_UP = [{ x0: -0.2, z0: -1.75, x1: 9.95, z1: 10.6 }, { x0: 9.8, z0: 5.5, x1: 14.15, z1: 10.5 }];
+  A.groundAt = (x, z, y = 0) => {
+    if (x > TW.ix0 && x < TW.ix1 && z > TW.z0 && z < TW.z1 + 0.1 && y < 0.95) {
+      let cand;
+      if (z >= TW.fz1) cand = [0, -3.04, -6.08];
+      else if (z <= TW.fz0) cand = [-1.52, -4.56, -7.6];
+      else { const f = (TW.fz1 - z) / (TW.fz1 - TW.fz0); cand = x <= TW.mid ? [-f * TW.drop, -3.04 - f * TW.drop, -6.08 - f * TW.drop] : [-3.04 + f * TW.drop, -6.08 + f * TW.drop]; }
+      let best = -1e9; for (const c of cand) if (c <= y + 0.6 && c > best) best = c;
+      return best > -1e8 ? best : Math.min(...cand);
+    }
+    for (const r of FLOORS_UP) if (x > r.x0 && x < r.x1 && z > r.z0 && z < r.z1 && y > -1.4) return 0;
+    for (const f of EXT_FLOORS) if (x > f.x0 && x < f.x1 && z > f.z0 && z < f.z1) return GY + f.y;
+    return GY;
+  };
+  const EXT_FLOORS = []; // raised slabs outside (store floors, islands)
+
+  // ================= neighbor: Marcus in 2B (through the door across the hall) =================
+  {
+    const R_ = G(W), wallM = new THREE.MeshStandardMaterial({ color: 0xe3dccd, roughness: 0.92, side: THREE.DoubleSide });
+    const box = (x0, y0, z0, x1, y1, z1, m = wallM) => B(R_, x1 - x0, y1 - y0, z1 - z0, m, (x0 + x1) / 2, y0, (z0 + z1) / 2);
+    // shell x 9.87..14.1, z 5.5..10.5 (the corridor wall already has the doorway at z 7.0..7.95)
+    box(14.03, 0, 5.5, 14.1, WALL_H, 10.5); COL(14.03, 0, 5.5, 14.1, WALL_H, 10.5);
+    box(9.87, 0, 5.5, 14.1, WALL_H, 5.57); COL(9.87, 0, 5.43, 14.1, WALL_H, 5.57);
+    box(9.87, 0, 10.43, 14.1, WALL_H, 10.5); COL(9.87, 0, 10.43, 14.1, WALL_H, 10.5);
+    box(9.87, 0, 5.5, 9.94, WALL_H, 7.0); box(9.87, 0, 7.95, 9.94, WALL_H, 10.5); // his side of the corridor wall
+    const fl = M(0xffffff, 0.6, 0, { map: floorTex('walnut') }); plane(R_, 4.2, 5.0, fl, 12.0, 0.001, 8.0, -Math.PI / 2);
+    plane(R_, 4.2, 5.0, M(0xf6f4ef, 0.95), 12.0, WALL_H - 0.01, 8.0, Math.PI / 2);
+    plane(R_, 0.8, 0.5, E(0xfff3dc, 1.2), 12.0, WALL_H - 0.02, 8.0, Math.PI / 2); // always-on ceiling light
+    // his front door (opens into his place, hinged in the corridor doorway)
+    const piv = G(R_, 9.9, 0, 7.95); const leaf = B(piv, 0.06, 2.1, 0.92, M(0x5b4632, 0.6), 0.03, 0, -0.46);
+    B(leaf.parent, 0.02, 0.04, 0.04, M(0xc8b273, 0.3, 0.8), 0.07, 1.02, -0.8);
+    const num = canvasTex(64, 32, (g) => { g.fillStyle = '#3a2f22'; g.fillRect(0, 0, 64, 32); g.fillStyle = '#e8dcc0'; g.font = 'bold 20px Georgia'; g.textAlign = 'center'; g.fillText('2B', 32, 24); });
+    plane(R_, 0.18, 0.09, M(0xffffff, 0.7, 0, { map: num }), 9.858, 1.75, 7.475, 0, -Math.PI / 2);
+    const dSt = { open: false, v: 0, answering: 0 }; markMoves(piv); markDyn(piv);
+    const doorBox = new THREE.Box3(V3(9.84, 0, 7.0), V3(9.97, 2.1, 7.95));
+    ctx.addCollider(doorBox, () => { if (dSt.v > 0.4) doorBox.makeEmpty(); else doorBox.set(V3(9.84, 0, 7.0), V3(9.97, 2.1, 7.95)); });
+    // furnishings: sofa toward a TV, rug, lamp, kitchenette strip, posters
+    B(R_, 1.9, 0.72, 0.85, M(0x4a5a68, 0.9), 12.0, 0, 9.9); B(R_, 1.9, 0.5, 0.2, M(0x4a5a68, 0.9), 12.0, 0.7, 10.25); COL(11.05, 0, 9.45, 12.95, 0.8, 10.4);
+    plane(R_, 2.2, 1.6, M(0xffffff, 0.9, 0, { map: getTex('oldrug') }), 12.0, 0.005, 8.6, -Math.PI / 2);
+    B(R_, 1.3, 0.1, 0.65, M(0x6b4a35, 0.6), 12.0, 0.3, 8.55); COL(11.35, 0, 8.2, 12.65, 0.45, 8.9);
+    const tvm = new THREE.MeshBasicMaterial({ color: 0x223038 }); B(R_, 1.5, 0.85, 0.06, M(0x111111, 0.4), 12.0, 1.0, 5.65); plane(R_, 1.38, 0.74, tvm, 12.0, 1.06, 5.69);
+    const consM = M(0x3a2f26, 0.7); B(R_, 1.7, 0.4, 0.4, consM, 12.0, 0, 5.8); COL(11.15, 0, 5.6, 12.85, 0.5, 6.0);
+    B(R_, 1.6, 0.9, 0.55, M(0xd9d5cc, 0.8), 13.6, 0, 7.0); B(R_, 1.6, 0.05, 0.6, M(0x8a8f94, 0.3, 0.6), 13.6, 0.9, 7.0); COL(13.3, 0, 6.2, 14.0, 1.0, 7.8); // kitchenette
+    C(R_, 0.14, 0.18, 0.4, M(0x2e3a46, 0.8), 10.6, 0, 9.9, 10); S(R_, 0.3, M(0x7c8f6a, 0.8), 10.6, 0.62, 9.9, 8, 6); // plant
+    const lampG = E(0xffd9a0, 1.1); C(R_, 0.02, 0.02, 1.4, M(0x222222, 0.5), 13.5, 0, 9.9, 8); const lsh = C(R_, 0.14, 0.18, 0.22, lampG, 13.5, 1.4, 9.9, 12);
+    plane(R_, 0.6, 0.8, M(0xffffff, 0.8, 0, { map: artTex('poster', 7) }), 14.0, 1.3, 8.6, 0, -Math.PI / 2);
+    // Marcus himself
+    const marcus = makePerson({ shirt: 0x7a4a2a, pants: 0x32383e, skin: 0xc98a5e, hair: 0x18120c });
+    marcus.g.position.set(12.4, 0, 9.4); marcus.g.rotation.y = Math.PI; W.add(marcus.g);
+    makeTalker(ctx, marcus, {
+      name: 'Marcus', task: 'neighbor',
+      firstLine: 'Hey! You must be from 2A — I\'m Marcus. Welcome!',
+      lines: ['How\'s the apartment treating you?', 'That Harris Teeter next door is dangerous. I\'m there daily.', 'If you hear my TV through the wall, just bang on it.', 'Panthers game on Sunday — you watching?', 'The BP on River Hwy fixed my brakes. Good folks.', 'Lilah seems great, by the way. You two settling in?'],
+    });
+    const mState = { phase: 'home' };
+    ctx.interact(leaf, {
+      label: () => dSt.open ? 'Close Marcus\'s door' : dSt.answering ? '' : 'Knock on 2B 🚪',
+      action: () => {
+        if (dSt.open) { dSt.open = false; Sfx.door(false); return; }
+        if (dSt.answering) return;
+        Sfx.knock(); dSt.answering = 1;
+        setTimeout(() => { marcus.say('Coming!'); }, 700);
+        setTimeout(() => { dSt.open = true; Sfx.door(true); dSt.answering = 0; if (!store.get('metMarcus', false)) { store.set('metMarcus', true); ctx.msg('👋 Marcus opens the door. Right-click him to say hi.'); } }, 1900);
+      }
+    });
+    ctx.tick(R_, (dt, t) => {
+      dSt.v = lerp(dSt.v, dSt.open ? 1 : 0, Math.min(1, dt * 6)); piv.rotation.y = -dSt.v * 1.9; // opens into his place
+      const px = ctx.playerPos();
+      if (dSt.open) {
+        // he walks to the doorway while you're there, then drifts back to his TV spot
+        const near = Math.hypot(px.x - 10.6, px.z - 7.5) < 3.2;
+        walkPerson(marcus, dt, t, near ? (Math.hypot(marcus.g.position.x - 10.9, marcus.g.position.z - 7.5) > 0.3 ? [[10.9, 7.5]] : []) : (Math.hypot(marcus.g.position.x - 12.4, marcus.g.position.z - 9.4) > 0.3 ? [[12.4, 9.4]] : []), 1.1);
+        if (!near && Math.hypot(px.x - 10.6, px.z - 7.5) > 6) { dSt.open = false; Sfx.door(false); }
+      } else animPerson(marcus, dt, t, 0);
+      tvm.color.setHSL(0.6 + Math.sin(t * 0.7) * 0.05, 0.3, dSt.open || true ? 0.22 + Math.sin(t * 3.1) * 0.05 : 0.1);
+    });
+  }
+
+  // ================= ground, parking lot, Caspian Pl, River Hwy =================
+  const grass = M(0xffffff, 1, 0, { map: getTex('grass') });
+  plane(W, 760, 700, grass, 30, GY - 0.01, -100, -Math.PI / 2);
+  const asphTex = () => { const m = M(0xffffff, 0.95, 0, { map: getTex('asphalt').clone() }); m.map.wrapS = m.map.wrapT = THREE.RepeatWrapping; return m; };
+  const road = (x0, z0, x1, z1, y = 0.02) => { const m = asphTex(); m.map.repeat.set((x1 - x0) / 9, (z1 - z0) / 9); m.map.needsUpdate = true; plane(W, x1 - x0, z1 - z0, m, (x0 + x1) / 2, GY + y, (z0 + z1) / 2, -Math.PI / 2); };
+  const paint = (x0, z0, x1, z1, col = 0xe8e6e0, y = 0.045) => plane(W, Math.abs(x1 - x0), Math.abs(z1 - z0), M(col, 0.7), (x0 + x1) / 2, GY + y, (z0 + z1) / 2, -Math.PI / 2);
+  const dashZ = (x, z0, z1, col = 0xd9b44a) => { for (let z = z0; z < z1; z += 4) paint(x - 0.08, z, x + 0.08, Math.min(z + 1.8, z1), col); };
+  const dashX = (z, x0, x1, col = 0xe8e6e0) => { for (let x = x0; x < x1; x += 5) paint(x, z - 0.09, Math.min(x + 2.2, x1), z + 0.09, col); };
+  const walk = (x0, z0, x1, z1) => plane(W, x1 - x0, z1 - z0, conc, (x0 + x1) / 2, GY + 0.06, (z0 + z1) / 2, -Math.PI / 2);
+
+  // parking lot (north of the building, at the bottom of the stairs)
+  road(-34, -31, 40, -3.8); walk(-16, -3.8, 26, -0.4);
+  for (let x = -32; x <= 36; x += 2.9) { if (x > 18 && x < 33) continue; paint(x - 0.07, -30.5, x + 0.07, -25.2); paint(x - 0.07, -9.2, x + 0.07, -3.9); }
+  // light posts
+  A.streetLamps = A.streetLamps || [];
+  const lamp = (x, z) => { C(W, 0.09, 0.12, 7, M(0x2a2a2a, 0.6), x, GY, z, 8); const h = S(W, 0.28, E(0xffe0a0, 0), x, GY + 7, z, 10, 8); A.streetLamps.push(h.material); COL(x - 0.15, GY, z - 0.15, x + 0.15, GY + 2, z + 0.15); };
+  for (const [x, z] of [[-20, -17], [2, -17], [24, -17], [-20, -32], [2, -32]]) lamp(x, z);
+  // parked cars (decorative, with colliders)
+  const carCols = [0x2e3a46, 0xf2f2f2, 0x1f1f22, 0x7a8a99, 0x4a7fb5, 0xc9ccd0, 0x6b4a35, 0x8a9aa0];
+  function parkedCar(x, z, ry, col) {
+    const c = G(W, x, GY, z, ry); const cm = M(col, 0.3, 0.6);
+    B(c, 1.8, 0.55, 4.3, cm, 0, 0.25, 0); B(c, 1.6, 0.5, 2.2, M(0x1c232b, 0.1, 0.5), 0, 0.8, -0.1); B(c, 1.62, 0.06, 2.0, cm, 0, 1.3, -0.1);
+    for (const wx of [-0.86, 0.86]) for (const wz of [-1.4, 1.4]) { const w = C(c, 0.33, 0.33, 0.2, M(0x111111, 0.8), wx, 0.33, wz, 10); w.rotation.z = Math.PI / 2; w.position.y = 0.33; }
+    COL(x - 1.6, GY + 0.25, z - 1.6, x + 1.6, GY + 1.3, z + 1.6);
+    return c;
+  }
+  for (let i = 0; i < 12; i++) { const x = -29 + i * 2.9 * 1.8 + rand(-0.2, 0.2); if (x > 8 && x < 17) continue; parkedCar(x, i % 2 ? -6.6 : -27.8, (i % 2 ? Math.PI : 0) + rand(-0.04, 0.04), carCols[(Math.random() * carCols.length) | 0]); }
+
+  // Caspian Pl → north to River Hwy
+  road(21, -126, 31, -30); dashZ(26, -122, -34);
+  walk(31, -120, 33.5, -31);
+  // complex entrance sign
+  {
+    const t = canvasTex(256, 128, (g) => { g.fillStyle = '#2e3a34'; g.fillRect(0, 0, 256, 128); g.strokeStyle = '#c8b273'; g.lineWidth = 5; g.strokeRect(7, 7, 242, 114); g.fillStyle = '#e8dcc0'; g.textAlign = 'center'; g.font = 'bold 30px Georgia'; g.fillText('Avalon', 128, 48); g.fillText('Lake Norman', 128, 82); g.font = '18px Georgia'; g.fillText('136 Caspian Pl', 128, 110); });
+    const s = G(W, 35.5, GY, -36, -0.5); B(s, 0.25, 1.2, 1.1, M(0x8a8178, 0.9), 0, 0, 0); plane(s, 2.2, 1.1, M(0xffffff, 0.8, 0, { map: t }), 0, 1.6, 0.0); B(s, 2.4, 1.3, 0.18, M(0x2e3a34, 0.8), 0, 1.0, -0.12);
+    COL(34.5, GY, -37, 36.5, GY + 2, -35);
+  }
+  // more complex buildings along Caspian
+  const facT = getTex('facade');
+  function bgBuilding(x, z, w, d, h, ry = 0) {
+    const b = G(W, x, GY, z, ry); const t = facT.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(w / 12, h / 10);
+    B(b, w, h, d, M(0xffffff, 0.85, 0, { map: t }), 0, 0, 0);
+    const r = new THREE.Mesh(new THREE.ConeGeometry(w * 0.72, 2.6, 4), M(0x4a4f55, 0.8)); r.rotation.y = Math.PI / 4; r.scale.z = d / w; r.position.y = h + 1.3; b.add(r);
+    COL(x - w / 2 - 1, GY, z - d / 2 - 1, x + w / 2 + 1, GY + h, z + d / 2 + 1);
+  }
+  bgBuilding(2, -56, 26, 13, 9, 0.06); bgBuilding(46, -52, 24, 13, 9, -0.1); bgBuilding(-24, -46, 20, 12, 9, 0.2); bgBuilding(50, -16, 16, 12, 9, -1.2);
+
+  // Town Center Dr (to the Harris Teeter plaza)
+  road(-46, -72, 22, -65); dashX(-68.5, -44, 20, 0xd9b44a);
+  // River Hwy (NC-150)
+  road(-220, -141, 262, -126);
+  paint(-220, -133.8, 262, -133.5, 0xd9b44a); paint(-220, -133.2, 262, -132.9, 0xd9b44a);
+  dashX(-129.7, -218, 260); dashX(-137.3, -218, 260);
+  for (let x = -200; x <= 250; x += 34) { lamp(x, -124.3); if (x > -90) lamp(x + 17, -142.7); }
+  // crosswalk + stop at the Caspian T
+  for (let x = 21.8; x < 31; x += 1.4) paint(x, -126.3, x + 0.7, -140.7);
+  paint(21.5, -125.4, 31, -124.9);
+  function sign(x, z, draw, w = 1.0, h = 1.0, ry = 0, poleH = 2.6) {
+    const t = canvasTex(160, 160, draw); const s = G(W, x, GY, z, ry);
+    C(s, 0.04, 0.05, poleH, steel, 0, 0, 0, 8); plane(s, w, h, M(0xffffff, 0.7, 0, { map: t }), 0, poleH - h / 2 + 0.2, 0.03);
+    COL(x - 0.12, GY, z - 0.12, x + 0.12, GY + 1.8, z + 0.12); return s;
+  }
+  sign(33, -123, (g) => { g.fillStyle = '#b32025'; g.beginPath(); for (let i = 0; i < 8; i++) { const a = i / 8 * TAU + TAU / 16; g.lineTo(80 + 70 * Math.cos(a), 80 + 70 * Math.sin(a)); } g.closePath(); g.fill(); g.fillStyle = '#fff'; g.font = 'bold 42px system-ui'; g.textAlign = 'center'; g.fillText('STOP', 80, 95); }, 0.8, 0.8);
+  sign(33, -119, (g) => { g.fillStyle = '#1f5a30'; g.fillRect(0, 40, 160, 44); g.fillStyle = '#fff'; g.font = 'bold 26px system-ui'; g.textAlign = 'center'; g.fillText('Caspian Pl', 80, 70); g.fillStyle = '#1f5a30'; g.fillRect(0, 88, 160, 44); g.fillStyle = '#fff'; g.fillText('River Hwy', 80, 118); }, 1.1, 1.1, 0, 3.0);
+  sign(-60, -123, (g) => { g.fillStyle = '#fff'; g.fillRect(20, 20, 120, 130); g.strokeStyle = '#111'; g.lineWidth = 4; g.strokeRect(24, 24, 112, 122); g.fillStyle = '#111'; g.textAlign = 'center'; g.font = '20px system-ui'; g.fillText('SPEED', 80, 52); g.fillText('LIMIT', 80, 74); g.font = 'bold 52px system-ui'; g.fillText('45', 80, 126); }, 0.85, 0.9);
+  sign(120, -144.5, (g) => { g.fillStyle = '#1f5a30'; g.fillRect(0, 30, 160, 100); g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = 'bold 24px system-ui'; g.fillText('NC-150', 80, 72); g.font = '20px system-ui'; g.fillText('River Hwy →', 80, 106); }, 1.2, 1.2, Math.PI);
+
+  // ================= Harris Teeter plaza (next door) =================
+  const HT = { x0: -118, x1: -72, z0: -34, z1: -58 };
+  {
+    road(-116, -112, -44, -58); // plaza lot
+    road(-88, -126, -76, -108); // driveway to the highway
+    for (let x = -112; x <= -50; x += 2.9) { paint(x - 0.07, -86, x + 0.07, -80.5); paint(x - 0.07, -79.5, x + 0.07, -74); }
+    walk(HT.x0 - 2, HT.z1 - 3.4, HT.x1 + 6, HT.z1);
+    const S_ = G(W); EXT_FLOORS.push({ x0: HT.x0, z0: HT.z1, x1: HT.x1 + 4, z1: HT.z0, y: 0.08 });
+    const wallM = M(0xd9cfc0, 0.9), band = M(0x1f4432, 0.7);
+    const bx = (x0, y0, z0, x1, y1, z1, m = wallM) => B(S_, x1 - x0, y1 - y0, z1 - z0, m, (x0 + x1) / 2, GY + y0, (z0 + z1) / 2);
+    // shell (entrance on the south face, toward its lot)
+    bx(HT.x0, 0, HT.z0 - 0.4, HT.x1 + 4, 7, HT.z0); COL(HT.x0, GY, HT.z0 - 0.4, HT.x1 + 4, GY + 7, HT.z0);
+    bx(HT.x0 - 0.4, 0, HT.z0, HT.x0, 7, HT.z1); COL(HT.x0 - 0.4, GY, HT.z0, HT.x0, GY + 7, HT.z1);
+    bx(HT.x1 + 4, 0, HT.z0, HT.x1 + 4.4, 7, HT.z1); COL(HT.x1 + 4, GY, HT.z0, HT.x1 + 4.4, GY + 7, HT.z1);
+    // south face: wall pieces + glass front + sliding doors at centre x -97..-93
+    bx(HT.x0, 0, HT.z1 - 0.4, -106, 7, HT.z1); COL(HT.x0, GY, HT.z1 - 0.4, -106, GY + 7, HT.z1);
+    bx(-84, 0, HT.z1 - 0.4, HT.x1 + 4, 7, HT.z1); COL(-84, GY, HT.z1 - 0.4, HT.x1 + 4, GY + 7, HT.z1);
+    bx(-106, 3.2, HT.z1 - 0.4, -84, 7, HT.z1);
+    const glassM = new THREE.MeshStandardMaterial({ color: 0x9fc4d8, roughness: 0.08, metalness: 0.4, transparent: true, opacity: 0.45 });
+    for (const [a, b2] of [[-106, -97.2], [-92.8, -84]]) { bx(a, 0, HT.z1 - 0.22, b2, 3.2, HT.z1 - 0.1, glassM); COL(a, GY, HT.z1 - 0.3, b2, GY + 3.2, HT.z1 - 0.05); }
+    bx(HT.x0, 7, HT.z0 - 0.4, HT.x1 + 4.4, 7.4, HT.z1); // roof
+    // sliding doors
+    const dL = B(S_, 2.2, 3.0, 0.08, glassM, -96.1, GY + 0.08, HT.z1 - 0.16), dR = B(S_, 2.2, 3.0, 0.08, glassM, -93.9, GY + 0.08, HT.z1 - 0.16);
+    markDyn(dL, dR); const doorB = new THREE.Box3(V3(-97.3, GY, HT.z1 - 0.35), V3(-92.7, GY + 3, HT.z1));
+    ctx.addCollider(doorB, null);
+    ctx.tick(S_, (dt) => {
+      const p = ctx.playerPos(); const near = p.y < -2 && Math.abs(p.z - HT.z1) < 3.5 && p.x > -99 && p.x < -91;
+      const o = lerp(dL.userData.o || 0, near ? 1 : 0, Math.min(1, dt * 4)); dL.userData.o = o;
+      if (Math.abs(o - (dL.userData.lo || 0)) > 0.002) { dL.userData.lo = o; dL.position.x = -96.1 - o * 2.1; dR.position.x = -93.9 + o * 2.1; if (o > 0.6) doorB.makeEmpty(); else doorB.set(V3(-97.3, GY, HT.z1 - 0.35), V3(-92.7, GY + 3, HT.z1)); }
+    });
+    // sign band + letters
+    const htT = canvasTex(512, 96, (g) => { g.fillStyle = '#1f4432'; g.fillRect(0, 0, 512, 96); g.fillStyle = '#f6efe0'; g.font = 'bold 56px Georgia'; g.textAlign = 'center'; g.fillText('Harris Teeter', 256, 64); });
+    const htSign = new THREE.MeshStandardMaterial({ map: htT, emissive: 0xffffff, emissiveMap: htT, emissiveIntensity: 0.35, roughness: 0.6 });
+    plane(S_, 18, 3.4, htSign, -95, GY + 4.9, HT.z1 + 0.02, 0, Math.PI); A.glowMats.push(htSign);
+    // interior: bright ceiling, tile floor, aisles, produce, dairy glow, registers
+    const tile = M(0xffffff, 0.55, 0, { map: floorTex('tile') }); plane(S_, HT.x1 + 4 - HT.x0 - 0.8, HT.z0 - HT.z1 - 0.8, tile, (HT.x0 + HT.x1 + 4) / 2, GY + 0.08, (HT.z0 + HT.z1) / 2, -Math.PI / 2);
+    plane(S_, HT.x1 + 4 - HT.x0 - 0.8, HT.z0 - HT.z1 - 0.8, M(0xf4f2ec, 0.95), (HT.x0 + HT.x1 + 4) / 2, GY + 6.9, (HT.z0 + HT.z1) / 2, Math.PI / 2);
+    for (let i = 0; i < 4; i++) plane(S_, 30, 0.8, E(0xfff6e2, 1.5), -93, GY + 6.85, -38.5 - i * 5, Math.PI / 2);
+    const shelfM = M(0x8a9aa0, 0.6), goodCols = [0xc0392b, 0xd9b44a, 0x4a7fb5, 0x7c8f6a, 0xe07a3f, 0xb8a7d6, 0xf2f2f2];
+    function aisle(xc, z0, z1) {
+      B(S_, 1.4, 1.9, z1 - z0, shelfM, xc, GY + 0.08, (z0 + z1) / 2); COL(xc - 0.7, GY, z0, xc + 0.7, GY + 2, z1);
+      for (let z = z0 + 0.6; z < z1 - 0.4; z += 0.62) for (let lv = 0; lv < 3; lv++) for (const s of [-1, 1])
+        B(S_, 0.12, 0.26, 0.42, M(goodCols[(Math.random() * goodCols.length) | 0], 0.7), xc + s * 0.78, GY + 0.35 + lv * 0.55, z);
+    }
+    aisle(-104, -52, -38); aisle(-98, -52, -38); aisle(-92, -52, -38); aisle(-86, -52, -38);
+    // produce bins
+    for (const [x, z] of [[-112, -44], [-112, -48], [-112, -52]]) { B(S_, 2.6, 0.9, 2.2, M(0x3a5a40, 0.8), x, GY + 0.08, z); for (let i = 0; i < 12; i++) S(S_, 0.11, M([0xc0262d, 0xe8892b, 0x8fb339, 0xf2d24b][i % 4], 0.55), x + rand(-1, 1), GY + 1.05, z + rand(-0.8, 0.8), 8, 6); COL(x - 1.3, GY, z - 1.1, x + 1.3, GY + 1, z + 1.1); }
+    // dairy wall (back)
+    const dairy = E(0xdff0ff, 0.9); B(S_, 36, 2.4, 0.7, M(0xe8ecef, 0.5), -92, GY + 0.08, HT.z0 + 0.8); plane(S_, 35, 1.8, dairy, -92, GY + 0.6, HT.z0 + 1.16, 0, Math.PI); COL(-110, GY, HT.z0, -74, GY + 2.5, HT.z0 + 1.2);
+    // flower stand & cooler near the front
+    const flw = G(S_, -108.5, GY + 0.08, -55.5); B(flw, 1.6, 0.8, 1.2, M(0x6b4a35, 0.7), 0, 0, 0); for (let i = 0; i < 8; i++) { C(flw, 0.05, 0.06, 0.3, M(0x2a6b4f, 0.8), -0.6 + (i % 4) * 0.4, 0.8, i < 4 ? -0.3 : 0.3, 6); S(flw, 0.11, M([0xd94f70, 0xf2d24b, 0xe3b8b8, 0xb8a7d6][i % 4], 0.6), -0.6 + (i % 4) * 0.4, 1.2, i < 4 ? -0.3 : 0.3, 8, 6); }
+    COL(-109.3, GY, -56.1, -107.7, GY + 1, -54.9);
+    const cool = G(S_, -80, GY + 0.08, -55.5); B(cool, 2.0, 2.0, 1.0, M(0xb32025, 0.5), 0, 0, 0); plane(cool, 1.7, 1.4, E(0xcfe8ff, 0.8), 0, 0.3, 0.51); COL(-81, GY, -56, -79, GY + 2, -55);
+    // registers + Dana
+    for (const x of [-96.5, -91.5]) { B(S_, 0.9, 1.0, 3.2, M(0x3f4a52, 0.7), x, GY + 0.08, -54.2); B(S_, 0.9, 0.08, 1.0, M(0x222, 0.5), x, GY + 1.08, -53.2); COL(x - 0.45, GY, -55.8, x + 0.45, GY + 1.1, -52.6); }
+    const dana = makePerson({ shirt: 0x1f4432, pants: 0x2e3a46, skin: 0xe8c39a, hair: 0x6b3a1a, apron: 0x16352a });
+    dana.g.position.set(-91.5, GY + 0.08, -52.9); dana.g.rotation.y = Math.PI; W.add(dana.g);
+    ctx.tick(dana.g, (dt, t) => animPerson(dana, dt, t, 0));
+    makeTalker(ctx, dana, { name: 'Dana', firstLine: 'Welcome to Harris Teeter! Holler if you need anything.', lines: ['The gala apples came in this morning.', 'VIC card? I\'ll scan mine for you.', 'Cold out there today, huh?'] });
+    // buying
+    const buy = (obj, label, cost, after) => ctx.interact(obj, { cook: true, reach: 3, label: () => label + ' · $' + cost, action: () => { if (!ctx.spend(cost, label)) return; Sfx.chime(); after(); } });
+    buy(flw, 'Fall bouquet for Lilah 💐', 6, () => { ctx.give('flowers', {}, { rise: true }); ctx.msg('She\'s going to love these. Left-click to snap her a photo. 💐'); });
+    for (const xc of [-104, -98, -92, -86]) { const h = B(S_, 1.6, 2, 14, new THREE.MeshBasicMaterial({ visible: false }), xc, GY + 0.08, -45); ctx.interact(h, { cook: true, reach: 3, label: () => 'Grab a bag of groceries 🛒 · $12', action: () => { if (!ctx.spend(12, 'groceries')) return; Sfx.pop(); ctx.give('groceries', {}, { rise: true }); ctx.msg('Got the essentials. Pay at the register, then put them away at home.'); } }); }
+    buy(cool, 'Energy drink ⚡', 3, () => { ctx.need('energy', 0.25); ctx.drink('coffee'); ctx.msg('Wings: acquired. ⚡'); });
+    // cart corral
+    const corral = G(W, -62, GY, -70); B(corral, 0.06, 1.0, 5, steel, -1, 0, 0); B(corral, 0.06, 1.0, 5, steel, 1, 0, 0); COL(-63.2, GY, -72.6, -60.8, GY + 1.1, -67.4);
+    for (let i = 0; i < 3; i++) { const c = G(corral, 0, 0.15, -1.6 + i * 0.8); B(c, 0.8, 0.5, 0.9, steel, 0, 0.35, 0); for (const [wx, wz] of [[-0.3, -0.35], [0.3, -0.35], [-0.3, 0.35], [0.3, 0.35]]) S(c, 0.07, M(0x222222, 0.6), wx, 0.07, wz, 6, 4); }
+    parkedCar(-70, -77.5, 0.03, 0xf2f2f2); parkedCar(-58, -77.3, -0.02, 0x2e3a46);
+  }
+
+  // ================= BP + the garage behind it (across River Hwy, down the road) =================
+  {
+    road(146, -148, 200, -141); // apron from the highway
+    road(146, -196, 200, -148); // forecourt
+    road(146, -216, 186, -196); // back lot by the garage
+    const B_ = G(W);
+    // canopy
+    const canM = M(0xf2f2f0, 0.7), greenM = M(0x1e7a46, 0.6);
+    B(B_, 34, 0.7, 20, canM, 167, GY + 5.0, -161); B(B_, 34.2, 0.5, 20.2, greenM, 167, GY + 4.6, -161);
+    const bpT = canvasTex(128, 128, (g) => { g.fillStyle = '#1e7a46'; g.fillRect(0, 0, 128, 128); for (let r = 54, i = 0; r > 10; r -= 11, i++) { g.fillStyle = ['#ffe600', '#ffffff', '#ffe600', '#1e7a46'][i % 4]; g.beginPath(); for (let k = 0; k < 20; k++) { const a = k / 20 * TAU, rr = k % 2 ? r * 0.62 : r; g.lineTo(64 + rr * Math.cos(a), 56 + rr * Math.sin(a)); } g.closePath(); g.fill(); } g.fillStyle = '#fff'; g.font = 'bold italic 30px system-ui'; g.textAlign = 'center'; g.fillText('bp', 64, 120); });
+    for (const ry of [0, Math.PI]) plane(B_, 4, 4, new THREE.MeshStandardMaterial({ map: bpT, emissive: 0xffffff, emissiveMap: bpT, emissiveIntensity: 0.25, roughness: 0.6 }), 167, GY + 4.65, -161 + (ry ? 10.2 : -10.2), 0, ry);
+    for (const [cx, cz] of [[154, -155], [180, -155], [154, -167], [180, -167]]) { C(B_, 0.22, 0.26, 5, canM, cx, GY, cz, 10); COL(cx - 0.3, GY, cz - 0.3, cx + 0.3, GY + 2, cz + 0.3); }
+    // pump islands + dispensers
+    A.pumps = [];
+    for (const ix of [160, 174]) {
+      B(B_, 3.2, 0.18, 10, curb, ix, GY, -161); EXT_FLOORS.push({ x0: ix - 1.6, z0: -166, x1: ix + 1.6, z1: -156, y: 0.18 });
+      for (const pz of [-158.2, -163.8]) {
+        const p = G(B_, ix, GY + 0.18, pz); B(p, 1.0, 1.9, 0.62, M(0xe8e8e6, 0.5), 0, 0, 0); B(p, 1.04, 0.5, 0.66, greenM, 0, 1.1, 0);
+        plane(p, 0.5, 0.3, E(0x1a2a1a, 0.6), 0, 1.25, 0.34); for (const s of [-1, 1]) B(p, 0.1, 0.5, 0.08, M(0x222222, 0.6), s * 0.38, 0.5, s * 0.28);
+        COL(ix - 0.55, GY, pz - 0.35, ix + 0.55, GY + 2, pz + 0.35);
+        A.pumps.push(V3(ix, GY, pz));
+        ctx.interact(p, { cook: true, reach: 4.8, label: () => { const c = A.car && A.car.g.position; if (!c || Math.hypot(c.x - ix, c.z - pz) > 6) return 'Pump ' + A.pumps.length + ' — park the Corolla here first'; return A.car.st.fuel > 0.97 ? 'Tank is full ⛽' : 'Fill up the Corolla ⛽ (' + Math.round(A.car.st.fuel * 100) + '%) · $18'; }, action: () => {
+          const c = A.car && A.car.g.position; if (!c || Math.hypot(c.x - ix, c.z - pz) > 6) return ctx.msg('Park the Corolla beside this pump first.');
+          if (A.car.st.fuel > 0.97) return ctx.msg('She\'s already full.');
+          if (!ctx.spend(18, 'gas')) return;
+          const snd = Sfx.loop('water', V3(ix, GY + 1, pz), 0.1);
+          ctx.startAction({ label: 'Filling the tank', dur: 5, done: () => { snd.stop(); A.car.st.fuel = 1; Sfx.beep(2, 1500); ctx.task('fuel'); ctx.msg('⛽ Full tank. Receipt? No thanks.'); } });
+          setTimeout(() => snd.stop(), 6500);
+        } });
+      }
+    }
+    // price sign
+    const prT = canvasTex(160, 220, (g) => { g.fillStyle = '#1e7a46'; g.fillRect(0, 0, 160, 220); g.drawImage(bpT.userData.ctx ? bpT.userData.ctx.canvas : bpT.image, 30, 8, 100, 100); g.fillStyle = '#111'; g.fillRect(12, 116, 136, 96); g.fillStyle = '#ffe600'; g.textAlign = 'center'; g.font = 'bold 44px system-ui'; g.fillText('2.89', 80, 162); g.fillStyle = '#fff'; g.font = '20px system-ui'; g.fillText('Regular', 80, 196); });
+    const pr = G(W, 149, GY, -146); B(pr, 0.5, 2.6, 0.5, steel, 0, 0, 0); plane(pr, 1.6, 2.2, new THREE.MeshStandardMaterial({ map: prT, emissive: 0xffffff, emissiveMap: prT, emissiveIntensity: 0.25 }), 0, 3.6, 0.3); plane(pr, 1.6, 2.2, new THREE.MeshStandardMaterial({ map: prT, emissive: 0xffffff, emissiveMap: prT, emissiveIntensity: 0.25 }), 0, 3.6, -0.3, 0, Math.PI);
+    COL(148.6, GY, -146.4, 149.4, GY + 2, -145.6);
+    // the shop
+    const SH = { x0: 156, x1: 182, z0: -176, z1: -190 };
+    const shM = M(0xe3ded2, 0.85);
+    const sb = (x0, y0, z0, x1, y1, z1, m = shM) => B(B_, x1 - x0, y1 - y0, z1 - z0, m, (x0 + x1) / 2, GY + y0, (z0 + z1) / 2);
+    EXT_FLOORS.push({ x0: SH.x0, z0: SH.z1, x1: SH.x1, z1: SH.z0, y: 0.06 });
+    sb(SH.x0, 0, SH.z1, SH.x1, 4, SH.z1 + 0.4); COL(SH.x0, GY, SH.z1, SH.x1, GY + 4, SH.z1 + 0.4);
+    sb(SH.x0, 0, SH.z1, SH.x0 + 0.4, 4, SH.z0); COL(SH.x0, GY, SH.z1, SH.x0 + 0.4, GY + 4, SH.z0);
+    sb(SH.x1 - 0.4, 0, SH.z1, SH.x1, 4, SH.z0); COL(SH.x1 - 0.4, GY, SH.z1, SH.x1, GY + 4, SH.z0);
+    // front wall with door gap x 167..169.2
+    sb(SH.x0, 0, SH.z0 - 0.4, 167, 4, SH.z0); COL(SH.x0, GY, SH.z0 - 0.4, 167, GY + 4, SH.z0);
+    sb(169.2, 0, SH.z0 - 0.4, SH.x1, 4, SH.z0); COL(169.2, GY, SH.z0 - 0.4, SH.x1, GY + 4, SH.z0);
+    sb(167, 3.0, SH.z0 - 0.4, 169.2, 4, SH.z0);
+    sb(SH.x0 - 0.2, 4, SH.z1 - 0.2, SH.x1 + 0.2, 4.35, SH.z0 + 0.2); B(B_, SH.x1 - SH.x0 + 0.4, 0.8, 0.3, greenM, 167 + 2, GY + 3.6, SH.z0 + 0.15);
+    plane(B_, (SH.x1 - SH.x0) * 0.8, 0.9, M(0xdfeef7, 0.1, 0.4, { transparent: true, opacity: 0.5 }), 169, GY + 1.9, SH.z0 + 0.01); // window strip
+    const shInT = canvasTex(256, 64, (g) => { g.fillStyle = '#1e7a46'; g.fillRect(0, 0, 256, 64); g.fillStyle = '#fff'; g.font = 'bold 34px system-ui'; g.textAlign = 'center'; g.fillText('bp shop', 128, 44); });
+    plane(B_, 5, 1.1, new THREE.MeshStandardMaterial({ map: shInT, emissive: 0xffffff, emissiveMap: shInT, emissiveIntensity: 0.3 }), 168, GY + 3.55, SH.z0 + 0.32);
+    plane(B_, SH.x1 - SH.x0 - 0.9, -SH.z1 + SH.z0 - 0.9, M(0xffffff, 0.55, 0, { map: floorTex('tile') }), 169, GY + 0.06, -183, -Math.PI / 2);
+    plane(B_, SH.x1 - SH.x0 - 0.9, -SH.z1 + SH.z0 - 0.9, M(0xf2f0ea, 0.95), 169, GY + 3.9, -183, Math.PI / 2);
+    plane(B_, 10, 0.7, E(0xfff6e2, 1.4), 169, GY + 3.86, -183, Math.PI / 2);
+    // cooler wall + snack shelf + counter + Sam
+    B(B_, 10, 2.2, 0.8, M(0xcfd4d8, 0.5), 169, GY + 0.06, -189.2); plane(B_, 9.4, 1.7, E(0xcfe8ff, 0.9), 169, GY + 0.5, -188.75); COL(164, GY, -189.8, 174, GY + 2.2, -188.4);
+    const snk = B(B_, 4.6, 1.5, 1.0, M(0x8a9aa0, 0.6), 165, GY + 0.06, -183); for (let i = 0; i < 12; i++) B(B_, 0.3, 0.34, 0.2, M([0xe07a3f, 0xd9b44a, 0xc0392b, 0x4a7fb5][i % 4], 0.6), 163.2 + (i % 6) * 0.72, GY + 0.6 + Math.floor(i / 6) * 0.55, -183 + (i % 2 ? 0.25 : -0.25));
+    COL(162.7, GY, -183.6, 167.3, GY + 1.6, -182.4);
+    const cnt = B(B_, 3.4, 1.05, 1.0, M(0x4a4038, 0.7), 176, GY + 0.06, -180); COL(174.3, GY, -180.6, 177.7, GY + 1.1, -179.4);
+    const sam = makePerson({ shirt: 0x1e7a46, pants: 0x222831, skin: 0xd9a06b, hair: 0x2a1a0e, hat: 0x1e7a46 });
+    sam.g.position.set(176, GY + 0.06, -181.4); W.add(sam.g);
+    ctx.tick(sam.g, (dt, t) => animPerson(sam, dt, t, 0));
+    makeTalker(ctx, sam, { name: 'Sam', firstLine: 'Hey! Pump\'s on whenever you\'re ready.', lines: ['Coffee\'s fresh… ish.', 'Ray out back will sort that Corolla right up.', 'Cold snap coming this weekend, they say.'] });
+    const snkHit = B(B_, 4.6, 1.7, 1.2, new THREE.MeshBasicMaterial({ visible: false }), 165, GY + 0.06, -183);
+    ctx.interact(snkHit, { cook: true, reach: 3, label: () => 'Grab road snacks 🥨 · $4', action: () => { if (!ctx.spend(4, 'snacks')) return; ctx.give('snack', { kind: 'cheese' }, { rise: true }); } });
+    const coolHit = B(B_, 9.4, 1.9, 0.5, new THREE.MeshBasicMaterial({ visible: false }), 169, GY + 0.1, -188.5);
+    ctx.interact(coolHit, { cook: true, reach: 3, label: () => 'Energy drink from the cooler ⚡ · $3', action: () => { if (!ctx.spend(3, 'energy drink')) return; ctx.need('energy', 0.25); ctx.drink('coffee'); } });
+
+    // ---- the garage behind the BP ----
+    const GA = { x0: 150, x1: 182, z0: -198, z1: -214 };
+    const gaM = M(0xb9bcbf, 0.7);
+    sb(GA.x0, 0, GA.z1, GA.x1, 4.6, GA.z1 + 0.5, gaM); COL(GA.x0, GY, GA.z1, GA.x1, GY + 4.6, GA.z1 + 0.5);
+    sb(GA.x0, 0, GA.z1, GA.x0 + 0.5, 4.6, GA.z0, gaM); COL(GA.x0, GY, GA.z1, GA.x0 + 0.5, GY + 4.6, GA.z0);
+    sb(GA.x1 - 0.5, 0, GA.z1, GA.x1, 4.6, GA.z0, gaM); COL(GA.x1 - 0.5, GY, GA.z1, GA.x1, GY + 4.6, GA.z0);
+    // north face: two open bays + office strip
+    sb(GA.x0, 0, GA.z0 - 0.5, 154, 4.6, GA.z0, gaM); COL(GA.x0, GY, GA.z0 - 0.5, 154, GY + 4.6, GA.z0);
+    sb(160, 0, GA.z0 - 0.5, 164, 4.6, GA.z0, gaM); COL(160, GY, GA.z0 - 0.5, 164, GY + 4.6, GA.z0);
+    sb(170, 0, GA.z0 - 0.5, GA.x1, 4.6, GA.z0, gaM); COL(170, GY, GA.z0 - 0.5, GA.x1, GY + 4.6, GA.z0);
+    sb(154, 3.2, GA.z0 - 0.5, 160, 4.6, GA.z0, gaM); sb(164, 3.2, GA.z0 - 0.5, 170, 4.6, GA.z0, gaM);
+    for (const x of [157, 167]) { const rd = B(B_, 5.6, 0.9, 0.12, M(0x7a8288, 0.5, 0.3), x, GY + 3.1, GA.z0 - 0.2); rd.rotation.x = 0.5; } // rolled-up doors
+    sb(GA.x0 + 0.2, 4.6, GA.z1 + 0.2, GA.x1 - 0.2, 4.95, GA.z0 - 0.2, M(0x4a4f55, 0.8));
+    const gaT = canvasTex(512, 80, (g) => { g.fillStyle = '#b32025'; g.fillRect(0, 0, 512, 80); g.fillStyle = '#fff'; g.font = 'bold 40px system-ui'; g.textAlign = 'center'; g.fillText('RIVER HWY AUTO & TIRE', 256, 54); });
+    plane(B_, 14, 1.6, new THREE.MeshStandardMaterial({ map: gaT, emissive: 0xffffff, emissiveMap: gaT, emissiveIntensity: 0.25 }), 166, GY + 4.0, GA.z0 + 0.3);
+    plane(B_, GA.x1 - GA.x0 - 1, -GA.z1 + GA.z0 - 1, M(0x6d7277, 0.9), 166, GY + 0.05, -206, -Math.PI / 2); EXT_FLOORS.push({ x0: GA.x0, z0: GA.z1, x1: GA.x1, z1: GA.z0, y: 0.05 });
+    plane(B_, 10, 0.7, E(0xfff6e2, 1.3), 166, GY + 4.5, -206, Math.PI / 2);
+    // lift with a car up on it
+    const lift = G(B_, 157, GY + 0.05, -206);
+    for (const s of [-1.3, 1.3]) { B(lift, 0.3, 2.0, 0.3, M(0xd94f20, 0.5), s, 0, -1.2); B(lift, 0.3, 2.0, 0.3, M(0xd94f20, 0.5), s, 0, 1.2); B(lift, 0.25, 0.12, 3.4, M(0x333a40, 0.5), s, 1.6, 0); }
+    COL(155.4, GY, -207.6, 158.6, GY + 2, -204.4);
+    const liftedCar = G(lift, 0, 1.75, 0); const lcM = M(0x5b6b73, 0.35, 0.5); B(liftedCar, 1.8, 0.55, 4.2, lcM, 0, 0.1, 0); B(liftedCar, 1.6, 0.5, 2.1, M(0x1c232b, 0.2, 0.4), 0, 0.62, -0.1);
+    for (const wx of [-0.86, 0.86]) for (const wz of [-1.35, 1.35]) { const w = C(liftedCar, 0.32, 0.32, 0.2, M(0x111111, 0.8), wx, 0.05, wz, 10); w.rotation.z = Math.PI / 2; }
+    // tires, tool wall, bench
+    for (const [tx, tz, n] of [[176, -210, 4], [179, -209, 3], [173.5, -211.5, 5]]) { for (let i = 0; i < n; i++) { const t = T(B_, 0.42, 0.16, M(0x16181a, 0.9), tx, GY + 0.22 + i * 0.34, tz, TAU); t.rotation.x = Math.PI / 2; } COL(tx - 0.6, GY, tz - 0.6, tx + 0.6, GY + 1.6, tz + 0.6); }
+    B(B_, 6, 1.0, 0.8, M(0x4a4038, 0.7), 166, GY + 0.05, -213.1); COL(163, GY, -213.6, 169, GY + 1.2, -212.6);
+    for (let i = 0; i < 10; i++) B(B_, 0.18, 0.5 + (i % 3) * 0.14, 0.06, M([0xc0392b, 0x4a7fb5, 0xd9b44a][i % 3], 0.6), 163 + i * 0.6, GY + 2.2, -213.4);
+    const ray = makePerson({ shirt: 0x3a6ea5, pants: 0x32383e, skin: 0xb97a4e, hair: 0x4a4a4a, apron: 0x2e3a46 });
+    ray.g.position.set(159.5, GY + 0.05, -206.5); ray.g.rotation.y = -1.2; W.add(ray.g);
+    ctx.tick(ray.g, (dt, t) => animPerson(ray, dt, t, 0));
+    makeTalker(ctx, ray, { name: 'Ray', firstLine: 'Afternoon! Ray. That the Corolla from over at Avalon?', lines: ['Tires look decent. Rotate \'em in spring.', 'Bring her round back any time.', 'Sam up front makes terrible coffee. Don\'t tell him.'] });
+    const svcHit = B(B_, 3.2, 2, 3.2, new THREE.MeshBasicMaterial({ visible: false }), 166.5, GY + 0.05, -206);
+    ctx.interact(svcHit, { cook: true, reach: 4, label: () => 'Quick check-up for the Corolla 🔧 · $20', action: () => {
+      const c = A.car && A.car.g.position; if (!c || Math.hypot(c.x - 166, c.z + 200) > 14) return ctx.msg('Ray: "Pull the Corolla around back first — park it by the bay."');
+      if (!ctx.spend(20, 'check-up')) return;
+      ctx.startAction({ label: 'Watching Ray work', dur: 6, done: () => { ray.say('All set. She\'s healthy!'); A.car.st.fuel = Math.max(A.car.st.fuel, 0.35); ctx.need('fun', 0.12); ctx.task('garage'); ctx.msg('🔧 Check-up done. The Corolla purrs now.'); } });
+    } });
+  }
+
+  // Perth Rd + houses (background flavor)
+  road(204, -240, 212, -126); dashZ(208, -236, -130);
+  sign(215, -131, (g) => { g.fillStyle = '#1f5a30'; g.fillRect(0, 56, 160, 48); g.fillStyle = '#fff'; g.font = 'bold 28px system-ui'; g.textAlign = 'center'; g.fillText('Perth Rd', 80, 89); }, 1.1, 1.1);
+  for (const [hx, hz, c] of [[224, -160, 0xd9cbb5], [226, -190, 0xb9c4c9], [222, -220, 0xd6b9a0]]) {
+    const h = G(W, hx, GY, hz, -Math.PI / 2 + rand(-0.1, 0.1)); B(h, 9, 4, 8, M(c, 0.9), 0, 0, 0); const r = new THREE.Mesh(new THREE.ConeGeometry(6.5, 2.6, 4), M(0x5a4a3a, 0.9)); r.rotation.y = Math.PI / 4; r.scale.z = 0.9; r.position.y = 5.3; h.add(r);
+    B(h, 1.1, 2.1, 0.15, M(0x4a3628, 0.7), 0, 0, 4.05); COL(hx - 5, GY, hz - 5, hx + 5, GY + 4, hz + 5);
+  }
+
+  // autumn trees (instanced, kept clear of roads and parcels)
+  {
+    const NO = [[-36, -33, 42, -2], [19, -128, 33, -28], [-48, -74, 24, -63], [-222, -143, 264, -124], [-120, -114, -42, -30], [144, -218, 202, -139], [202, -242, 214, -124], [216, -228, 234, -152], [-2, -70, 56, -42], [-36, -52, -12, -40]];
+    const leafCols = [0xd9622b, 0xe8a23a, 0xb83a26, 0xe3c14b, 0x8f5a2a, 0x6f8a3e, 0xc94f1f, 0xf0b54a];
+    const N = 420, sg = new THREE.IcosahedronGeometry(1, 1), im = new THREE.InstancedMesh(sg, M(0xffffff, 0.9), N);
+    const tg = new THREE.CylinderGeometry(0.15, 0.25, 1, 6), tm = new THREE.InstancedMesh(tg, M(0x4a3628, 0.9), N);
+    const d = new THREE.Object3D(), c = new THREE.Color(); let k = 0, guard = 0;
+    while (k < N && guard++ < 6000) {
+      const x = rand(-240, 280), z = rand(-260, 30);
+      if (x > -40 && x < 44 && z > -34 && z < 18) continue; // our building + lot
+      if (NO.some(r => x > r[0] - 3 && x < r[2] + 3 && z > r[1] - 3 && z < r[3] + 3)) continue;
+      const s = rand(1.6, 3.2), h = rand(5, 10);
+      d.position.set(x, GY + h, z); d.scale.set(s, s * 1.3, s); d.rotation.set(Math.random(), Math.random(), 0); d.updateMatrix(); im.setMatrixAt(k, d.matrix); im.setColorAt(k, c.set(leafCols[(Math.random() * leafCols.length) | 0]).offsetHSL(0, 0, rand(-0.05, 0.05)));
+      d.position.set(x, GY + h / 2, z); d.scale.set(1, h, 1); d.rotation.set(0, 0, 0); d.updateMatrix(); tm.setMatrixAt(k, d.matrix); k++;
+    }
+    W.add(im); W.add(tm);
+    // a line of maples along Caspian with real trunks you can't drive through
+    for (let z = -44; z > -120; z -= 14) { for (const sx of [17.5, 35]) { C(W, 0.14, 0.2, 2.6, M(0x4a3628, 0.9), sx, GY, z, 7); const lv = S(W, 1.5, M(leafCols[(Math.random() * 8) | 0], 0.9), sx, GY + 3.4, z, 10, 8); lv.scale.y = 1.25; COL(sx - 0.25, GY, z - 0.25, sx + 0.25, GY + 2, z + 0.25); } }
+  }
+
+  // ================= your red Corolla =================
+  const car = { st: { sp: 0, yaw: Math.PI, fuel: 0.55, radio: null, snd: null, lights: [] } };
+  {
+    const g = G(W, 12.5, GY, -7.2, Math.PI); markDyn(g); car.g = g;
+    const red = M(0xc8102e, 0.25, 0.55), dark = M(0x1a1d21, 0.3, 0.4), glass = M(0x2a3640, 0.08, 0.6, { transparent: true, opacity: 0.85 });
+    B(g, 1.76, 0.5, 4.54, red, 0, 0.26, 0); // body
+    const hood = B(g, 1.7, 0.16, 1.1, red, 0, 0.72, -1.6); hood.rotation.x = 0.06;
+    B(g, 1.7, 0.2, 1.25, red, 0, 0.68, 1.55); // trunk
+    B(g, 1.58, 0.58, 2.2, glass, 0, 0.78, 0.08); // greenhouse
+    B(g, 1.62, 0.06, 2.1, red, 0, 1.36, 0.08); // roof
+    B(g, 1.74, 0.16, 0.2, dark, 0, 0.3, -2.22); B(g, 1.74, 0.16, 0.2, dark, 0, 0.3, 2.22); // bumpers
+    const head = E(0xfff3c8, 0); for (const s of [-1, 1]) { plane(g, 0.34, 0.14, head, s * 0.56, 0.52, -2.273); car.st.lights.push(head); }
+    const tail = E(0xff2a22, 0); for (const s of [-1, 1]) plane(g, 0.3, 0.12, tail, s * 0.6, 0.56, 2.273, 0, Math.PI); car.st.lights.push(tail);
+    const plate = canvasTex(128, 64, (gc) => { gc.fillStyle = '#f4f6f8'; gc.fillRect(0, 0, 128, 64); gc.fillStyle = '#2a4b8a'; gc.font = 'bold 30px system-ui'; gc.textAlign = 'center'; gc.fillText('NOAH', 64, 42); gc.fillStyle = '#b32025'; gc.font = '12px system-ui'; gc.fillText('NORTH CAROLINA', 64, 14); });
+    plane(g, 0.42, 0.21, M(0xffffff, 0.7, 0, { map: plate }), 0, 0.42, 2.274, 0, Math.PI);
+    car.wheels = [];
+    for (const wx of [-0.82, 0.82]) for (const wz of [-1.42, 1.42]) { const w = G(g, wx, 0.32, wz); const ty = C(w, 0.32, 0.32, 0.22, M(0x101214, 0.85), 0, 0, 0, 14); ty.rotation.z = Math.PI / 2; ty.position.y = 0; const hub = C(w, 0.14, 0.14, 0.24, M(0xc9ccd0, 0.3, 0.8), 0, 0, 0, 10); hub.rotation.z = Math.PI / 2; car.wheels.push(w); }
+    // interior bits you see while driving
+    B(g, 1.5, 0.08, 0.5, dark, 0, 0.85, -0.85); // dash
+    const wheelO = G(g, -0.42, 0.92, -0.72); const sw = T(wheelO, 0.17, 0.025, dark, 0, 0, 0, TAU); sw.rotation.x = -1.1; car.steer = wheelO;
+    B(g, 0.5, 0.5, 0.5, M(0x24282d, 0.8), -0.42, 0.5, -0.1); B(g, 0.5, 0.5, 0.5, M(0x24282d, 0.8), 0.42, 0.5, -0.1); // seats
+    ctx.interact(g, { reach: 3.4, label: () => car.st.driving ? '' : 'Get in the Corolla 🚗', action: () => ctx.enterCar && ctx.enterCar() });
+    A.car = car;
+  }
+
+  // ================= areas (names + first-visit tips) =================
+  const AREAS = [
+    { id: 'lot', n: 'Parking lot · Avalon', r: [-34, -31, 40, -0.4], tip: '🅿 Your red Corolla is parked by the stairs. Right-click the door to drive.' },
+    { id: 'caspian', n: 'Caspian Pl', r: [16, -126, 36, -31], tip: '🛣 Caspian Pl — follow it north to River Hwy. Harris Teeter is off Town Center Dr.' },
+    { id: 'towncenter', n: 'Town Center Dr', r: [-46, -74, 16, -63], tip: '🛒 Town Center Dr — the Harris Teeter plaza is just ahead on the right.' },
+    { id: 'ht', n: 'Harris Teeter · Town Center Dr', r: [-120, -114, -42, -32], tip: '🛒 Harris Teeter: walk in through the sliding doors. Groceries $12, flowers $6, energy drink $3.' },
+    { id: 'hwy', n: 'River Hwy · NC-150', r: [-222, -143, 264, -124], tip: '🛣 River Hwy (NC-150). The BP is down the road to the east, across the highway.' },
+    { id: 'bp', n: 'BP · 1208 River Hwy', r: [144, -194, 202, -141], tip: '⛽ The BP. Park beside a pump and right-click it to fill the tank ($18). The shop has snacks.' },
+    { id: 'garage', n: 'River Hwy Auto & Tire', r: [144, -218, 202, -194], tip: '🔧 Ray\'s garage. Park by the bays and he\'ll give the Corolla a check-up ($20).' },
+    { id: 'perth', n: 'Perth Rd', r: [202, -242, 216, -126], tip: '🏡 Perth Rd — quiet street, nice houses.' },
+  ];
+  A.inTower = (x, z) => x > 7.6 && x < 9.95 && z > -0.2 && z < 5.6;
+  A.areaAt = (x, z, y = GY) => {
+    if (y > -2) return null;
+    for (const a of AREAS) if (x > a.r[0] && x < a.r[2] && z > a.r[1] && z < a.r[3]) return a;
+    return { id: 'outside', n: 'Mooresville, NC' };
+  };
+  return A;
+}
+
 // ---------- engine: renderer, player, needs, clock, actions, phone, events, UI ----------
 const $ = (s) => document.querySelector(s);
 const store = {
@@ -2988,7 +3619,7 @@ const saved = store.get('state', null);
 const P = {
   pos: V3(), vy: 0, yaw: 0, pitch: -0.05, eye: 1.62, crouch: false, sit: null, day: 1, dayTarget: 1, bob: 0, stepAcc: 0, caffeine: 0,
   needs: Object.assign({ hunger: 0.7, energy: 0.75, hygiene: 0.65, bladder: 0.7, fun: 0.6 }, saved && saved.needs),
-  minutes: saved ? saved.minutes : 9 * 60, dayNum: saved ? saved.dayNum : 1, action: null, anim: null,
+  minutes: saved ? saved.minutes : 9 * 60, dayNum: saved ? saved.dayNum : 1, action: null, anim: null, cash: saved && saved.cash != null ? saved.cash : 85, drive: null, chew: 0, shake: 0,
 };
 const flags = { tvT: 0, musicT: 0, showering: false };
 let held = null, heldSet = new Set(), hover = null, placeTarget = null;
@@ -3030,6 +3661,13 @@ const ctx = {
   toggleBurner(b, on) { if (b.toggle) b.toggle(on); else b.on = on; },
   bite(g) { bite(g); },
   puzzle(d, onSolve, onChange) { openPuzzle(d, onSolve, onChange); },
+  simon(d, onWin, onPad) { openSimon(d, onWin, onPad); },
+  spend(n, what) { if (P.cash < n) { toast('💸 Not enough cash for ' + (what || 'that') + ' ($' + n + '). Do some work on the laptop.'); Sfx.tone(240, 0.2, 'square', 0.05); return false; } P.cash -= n; updateCash(); toast('💵 -$' + n + (what ? ' · ' + what : '')); return true; },
+  earn(n, what) { P.cash += n; updateCash(); Sfx.chime(); },
+  restock() { A.refillDishes && A.refillDishes(); itemsGroup.children.forEach(g => g.userData.refill && g.userData.refill()); },
+  removeHeld() { if (held) { const g = held; held = null; heldSet.clear(); helper.visible = false; camera.remove(g); removeItem(g); } },
+  flowerPhoto() { sendText('Lilah', '📷 [photo of a fall bouquet]'); completeTask('text'); setTimeout(() => {}, 0); queueReply('Lilah', ['WAIT. Are those for me??', 'Okay you\'re the best husband. Love you ❤️'], 1.5); ctx.need('fun', 0.1); toast('📸 Sent to Lilah.'); },
+  enterCar() { enterCar(); },
   removeItem(g) { removeItem(g); },
   sit(pos, yaw, lie) {
     P.sit = { pos: pos.clone(), yaw, lie, prev: P.pos.clone(), root: arguments[3] || null }; P.yaw = yaw; P.pitch = lie ? 0.9 : -0.1;
@@ -3059,6 +3697,7 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 // ---- build apartment and items ----
 const A = buildApartment(scene, ctx);
 A.world.add(itemsGroup);
+buildWorld(scene, ctx, A);
 for (let i = 0; i < POOL_SIZE; i++) { const l = new THREE.PointLight(0xffffff, 0, 8, 1.5); l.userData.src = null; scene.add(l); POOL.push(l); } // fixed count: shaders never recompile
 const _lp = V3();
 function updateLightPool(dt) {
@@ -3114,7 +3753,7 @@ const DEFAULT_LAYOUT = {
     // living room: sofa on the half wall, TV on the east wall, tree by the sofa, bistro set top right
     ['sofa', 4.65, 0, 3.55, HP], ['art_wedding', 4.165, 1.62, 2.8, HP, null, { seed: 11 }], ['art_wedding', 4.165, 1.62, 3.55, HP, null, { seed: 12 }], ['art_wedding', 4.165, 1.62, 4.3, HP, null, { seed: 13 }],
     ['picture_light', 4.165, 2.17, 2.8, HP], ['picture_light', 4.165, 2.17, 3.55, HP], ['picture_light', 4.165, 2.17, 4.3, HP],
-    ['xmas_tree', 4.55, 0, 2.0, 0], ['present', 5.05, 0, 1.75, 0.3], ['present', 5.2, 0, 2.2, -0.2, '#2e5a3a'],
+    ['xmas_tree', 4.55, 0, 2.0, 0], ['present', 5.05, 0, 1.75, 0.3], ['present', 5.2, 0, 2.2, -0.2, '#2e5a3a'], ['present', 5.55, 0, 1.45, 0.9, '#2e3a46'],
     ['rug_vintage', 5.9, 0, 3.6, HP], ['coffee_marble', 5.9, 0, 3.6, HP], ['tray_trees', 5.9, 0.485, 3.32, 0], ['albums', 5.9, 0.485, 3.8, 0.5],
     ['media_console', 7.32, 0, 3.85, -HP], ['tv', 7.535, 1.55, 3.85, -HP], ['speaker', 7.32, 0.63, 3.2, -HP], ['record_player', 7.32, 0.63, 3.85, -HP], ['mini_tree', 7.32, 0.63, 4.5, 0], ['basket', 4.45, 0, 5.0, 0],
     ['bistro_table', 6.95, 0, 1.95, 0], ['armchair', 6.2, 0, 2.0, HP], ['armchair', 6.9, 0, 2.62, PI], ['candle', 6.88, 0.735, 1.88, 0], ['mini_tree', 7.05, 0.735, 2.02, 0], ['wine', 6.83, 0.735, 2.08, 0],
@@ -3129,7 +3768,7 @@ const DEFAULT_LAYOUT = {
     ['lamp_table', 4.62, 0.935, 9.7, 0, null, { on: true }], ['stand_mixer', 5.1, 0.935, 9.62, PI], ['fruit_bowl', 2.22, 0.935, 8.9, 0], ['plant_small', 2.22, 0.935, 8.05, 0],
     // bedroom
     ['bed', 1.14, 0, 1.41, HP], ['nightstand', 0.27, 0, 0.31, HP], ['nightstand', 0.27, 0, 2.51, HP], ['lamp_table', 0.27, 0.63, 0.31, 0, null, { on: true }], ['lamp_table', 0.27, 0.63, 2.51, 0],
-    ['desk', 2.3, 0, 3.065, PI], ['monitor', 2.3, 0.76, 3.0, PI], ['plant_small', 2.75, 0.76, 3.2, 0], ['office_chair', 2.3, 0, 2.97, 0],
+    ['desk', 2.3, 0, 3.065, PI], ['monitor', 2.3, 0.76, 3.0, PI], ['laptop', 1.85, 0.76, 3.05, PI + 0.25], ['plant_small', 2.75, 0.76, 3.2, 0], ['office_chair', 2.3, 0, 2.97, 0],
     ['art_monet', 0.06, 1.75, 1.41, HP], ['arched_cabinet', 2.78, 0, 0.27, 0], ['dresser', 3.8, 0, 1.7, -HP],
     ['art_photo', 4.04, 1.45, 1.25, -HP, null, { seed: 21 }], ['art_photo', 4.04, 1.45, 1.7, -HP, null, { seed: 22 }], ['art_photo', 4.04, 1.45, 2.15, -HP, null, { seed: 23 }],
     ['art_photo', 4.04, 1.9, 1.25, -HP, null, { seed: 24 }], ['art_photo', 4.04, 1.9, 1.7, -HP, null, { seed: 25 }], ['art_photo', 4.04, 1.9, 2.15, -HP, null, { seed: 26 }],
@@ -3149,7 +3788,7 @@ camera.layers.enable(LAYER_MERGED);
 const optStats = optimizeStatic({
   roots: [A.world, A.outdoor],
   tickOwners: TICKS.map(t => t.owner).filter(o => o !== A.world && o !== itemsGroup),
-  registry: [...Object.values(A.lights).flatMap(L => L.mats), ...A.streetLamps, A.sky.material],
+  registry: [...Object.values(A.lights).flatMap(L => L.mats), ...A.streetLamps, ...(A.glowMats || []), A.sky.material],
   isItemContainer: (o) => { const d = CATALOG[o.userData.item.t]; return d.small || d.removable; },
 });
 console.info('static merge', optStats);
@@ -3275,6 +3914,7 @@ function moveAndSlide(vx, vz, dt) {
 const keys = {}; const joy = { x: 0, y: 0 };
 const joyRun = () => Math.hypot(joy.x, joy.y) > 0.95;
 function updatePlayer(dt) {
+  if (P.drive) return updateCar(dt);
   let mx = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0) + joy.x;
   let mz = (keys.KeyS || keys.ArrowDown ? 1 : 0) - (keys.KeyW || keys.ArrowUp ? 1 : 0) + joy.y;
   const anyMove = Math.abs(mx) + Math.abs(mz) > 0.15 || keys.Space;
@@ -3296,32 +3936,35 @@ function updatePlayer(dt) {
   const doorHit = moveAndSlide(vx, vz, dt);
   if (Math.abs(vx) + Math.abs(vz) > 0) bump(doorHit, dt); else bumpT = 0;
   const moved = Math.hypot(P.pos.x - ox, P.pos.z - oz);
-  P.vy -= 9.8 * dt; P.pos.y += P.vy * dt; if (P.pos.y <= 0) { if (P.vy < -2) Sfx.step(); P.pos.y = 0; P.vy = 0; if (keys.Space && !uiOpen() && !P.action) P.vy = 3.6; }
-  if (moved > 0.001 && P.pos.y === 0) { P.bob += moved * 3.4; P.stepAcc += moved; if (P.stepAcc > (running ? 0.85 : 0.65)) { P.stepAcc = 0; Sfx.step(P.crouch || roomAt(P.pos.x, P.pos.z) === 'corridor'); } }
+  const gy = A.groundAt ? A.groundAt(P.pos.x, P.pos.z, P.pos.y) : 0;
+  P.vy -= 9.8 * dt; P.pos.y += P.vy * dt; if (P.pos.y <= gy) { if (P.vy < -2) Sfx.step(); P.pos.y = gy; P.vy = 0; if (keys.Space && !uiOpen() && !P.action) P.vy = 3.6; }
+  if (P.pos.y > gy + 0.02 && P.vy === 0) P.pos.y = Math.max(gy, P.pos.y - 6 * dt); // walking down a ramp keeps your feet on it
+  if (moved > 0.001 && Math.abs(P.pos.y - gy) < 0.03) { P.bob += moved * 3.4; P.stepAcc += moved; if (P.stepAcc > (running ? 0.85 : 0.65)) { P.stepAcc = 0; Sfx.step(P.crouch || roomAt(P.pos.x, P.pos.z) === 'corridor'); } }
   P.eye = lerp(P.eye, P.crouch ? 1.38 : 1.62, dt * 10);
   const fov = lerp(camera.fov, running && moved > 0.01 ? 75 : 70, dt * 6); if (Math.abs(fov - camera.fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
   camera.position.set(P.pos.x, P.pos.y + P.eye + Math.sin(P.bob) * 0.03, P.pos.z);
   camera.rotation.set(P.pitch + (P.chew > 0 ? Math.sin(P.chew * 26) * 0.004 * P.chew : 0) + (P.shake > 0 ? (Math.random() - 0.5) * P.shake * 0.06 : 0), P.yaw, Math.sin(P.bob * 0.5) * 0.004);
   if (P.shake > 0) P.shake -= dt;
-  if (P.pos.z < 1.4 && P.pos.x > 4.1 && P.pos.x < 7.6) completeTask('outside');
+  if (P.pos.z < 1.4 && P.pos.x > 4.1 && P.pos.x < 7.6 && P.pos.y > -0.5) completeTask('outside');
 }
 
 // ---- input ----
 let skipMoves = 0, locked = false, dragging = false, dragDist = 0, lastMouse = null; const mouseNDC = new THREE.Vector2(0, 0); let mouseInCanvas = false;
 const EL = { menu: $('#menu'), start: $('#start'), tasks: $('#tasks'), phone: $('#phone'), prompt: $('#prompt'), vignette: $('#vignette'), wet: $('#wet'), action: $('#action'), perf: $('#perfHud') };
-const uiOpen = () => !EL.menu.hidden || !EL.start.hidden || !EL.tasks.hidden || !EL.phone.hidden || !$('#puzzle').hidden;
+const uiOpen = () => !EL.menu.hidden || !EL.start.hidden || !EL.tasks.hidden || !EL.phone.hidden || !$('#puzzle').hidden || !$('#simon').hidden;
+const uiFreezes = () => !EL.menu.hidden || !EL.start.hidden || !EL.tasks.hidden || !$('#puzzle').hidden || !$('#simon').hidden; // the phone keeps time moving
 const tryLock = () => { if (isTouch) return; try { const p = canvas.requestPointerLock(); p && p.catch && p.catch(() => { }); } catch (e) { } };
 // mouse: right click = use / interact, left click = hit, bite or the aimed thing's grab action
 canvas.addEventListener('mousedown', (e) => {
   Sfx.init();
-  if (e.button === 2) { primary(); return; }
+  if (e.button === 2) { primary(); if (!locked && !uiOpen()) tryLock(); return; }
   if (e.button !== 0) return;
   if (locked) { leftAction(); return; }
   dragging = true; dragDist = 0; lastMouse = [e.clientX, e.clientY];
 });
 addEventListener('mouseup', (e) => {
   if (!dragging || e.button !== 0) return; dragging = false;
-  if (dragDist < 6 && e.target === canvas) { if (!hover && !held) { tryLock(); return; } leftAction(); }
+  if (dragDist < 6 && e.target === canvas) { if (hover || held) leftAction(); if (!uiOpen()) tryLock(); }
 });
 addEventListener('mousemove', (e) => {
   const rect = canvas.getBoundingClientRect(); mouseNDC.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1); mouseInCanvas = e.target === canvas;
@@ -3350,6 +3993,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyW' && !e.repeat) { const now = e.timeStamp; if (now - lastW < 300) P.sprintLatch = true; lastW = now; } // double-tap W to sprint
   keys[e.code] = true;
   if (e.code === 'F1') { toggleHud(); return; }
+  if (!$('#simon').hidden) { if (e.code === 'Escape') closeSimon(); return; }
   if (!$('#puzzle').hidden) { const b = Puzzle.blank(), dir = { ArrowUp: 3, KeyW: 3, ArrowDown: -3, KeyS: -3, ArrowLeft: 1, KeyA: 1, ArrowRight: -1, KeyD: -1 }[e.code]; if (e.code === 'Escape') { closePuzzle(); return; } if (dir !== undefined) { e.preventDefault(); const i = b + dir; if (i >= 0 && i < 9 && (Math.abs(dir) === 3 || Math.floor(i / 3) === Math.floor(b / 3))) slidePz(i); } return; }
   if (e.code === 'Escape') { if (!$('#phone').hidden) { closePhone(); return; } if (!$('#tasks').hidden) { $('#tasks').hidden = true; return; } if (!$('#menu').hidden) { closeMenu(); return; } if (!locked && $('#start').hidden) openMenu(); return; }
   if (uiOpen() || e.repeat) return;
@@ -3374,7 +4018,7 @@ function hitList(maxDist, opts = NOOPTS) {
   const out = [];
   for (const h of frameHits) {
     if (h.distance > maxDist) break;
-    const o = h.object; if (o.isPoints || o.isSprite || o.userData.noRay || heldSet.has(o)) continue;
+    const o = h.object; if (o.isPoints || o.isSprite || o.userData.noRay || heldSet.has(o) || (P.drive && driveSet.has(o))) continue;
     let vis = true, p = o; while (p) { if (!p.visible) { vis = false; break; } p = p.parent; } if (!vis) continue;
     const ghost = o.material && (o.material.visible === false || (o.material.transparent && o.material.opacity < 0.35));
     if (ghost && (opts.solidOnly || !findIntDeep(o))) continue;
@@ -3474,6 +4118,7 @@ const labelOf = (d, k = 'label') => { const v = d && d[k]; return typeof v === '
 function freshAim() { camera.updateMatrixWorld(); castFrame(); updateHover(); } // clicks use exactly what the crosshair is on right now
 function primary() {
   Sfx.init();
+  if (P.drive) { freshAim(); if (hover && hover.int && hover.int.cook) { try { hover.int.action(); } catch (e) { console.error(e); } return; } return carRadio(); }
   if (P.action || P.anim) return;
   freshAim();
   if (hover && hover.int) { const d = hover.int; try { d.action && d.action(); } catch (e) { console.error(e); } return; }
@@ -3484,6 +4129,7 @@ function primary() {
 let handHintT = 0;
 function leftAction() {
   Sfx.init();
+  if (P.drive) return carHorn();
   if (P.action || P.anim) return;
   freshAim();
   if (held && held.userData.item.food) return bite(held); // food in hand: left click always takes a bite
@@ -3499,6 +4145,7 @@ function leftAction() {
 }
 // E: pick up the item you're looking at
 function pickUp() {
+  if (P.drive) return exitCar();
   if (P.action || P.anim) return;
   freshAim();
   if (held) return toast('Your hands are full — right-click a surface to set it down, or press Q to drop it.');
@@ -3618,6 +4265,127 @@ function slidePz(i) {
   } else renderPz();
 }
 
+// ---- driving the Corolla ----
+const CAR_R = 1.12; const driveSet = new Set();
+function carHit(x, z) {
+  const y0 = A.GY + 0.28, y1 = A.GY + 1.25;
+  for (const c of STATIC) {
+    const b = c.box; if (!b || b.isEmpty() || b.max.y <= y0 || b.min.y >= y1) continue;
+    const qx = clamp(x, b.min.x, b.max.x), qz = clamp(z, b.min.z, b.max.z);
+    if ((x - qx) ** 2 + (z - qz) ** 2 < CAR_R * CAR_R) return true;
+  }
+  return false;
+}
+function enterCar() {
+  const car = A.car; if (!car || P.drive || P.action) return;
+  if (held) dropHeld();
+  P.drive = { car }; P.sit = null; P.yaw = car.g.rotation.y; P.pitch = -0.04;
+  driveSet.clear(); car.g.traverse(o => driveSet.add(o)); car.st.driving = true;
+  car.st.snd = Sfx.loop('hum', () => car.g.position, 0.06);
+  document.body.classList.add('driving');
+  if (isTouch) { $('#tUse').textContent = 'Exit'; $('#tUseHeld').textContent = 'Horn'; $('#tGrab').textContent = 'Radio'; }
+  $('#driveHud').hidden = false;
+  toast(isTouch ? '🚗 Stick: drive & steer · Exit when stopped' : '🚗 W/S gas & reverse · A/D steer · left-click horn · right-click radio · E to get out');
+  completeTask('drive'); Sfx.door(false);
+}
+function exitCar() {
+  const car = P.drive && P.drive.car; if (!car) return;
+  if (Math.abs(car.st.sp) > 2) return toast('Slow down to get out.');
+  car.st.sp = 0; car.st.snd && car.st.snd.stop(); car.st.snd = null;
+  if (car.st.radio) { car.st.radio.stop(); car.st.radio = null; }
+  P.drive = null; driveSet.clear(); car.st.driving = false; document.body.classList.remove('driving');
+  if (isTouch) { $('#tUse').textContent = 'Use'; $('#tUseHeld').textContent = 'Eat / Hit'; $('#tGrab').textContent = 'Grab / Drop'; }
+  $('#driveHud').hidden = true;
+  const g = car.g, side = _fwd.set(-1.6, 0, 0).applyAxisAngle(V3(0, 1, 0), g.rotation.y);
+  let ex = g.position.x + side.x, ez = g.position.z + side.z;
+  if (carHit(ex, ez)) { ex = g.position.x - side.x; ez = g.position.z - side.z; }
+  P.pos.set(ex, A.groundAt(ex, ez, A.GY + 1), ez); P.vy = 0; Sfx.door(true);
+}
+function carHorn() { Sfx.tone(392, 0.45, 'square', 0.18); Sfx.tone(494, 0.45, 'square', 0.14); completeTask('horn'); }
+function carRadio() {
+  const car = P.drive && P.drive.car; if (!car) return;
+  if (car.st.radio) { car.st.radio.stop(); car.st.radio = null; toast('📻 Radio off.'); }
+  else { car.st.radio = Sfx.music(() => car.g.position, 0); toast('📻 Lo-fi on the radio.'); completeTask('music'); }
+}
+const _fwd = V3();
+let fuelWarned = false, lastHudTxt = '';
+function updateCar(dt) {
+  const car = P.drive.car, st = car.st, g = car.g;
+  let th = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0) - joy.y;
+  let steer = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0) + joy.x;
+  if (uiOpen() || P.action) { th = 0; steer = 0; }
+  const area = A.areaAt(g.position.x, g.position.z, A.GY);
+  const onRoad = area && area.id !== 'outside';
+  const maxF = st.fuel <= 0 ? 2.2 : onRoad ? 16 : 6.5;
+  const target = th > 0 ? th * maxF : th * 5;
+  st.sp += clamp(target - st.sp, -1, 1) * (th !== 0 ? 9 : 4.5) * dt;
+  if (th === 0 && Math.abs(st.sp) < 0.25) st.sp = 0;
+  if (keys.Space) st.sp *= Math.max(0, 1 - 3.5 * dt);
+  const dir = Math.abs(st.sp) > 0.05 ? Math.sign(st.sp) : 0;
+  g.rotation.y -= steer * clamp(0.55 + Math.abs(st.sp) * 0.13, 0, 1.7) * dir * dt;
+  _fwd.set(-Math.sin(g.rotation.y), 0, -Math.cos(g.rotation.y));
+  const step = st.sp * dt, nx = g.position.x + _fwd.x * step, nz = g.position.z + _fwd.z * step;
+  const noseX = nx + _fwd.x * 1.9 * dir, noseZ = nz + _fwd.z * 1.9 * dir;
+  if (carHit(nx, nz) || carHit(noseX, noseZ)) { if (Math.abs(st.sp) > 3) { Sfx.thud(); P.shake = 0.25; } st.sp = -st.sp * 0.22; }
+  else { g.position.x = clamp(nx, -235, 275); g.position.z = clamp(nz, -255, 25); }
+  g.position.y = Math.min(A.groundAt(g.position.x, g.position.z, A.GY + 1), A.GY + 0.25);
+  st.fuel = Math.max(0, st.fuel - Math.abs(step) * 0.00045);
+  if (st.fuel < 0.15 && !fuelWarned && st.fuel > 0) { fuelWarned = true; toast('⛽ Low fuel! The BP is east on River Hwy, across the highway.'); }
+  if (st.fuel <= 0 && Math.abs(st.sp) > 2.3) toast('⛽ Running on fumes…');
+  car.wheels.forEach((w, i) => { w.rotation.x -= st.sp * dt / 0.32; if (i === 0 || i === 2) w.rotation.y = -steer * 0.4; });
+  if (car.steer) car.steer.rotation.y = -steer * 0.55;
+  if (st.snd) st.snd.setVol(0.05 + Math.abs(st.sp) / 16 * 0.22);
+  const night = ctx.isNight(); st.lights.forEach((m, i) => m.emissiveIntensity = night ? (i < 2 ? 3 : 1.6) : (keys.Space && i >= 2 ? 2 : 0));
+  // camera: driver seat, free look
+  _cs.set(-0.42, 1.14, -0.12).applyAxisAngle(_up, g.rotation.y).add(g.position);
+  camera.position.copy(_cs); camera.rotation.set(P.pitch + (P.shake > 0 ? (Math.random() - 0.5) * P.shake * 0.05 : 0), P.yaw, 0);
+  if (P.shake > 0) P.shake -= dt;
+  P.pos.set(g.position.x, g.position.y + 0.4, g.position.z); // keep ticks/lights centred on the car
+  const mph = Math.abs(st.sp * 2.237) | 0, txt = mph + ' mph · ⛽ ' + Math.round(st.fuel * 100) + '%' + (st.radio ? ' · 📻' : '');
+  if (txt !== lastHudTxt) { lastHudTxt = txt; $('#driveHud').textContent = txt; }
+}
+const _cs = V3(), _up = V3(0, 1, 0);
+
+// ---- Simon says: the memory toy in the navy present ----
+const Simon = { d: null, onWin: null, onPad: null, seq: [], at: 0, mode: 'idle', t: 0, round: 0, GOAL: 6 };
+const SIMON_FREQ = [329.6, 392, 493.9, 587.3];
+function simonBeep(i, dur = 0.32) { Sfx.tone(SIMON_FREQ[i], dur, 'triangle', 0.14); Simon.onPad && Simon.onPad(i); const pads = document.querySelectorAll('.spad'); pads.forEach((p, k) => p.classList.toggle('lit', k === i)); clearTimeout(Simon.litT); Simon.litT = setTimeout(() => { pads.forEach(p => p.classList.remove('lit')); Simon.onPad && Simon.onPad(-1); }, dur * 1000 * 0.75); }
+function openSimon(d, onWin, onPad) {
+  Object.assign(Simon, { d, onWin, onPad, seq: [], at: 0, mode: 'watch', t: 0, round: 0 });
+  $('#simon').hidden = false; unlock();
+  $('#sMsg').textContent = 'Watch the lights, then repeat them. Reach round ' + Simon.GOAL + ' to win!';
+  simonNext();
+}
+function simonNext() {
+  Simon.seq.push((Math.random() * 4) | 0); Simon.round = Simon.seq.length; Simon.at = 0; Simon.mode = 'watch';
+  $('#sRound').textContent = 'Round ' + Simon.round + ' / ' + Simon.GOAL;
+  let i = 0; clearInterval(Simon.player);
+  Simon.player = setInterval(() => { if ($('#simon').hidden) return clearInterval(Simon.player); if (i >= Simon.seq.length) { clearInterval(Simon.player); Simon.mode = 'input'; $('#sMsg').textContent = 'Your turn!'; return; } simonBeep(Simon.seq[i++]); }, 560);
+}
+function simonPress(i) {
+  if (Simon.mode !== 'input') return;
+  simonBeep(i, 0.22);
+  if (i !== Simon.seq[Simon.at++]) {
+    Simon.mode = 'watch'; $('#sMsg').textContent = '❌ Oops — watch it again…'; Sfx.tone(140, 0.5, 'sawtooth', 0.12);
+    const seq = Simon.seq; Simon.seq = seq; Simon.at = 0;
+    setTimeout(() => { if ($('#simon').hidden) return; let k = 0; clearInterval(Simon.player); Simon.player = setInterval(() => { if (k >= seq.length) { clearInterval(Simon.player); Simon.mode = 'input'; $('#sMsg').textContent = 'Your turn!'; return; } simonBeep(seq[k++]); }, 560); }, 900);
+    return;
+  }
+  if (Simon.at === Simon.seq.length) {
+    if (Simon.round >= Simon.GOAL) {
+      Simon.mode = 'idle'; $('#sMsg').textContent = '🏆 You win!'; Sfx.chime(); setTimeout(() => Sfx.chime(), 250);
+      const cb = Simon.onWin, r = Simon.round; Simon.d.best = Math.max(Simon.d.best || 0, r);
+      setTimeout(() => { closeSimon(); cb && cb(r); }, 1200);
+      return;
+    }
+    Simon.mode = 'watch'; $('#sMsg').textContent = '✔ Nice!'; setTimeout(() => { if (!$('#simon').hidden) simonNext(); }, 700);
+  }
+}
+function closeSimon() { if ($('#simon').hidden) return; clearInterval(Simon.player); clearTimeout(Simon.litT); Simon.onPad && Simon.onPad(-1); $('#simon').hidden = true; Simon.d = null; tryLock(); }
+document.querySelectorAll('.spad').forEach((p, i) => p.addEventListener('pointerdown', (e) => { e.preventDefault(); simonPress(i); }));
+$('#sClose').onclick = closeSimon;
+$('#simon').addEventListener('pointerdown', (e) => { if (e.target === $('#simon')) closeSimon(); });
+
 // ---- tasks ----
 const TASKS = [
   ['coffee', 'Brew an espresso at the coffee bar'], ['cook', 'Cook something on the stove'], ['bake', 'Bake cookies in the oven'], ['tea', 'Boil the kettle for tea'], ['microwave', 'Heat leftovers in the microwave'],
@@ -3626,6 +4394,8 @@ const TASKS = [
   ['tv', 'Watch TV from the couch'], ['music', 'Put on some music'], ['tree', 'Switch the tree lights'], ['gift', 'Open a present'], ['plants', 'Water a plant'],
   ['outside', 'Step out onto the balcony'], ['shower', 'Take a shower'], ['teeth', 'Brush your teeth'], ['toilet', 'Use the toilet'], ['hands', 'Wash your hands'], ['outfit', 'Pick an outfit in the closet'],
   ['sleep', 'Sleep in your bed'], ['lights', 'Flip a light switch'], ['breaker', 'Flip the main breaker'], ['computer', 'Use the computer'], ['read', 'Look through the wedding album'],
+  ['simon', 'Beat the memory game from under the tree'], ['text', 'Text somebody back'], ['work', 'Do some work on the laptop'], ['neighbor', 'Say hi to Marcus in 2B'], ['paydriver', 'Pay a delivery driver at the door'],
+  ['drive', 'Take the Corolla for a drive'], ['horn', 'Honk the horn'], ['groceries', 'Buy groceries at Harris Teeter & put them away'], ['fuel', 'Fill up the tank at the BP'], ['garage', 'Get a check-up at the garage behind the BP'],
 ];
 const done = new Set(store.get('tasks', []));
 function completeTask(id) { if (done.has(id)) return; done.add(id); store.set('tasks', [...done]); const t = TASKS.find(t => t[0] === id); if (t) { toast('✅ ' + t[1] + '  (' + done.size + '/' + TASKS.length + ')', 'task'); Sfx.chime(); } updateHud(); }
@@ -3634,37 +4404,85 @@ function renderTasks() {
   $('#taskCount').textContent = done.size + ' / ' + TASKS.length;
 }
 
-// ---- phone: delivery, music, smart home, texts ----
-const orders = []; let phoneMusic = null; const texts = [];
-const FOOD = [['🍕', 'Pizza', 'pizza', null, 35], ['🍜', 'Thai food', 'takeout', 'Thai food', 40], ['🍔', 'Burgers', 'takeout', 'Burgers', 30], ['🌯', 'Burritos', 'takeout', 'Burritos', 30]];
-function addText(from, body) { texts.unshift({ from, body, time: fmtTime(P.minutes) }); if (texts.length > 12) texts.pop(); $('#phoneBadge').hidden = false; Sfx.tone(1320, 0.08, 'sine', 0.1); Sfx.tone(1760, 0.1, 'sine', 0.1, 0, 0.1); }
+// ---- phone: contacts, texting, delivery, music, smart home ----
+const orders = []; let phoneMusic = null;
+const FOOD = [['🍕', 'Pizza', 'pizza', null, 35, 14], ['🍜', 'Thai food', 'takeout', 'Thai food', 40, 16], ['🍔', 'Burgers', 'takeout', 'Burgers', 30, 13], ['🌯', 'Burritos', 'takeout', 'Burritos', 30, 11]];
+const CONTACTS = [
+  { n: 'Lilah', e: '❤️', sub: 'Wife', chips: ['Love you ❤️', 'Want Thai tonight? 🍜', 'Come look at the tree with me 🎄', 'How\'s your day going?'], replies: [['Love you more!! See you at 6 ❤️'], ['YES. Extra spring rolls please 🥢'], ['Omw!! Put the fireplace on 🔥'], ['Long, but better now 😊 Miss you']] },
+  { n: 'Joe', e: '🏀', sub: 'Little brother', chips: ['Game night Friday?', 'You seen the Hornets score? 😬', 'Come see the new place, man'], replies: [['BET. I\'m bringing the switch 🎮'], ['Bro don\'t even start 💀'], ['Pull up this weekend, I\'ll bring wings']] },
+  { n: 'Mom', e: '🌼', sub: 'Mom', chips: ['Hi Mom ❤️', 'The tree looks great, sending pics!', 'Dinner Sunday still on?'], replies: [['Hi sweetheart! Eat something green today 🥦'], ['Send them!! Dad says hi 👋'], ['Of course! Bring Lilah, I\'m making the roast']] },
+  { n: 'Marcus', e: '🏠', sub: 'Neighbor in 2B', needsMet: true, chips: ['Hey, it\'s your neighbor in 2A 👋', 'Panthers game this Sunday?', 'You need anything from Harris Teeter?'], replies: [['Hey! Knock any time, door\'s usually open'], ['I\'ve got the big TV. You bring the chips 🏈'], ['You\'re a legend — grab me some of that salsa']] },
+  { n: 'DoorDash', e: '🛵', sub: 'Delivery updates', chips: ['Where\'s my order? 👀'], replies: [['Your dasher is on the way! 🛵']] },
+  { n: 'Amazon', e: '📦', sub: 'Deliveries', chips: ['Where\'s my package? 📦'], replies: [['Out for delivery — it\'ll be at your door soon!']] },
+  { n: 'Avalon Lake Norman', e: '🏢', sub: 'Leasing office', chips: ['When is rent due again?', 'The hallway light is out'], replies: [['Rent is due the 1st! Pay online any time 🙂'], ['Maintenance will stop by tomorrow — thanks for the heads up!']] },
+];
+const threads = store.get('threads', null) || {
+  Lilah: [{ m: 0, b: 'Made it to work. The tree better be lit when I\'m home 🎄', t: '8:40 AM' }],
+  Joe: [{ m: 0, b: 'yo send pics of the new place', t: '8:15 AM' }],
+  Mom: [{ m: 0, b: 'How\'s the new place? Send pics of the tree! 🎄', t: '8:02 AM' }],
+};
+const unread = new Set(store.get('unread', []));
+const pendingReplies = [];
+const totalMin = () => P.dayNum * 1440 + P.minutes;
+function saveThreads() { const trim = {}; for (const k in threads) trim[k] = threads[k].slice(-30); store.set('threads', trim); store.set('unread', [...unread]); }
+function addText(from, body) {
+  (threads[from] = threads[from] || []).push({ m: 0, b: body, t: fmtTime(P.minutes) });
+  unread.add(from); saveThreads(); $('#phoneBadge').hidden = false;
+  Sfx.tone(1320, 0.08, 'sine', 0.1); Sfx.tone(1760, 0.1, 'sine', 0.1, 0, 0.1);
+  if ($('#phone').hidden) toast('💬 ' + from + ': ' + (body.length > 44 ? body.slice(0, 44) + '…' : body));
+  else if (phoneView === 't:' + from) phoneApp(phoneView); else if (phoneView === 'msgs') phoneApp('msgs');
+}
+function sendText(to, body) {
+  (threads[to] = threads[to] || []).push({ m: 1, b: body, t: fmtTime(P.minutes) }); saveThreads(); completeTask('text');
+  Sfx.noise(0.06, 0.15, 3200, 2);
+}
+function queueReply(name, lines, delayMin = 2) { pendingReplies.push({ name, lines: [].concat(lines), at: totalMin() + delayMin + Math.random() * 2 }); }
 function togglePhone() { $('#phone').hidden ? openPhone() : closePhone(); }
 function openPhone(app = 'home') { $('#phone').hidden = false; unlock(); phoneApp(app); Sfx.click(); }
 function closePhone() { $('#phone').hidden = true; tryLock(); }
-const back = () => `<button class="backbtn" data-back="1">← Home</button>`;
+const back = (to = 'home', lbl = '← Home') => `<button class="backbtn" data-back="${to}">${lbl}</button>`;
+const esc = (t) => t.replace(/</g, '&lt;');
+let phoneView = 'home';
 function phoneApp(app) {
+  phoneView = app;
   const scr = $('#phoneScreen'); $('#phoneTime').textContent = fmtTime(P.minutes);
   if (app === 'home') {
-    scr.innerHTML = `<div class="weather"><strong>${ctx.isNight() ? '🌙' : '☀️'} ${ctx.isNight() ? 49 : 61}°F</strong><span>Lake Norman · ${ctx.isNight() ? 'Clear night' : 'Crisp and sunny'}</span></div>
-      <div class="apps"><button data-app="food"><i>🛵</i>Food</button><button data-app="music"><i>🎧</i>Music</button><button data-app="home2"><i>🏠</i>Home</button><button data-app="msgs"><i>💬</i>Messages</button><button data-app="todo"><i>✅</i>To-dos</button></div>
+    scr.innerHTML = `<div class="weather"><strong>${ctx.isNight() ? '🌙' : '☀️'} ${ctx.isNight() ? 49 : 61}°F</strong><span>Lake Norman · ${ctx.isNight() ? 'Clear night' : 'Crisp and sunny'}</span><strong class="cash">💵 $${P.cash}</strong></div>
+      <div class="apps"><button data-app="food"><i>🛵</i>Food</button><button data-app="music"><i>🎧</i>Music</button><button data-app="home2"><i>🏠</i>Home</button><button data-app="msgs"><i>💬</i>Messages${unread.size ? '<em class="dot"></em>' : ''}</button><button data-app="todo"><i>☑️</i>To-dos</button></div>
       ${orders.length ? `<div class="pill2">🛵 ${orders.map(o => o.name + ' arriving ' + fmtTime(o.eta)).join('<br>')}</div>` : ''}`;
   } else if (app === 'food') {
-    scr.innerHTML = `<h3>Order delivery</h3><p class="sub">Left at your front door.</p>` + FOOD.map((f, i) => `<button class="row" data-order="${i}"><i>${f[0]}</i><span><b>${f[1]}</b><small>About ${f[4]} min</small></span></button>`).join('') + back();
+    scr.innerHTML = `<h3>Order delivery · 💵 $${P.cash}</h3><p class="sub">A dasher brings it to your door — say hi and pay there.</p>` + FOOD.map((f, i) => `<button class="row" data-order="${i}"><i>${f[0]}</i><span><b>${f[1]} · $${f[5]}</b><small>About ${f[4]} min</small></span></button>`).join('') + back();
   } else if (app === 'music') {
-    scr.innerHTML = `<h3>Music</h3><p class="sub">${phoneMusic ? '▶ Playing: lo-fi fall beats' : 'Nothing playing'}</p><button class="row" data-music="1"><i>${phoneMusic ? '⏸' : '▶'}</i><span><b>${phoneMusic ? 'Pause' : 'Play lo-fi fall beats'}</b><small>Through your headphones</small></span></button>` + back();
+    scr.innerHTML = `<h3>Music</h3><p class="sub">${phoneMusic ? '▶ Playing: lo-fi fall beats' : 'Nothing playing'}</p><button class="row" data-music="1"><i>${phoneMusic ? '⏸' : '▶'}</i><span><b>${phoneMusic ? 'Pause' : 'Play lo-fi fall beats'}</b></span></button>` + back();
   } else if (app === 'home2') {
     const anyOn = Object.values(A.lights).some(L => L.on);
     scr.innerHTML = `<h3>Smart home</h3><button class="row" data-home="lights"><i>💡</i><span><b>${anyOn ? 'All lights off' : 'All lights on'}</b><small>Every room</small></span></button>
       <button class="row" data-home="lock"><i>${A.doorById.front.locked ? '🔓' : '🔒'}</i><span><b>${A.doorById.front.locked ? 'Unlock' : 'Lock'} front door</b><small>Currently ${A.doorById.front.locked ? 'locked' : 'unlocked'}</small></span></button>
       <button class="row" data-home="warm"><i>🌡</i><span><b>Thermostat ${A.temp}°F</b><small>Tap to warm up 1°</small></span></button>` + back();
   } else if (app === 'msgs') {
-    $('#phoneBadge').hidden = true;
-    scr.innerHTML = `<h3>Messages</h3>` + (texts.length ? texts.map(t => `<div class="msg"><b>${t.from}</b><small>${t.time}</small><p>${t.body}</p></div>`).join('') : '<p class="sub">No messages yet.</p>') + back();
+    const rows = CONTACTS.filter(c => !c.needsMet || store.get('metMarcus', false)).map(c => {
+      const th = threads[c.n] || [], last = th[th.length - 1];
+      return `<button class="row" data-thread="${c.n}"><i>${c.e}</i><span><b>${c.n}${unread.has(c.n) ? ' <em class="dot"></em>' : ''}</b><small>${last ? (last.m ? 'You: ' : '') + esc(last.b).slice(0, 38) : c.sub}</small></span></button>`;
+    }).join('');
+    scr.innerHTML = `<h3>Messages</h3>` + rows + back();
+  } else if (app.startsWith('t:')) {
+    const name = app.slice(2); unread.delete(name); saveThreads(); if (![...unread].length) $('#phoneBadge').hidden = true;
+    const c = CONTACTS.find(k => k.n === name), th = threads[name] || [];
+    scr.innerHTML = `<h3>${c ? c.e + ' ' : ''}${name}</h3><div class="thread">` +
+      th.slice(-14).map(m => `<div class="bub ${m.m ? 'me' : 'them'}">${esc(m.b)}<small>${m.t}</small></div>`).join('') +
+      `</div><div class="chips">` + (c ? c.chips.map((ch, i) => `<button class="chip" data-chip="${i}">${esc(ch)}</button>`).join('') : '') + `</div>` + back('msgs', '← Messages');
+    const tEl = scr.querySelector('.thread'); if (tEl) tEl.scrollTop = 1e6;
+    scr.querySelectorAll('[data-chip]').forEach(b2 => b2.onclick = () => {
+      const i = +b2.dataset.chip; sendText(name, c.chips[i]);
+      queueReply(name, c.replies[i] || c.replies[0], 1 + Math.random() * 2);
+      phoneApp(app);
+    });
   } else if (app === 'todo') {
-    scr.innerHTML = `<h3>To-dos · ${done.size}/${TASKS.length}</h3>` + TASKS.filter(t => !done.has(t[0])).slice(0, 8).map(t => `<div class="msg"><p>☐ ${t[1]}</p></div>`).join('') + back();
+    scr.innerHTML = `<h3>To-dos · ${done.size}/${TASKS.length}</h3>` + TASKS.filter(t => !done.has(t[0])).slice(0, 9).map(t => `<div class="msg"><p>☐ ${t[1]}</p></div>`).join('') + back();
   }
   scr.querySelectorAll('[data-app]').forEach(b => b.onclick = () => { Sfx.click(); phoneApp(b.dataset.app); });
-  scr.querySelectorAll('[data-order]').forEach(b => b.onclick = () => { const f = FOOD[+b.dataset.order]; orders.push({ name: f[1], type: f[2], label: f[3], eta: (P.minutes + f[4]) % 1440, left: f[4] }); toast('🛵 ' + f[1] + ' ordered! Arrives in about ' + f[4] + ' minutes.'); completeTask('order'); Sfx.chime(); phoneApp('home'); });
+  scr.querySelectorAll('[data-thread]').forEach(b => b.onclick = () => { Sfx.click(); phoneApp('t:' + b.dataset.thread); });
+  scr.querySelectorAll('[data-order]').forEach(b => b.onclick = () => { const f = FOOD[+b.dataset.order]; orders.push({ name: f[1], type: f[2], label: f[3], eta: (P.minutes + f[4]) % 1440, left: f[4], cost: f[5] }); toast('🛵 ' + f[1] + ' ordered ($' + f[5] + ' at the door). About ' + f[4] + ' min.'); addText('DoorDash', 'Order confirmed: ' + f[1] + ' · $' + f[5] + '. Your dasher will be there around ' + fmtTime((P.minutes + f[4]) % 1440) + '.'); completeTask('order'); phoneApp('home'); });
   scr.querySelectorAll('[data-music]').forEach(b => b.onclick = () => { if (phoneMusic) { phoneMusic.stop(); phoneMusic = null; } else { phoneMusic = Sfx.music(null, 0); completeTask('music'); } phoneApp('music'); });
   scr.querySelectorAll('[data-home]').forEach(b => b.onclick = () => {
     const k = b.dataset.home;
@@ -3673,21 +4491,59 @@ function phoneApp(app) {
     if (k === 'warm') { A.temp = Math.min(78, A.temp + 1); }
     Sfx.beep(1, 1800); phoneApp('home2');
   });
-  scr.querySelectorAll('[data-back]').forEach(b => b.onclick = () => phoneApp('home'));
+  scr.querySelectorAll('[data-back]').forEach(b => b.onclick = () => phoneApp(b.dataset.back));
 }
 
-// ---- random life events ----
+// ---- random life events + the delivery driver ----
 let nextPackage = 60 * (2 + Math.random() * 3), nextText = 40;
 function spawnAtDoor(type, d) { return spawnItem({ id: uid(), t: type, x: 8.05 + Math.random() * 0.2, y: 0, z: 7.3 + Math.random() * 0.4, r: Math.random() * 3, d }); }
+let driver = null;
+function removeDriver() { if (!driver) return; TICKS = TICKS.filter(t => t.owner !== driver.p.g); driver.p.g.parent && driver.p.g.parent.remove(driver.p.g); driver = null; }
+function makeDriver(o) {
+  const p = makePerson({ shirt: 0xd93a35, pants: 0x222831, skin: [0xe2b08a, 0xc98a5e, 0x8a5a3a][(Math.random() * 3) | 0], hair: 0x241a10, hat: 0xd93a35 });
+  p.g.position.set(8.7, 0, 5.75); A.world.add(p.g);
+  const bag = G(p.g, 0.3, 0.9, 0.18); B(bag, 0.24, 0.26, 0.16, M(0xc9a27a, 0.95), 0, 0, 0); B(bag, 0.24, 0.03, 0.16, M(0xa9875f, 0.95), 0, 0.26, 0);
+  const D = { p, o, bag, state: 'in', path: [[8.7, 6.7], [8.22, 7.42]], waitMin: 0, rung: false };
+  ctx.interact(p.g, {
+    reach: 2.8, cook: true,
+    label: () => D.state === 'wait' ? 'Say hi & pay $' + o.cost + ' for the ' + o.name.toLowerCase() + ' 💵' : '',
+    action: () => {
+      if (D.state !== 'wait') return;
+      const paid = P.cash >= o.cost; if (paid) { P.cash -= o.cost; updateCash(); toast('💵 -$' + o.cost + ' · ' + o.name); } else toast('💳 Covered by app credit (cash is low).');
+      p.say(['Enjoy! Stay warm out there.', 'Have a good one!', 'Careful, it\'s hot!'][(Math.random() * 3) | 0]);
+      spawnAtDoor(o.type, o.label ? { label: o.label } : {});
+      addText('DoorDash', 'Delivered! Enjoy your ' + o.name.toLowerCase() + '. 🛵');
+      completeTask('paydriver'); ctx.need('fun', 0.05);
+      D.state = 'out'; D.path = [[8.7, 6.4], [8.7, 5.7]];
+    }
+  });
+  ctx.tick(p.g, (dt, t) => {
+    if (D.state === 'in') { if (walkPerson(p, dt, t, D.path, 1.25)) { D.state = 'wait'; p.g.rotation.y = Math.PI / 2 + 0.2; Sfx.doorbell(); setTimeout(() => Sfx.knock(), 1100); toast('🛎 The dasher is at your door with the ' + o.name.toLowerCase() + ' — say hi and pay!'); } }
+    else if (D.state === 'wait') { animPerson(p, dt, t, 0); bag.position.y = 0.9 + Math.sin(t * 2) * 0.01; }
+    else if (D.state === 'out') { if (walkPerson(p, dt, t, D.path, 1.5)) removeDriver(); }
+  });
+  return D;
+}
 function updateEvents(gameMin) {
   for (let i = orders.length - 1; i >= 0; i--) {
     const o = orders[i]; o.left -= gameMin;
-    if (o.left <= 0) { orders.splice(i, 1); spawnAtDoor(o.type, o.label ? { label: o.label } : {}); Sfx.doorbell(); setTimeout(() => Sfx.knock(), 1200); toast('🔔 Ding-dong! Your ' + o.name.toLowerCase() + ' order is outside the front door.'); addText('DoorDash', 'Your ' + o.name + ' was left at your door. Enjoy!'); }
+    if (o.left <= 0) {
+      orders.splice(i, 1);
+      if (!driver) { driver = makeDriver(o); addText('DoorDash', 'Your dasher is at the door! 🛵'); }
+      else { spawnAtDoor(o.type, o.label ? { label: o.label } : {}); Sfx.doorbell(); toast('🔔 Your ' + o.name.toLowerCase() + ' order was left at the front door.'); addText('DoorDash', 'Your ' + o.name + ' was left at your door. Enjoy!'); }
+    }
   }
+  if (driver && driver.state === 'wait') { driver.waitMin += gameMin; if (driver.waitMin > 120) { spawnAtDoor(driver.o.type, driver.o.label ? { label: driver.o.label } : {}); addText('DoorDash', 'We left your order at the door — no charge this time. 💙'); driver.state = 'out'; driver.path = [[8.7, 6.4], [8.7, 5.7]]; } }
+  for (let i = pendingReplies.length - 1; i >= 0; i--) { const r = pendingReplies[i]; if (totalMin() >= r.at) { pendingReplies.splice(i, 1); addText(r.name, r.lines[(Math.random() * r.lines.length) | 0]); } }
   nextPackage -= gameMin;
   if (nextPackage <= 0) { nextPackage = 60 * (5 + Math.random() * 6); if (hour() > 8 && hour() < 20) { spawnAtDoor('package', {}); Sfx.knock(); toast('📦 *knock knock* A package was left at your door.'); addText('Amazon', 'Delivered: your package is at the front door.'); } }
   nextText -= gameMin;
-  if (nextText <= 0) { nextText = 60 * (2 + Math.random() * 4); const m = [['Mom', 'How\'s the new place? Send pics of the tree! 🎄'], ['Lilah', 'Did you remember to water the plants? 🪴'], ['Lilah', 'Want to order Thai tonight?'], ['Joe', 'Game night this weekend?'], ['Avalon Lake Norman', 'Reminder: the fitness center is open 24/7.'], ['Lilah', 'Can you start the laundry? 🧺']][(Math.random() * 6) | 0]; addText(m[0], m[1]); toast('💬 New message from ' + m[0] + (isTouch ? ' (tap Phone)' : ' (Esc → Open phone)')); }
+  if (nextText <= 0) {
+    nextText = 60 * (2 + Math.random() * 4);
+    const pool = [['Mom', 'How are you two doing? Send pics! 🎄'], ['Lilah', 'Did you remember to water the plants? 🪴'], ['Lilah', 'Want to order Thai tonight?'], ['Joe', 'Game night this weekend?'], ['Avalon Lake Norman', 'Reminder: the fitness center is open 24/7.'], ['Lilah', 'Can you start the laundry? 🧺'], ['Joe', 'bro the Hornets are COOKING rn 🏀']];
+    if (store.get('metMarcus', false)) pool.push(['Marcus', 'Heard you moving furniture — need a hand?'], ['Marcus', 'Grabbing wings later if you want in 🍗']);
+    const m = pool[(Math.random() * pool.length) | 0]; addText(m[0], m[1]);
+  }
 }
 
 // ---- toast / fade ----
@@ -3703,6 +4559,7 @@ document.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openMenu
 $('#mTasks').onclick = () => { $('#menu').hidden = true; renderTasks(); $('#tasks').hidden = false; };
 $('#mPhone').onclick = () => { $('#menu').hidden = true; openPhone(); };
 $('#taskChip').onclick = () => { renderTasks(); $('#tasks').hidden = false; unlock(); };
+$('#cashChip').onclick = () => { openPhone(); };
 $('#closeTasks').onclick = () => { $('#tasks').hidden = true; tryLock(); };
 $('#closePhone').onclick = closePhone;
 $('#sens').value = settings.sens; $('#sens').oninput = (e) => { settings.sens = +e.target.value; store.set('settings', settings); };
@@ -3742,6 +4599,16 @@ function updateHud() {
   for (const k of NEEDS) { const el = $('#n_' + k); if (el) { el.style.width = (P.needs[k] * 100) + '%'; el.parentNode.parentNode.classList.toggle('low', P.needs[k] < 0.2); } }
   const m = mood(); $('#mood').textContent = m[0] + ' ' + m[1];
   $('#taskChip').textContent = '✓ ' + done.size + '/' + TASKS.length;
+  updateCash();
+}
+function updateCash() { const el = $('#cashChip'); if (el && el.textContent !== '$' + P.cash) el.textContent = '$' + P.cash; }
+const seenAreas = new Set(store.get('areas', []));
+let lastAreaId = null;
+function areaPulse() {
+  const a = A.areaAt && A.areaAt(P.pos.x, P.pos.z, P.pos.y);
+  if (!a) { lastAreaId = null; return a; }
+  if (a.id !== lastAreaId) { lastAreaId = a.id; if (a.tip && !seenAreas.has(a.id)) { seenAreas.add(a.id); store.set('areas', [...seenAreas]); toast(a.tip); } }
+  return a;
 }
 let lastPrompt = null;
 // big pop-up action for cooking: a tap target on phones, a large card on desktop
@@ -3811,10 +4678,10 @@ function frame(now) {
   requestAnimationFrame(frame);
   const rawMs = now - last; const dt = Math.min(0.1, rawMs / 1000); last = now;
   // menus, phone and to-do list freeze the world: draw one last frame, then skip all work
-  if (uiOpen()) { if (pausedDrawn) { stats.paused = true; recordFrame(rawMs, 0, 0); return; } pausedDrawn = true; } else pausedDrawn = false;
+  if (uiFreezes()) { if (pausedDrawn) { stats.paused = true; recordFrame(rawMs, 0, 0); return; } pausedDrawn = true; } else pausedDrawn = false;
   stats.paused = false; clockT += dt;
   const pf0 = performance.now();
-  const playing = EL.start.hidden && EL.menu.hidden && EL.phone.hidden;
+  const playing = EL.start.hidden && EL.menu.hidden;
   const gameMin = playing ? dt : 0; // 1 real second = 1 game minute
   if (playing) { advanceTime(gameMin); updateNeeds(dt, gameMin); updateEvents(gameMin); }
   for (const c of STATIC) if (c.upd) c.upd();
@@ -3827,8 +4694,8 @@ function frame(now) {
   for (const g of itemsGroup.children) if (g.userData.wiggle > 0) { g.userData.wiggle -= dt; g.scale.setScalar(1 + Math.sin(g.userData.wiggle * 20) * 0.03 * g.userData.wiggle); }
   updateDay(dt);
   if (P.caffeine > 0) P.caffeine -= dt;
-  if ((hudAcc += dt) > 0.4) { hudAcc = 0; updateHud(); const r = roomAt(P.pos.x, P.pos.z); $('#roomName').textContent = ROOMS[r] ? ROOMS[r].name : 'Outside'; $('#clock').textContent = (ctx.isNight() ? '🌙 ' : '☀️ ') + 'Day ' + P.dayNum + ' · ' + fmtTime(P.minutes); }
-  if ((saveAcc += dt) > 10) { saveAcc = 0; store.set('state', { needs: P.needs, minutes: P.minutes, dayNum: P.dayNum }); }
+  if ((hudAcc += dt) > 0.4) { hudAcc = 0; updateHud(); const r = roomAt(P.pos.x, P.pos.z); const area = areaPulse(); $('#roomName').textContent = A.inTower && A.inTower(P.pos.x, P.pos.z) ? 'Stairwell' : P.pos.y > -1.4 && ROOMS[r] ? ROOMS[r].name : (P.pos.y > -1.4 && P.pos.x > 9.9 && P.pos.x < 14.1 && P.pos.z > 5.5 ? "Marcus's place · 2B" : P.pos.y > -1.4 ? 'Stairwell' : area ? area.n : 'Outside'); $('#clock').textContent = (ctx.isNight() ? '🌙 ' : '☀️ ') + 'Day ' + P.dayNum + ' · ' + fmtTime(P.minutes); }
+  if ((saveAcc += dt) > 10) { saveAcc = 0; store.set('state', { needs: P.needs, minutes: P.minutes, dayNum: P.dayNum, cash: P.cash }); }
   Sfx.updateLoops(camera.position);
   const pf1 = performance.now();
   renderer.render(scene, camera);
@@ -3876,7 +4743,7 @@ P.pos.set(A.spawn.x, 0, A.spawn.z); P.yaw = A.spawn.yaw; P.day = P.dayTarget = d
 updateHud(); renderTasks();
 camera.position.set(P.pos.x, P.eye, P.pos.z); camera.rotation.set(P.pitch, P.yaw, 0); camera.updateMatrixWorld();
 precompile().then(() => requestAnimationFrame(frame));
-window.__game = { STATIC_LIST: () => STATIC, moveAndSlide, dragLook, PR, POOL, SOURCES, lightStats, optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, leftAction, pickUp, bite, Crumbs, inSink, sinkBlocked: () => sinkBlocked, clock: () => clockT, FOOD: { FOOD_MODELS, FRUIT, pastaBowl, pizzaSlice }, held: () => held, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
+window.__game = { STATIC_LIST: () => STATIC, moveAndSlide, dragLook, PR, POOL, SOURCES, lightStats, optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, leftAction, pickUp, bite, Crumbs, simonPress, SimonState: () => ({ mode: Simon.mode, seq: Simon.seq.slice(), at: Simon.at, round: Simon.round }), enterCar, exitCar, held: () => held, inSink, sinkBlocked: () => sinkBlocked, clock: () => clockT, FOOD: { FOOD_MODELS, FRUIT, pastaBowl, pizzaSlice }, held: () => held, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
 
 </script>
 
