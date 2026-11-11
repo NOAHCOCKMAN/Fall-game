@@ -436,7 +436,8 @@ function updateHover() {
   const hits = hitList(9);
   const h = hits[0]; if (!h) return;
   let pick = h, io = findIntDeep(h.object);
-  for (const k of hits) { if (k.distance > h.distance + 0.06) break; const ki = findIntDeep(k.object); if (ki && (!io || ki !== io && k.object.userData.int)) { pick = k; io = ki; break; } }
+  for (const k of hits) { if (k.distance > h.distance + 0.4) break; const ki = findIntDeep(k.object); if (ki && ki.userData.int.priority) { pick = k; io = ki; break; } } // stove knobs win over a pan handle hanging in front of them
+  if (!(io && io.userData.int.priority)) for (const k of hits) { if (k.distance > h.distance + 0.06) break; const ki = findIntDeep(k.object); if (ki && (!io || ki !== io && k.object.userData.int)) { pick = k; io = ki; break; } }
   const reach = io && io.userData.int.reach || 2.6;
   if (pick.distance > reach) io = null;
   if (!io && h.distance > 2.6) return;

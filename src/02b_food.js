@@ -306,7 +306,7 @@ def('pan', 'Frying pan', 'Kitchen', { mount: 'surface', solid: false, small: tru
       const burner = ctx.burnerAt(g.getWorldPosition(wp));
       if (!st.food) return 'Add ' + FOODS[PAN_ORDER[st.choice]].name + ' to the pan';
       const s = stage(), heat = heatHere();
-      if (s === 'raw') return heat ? 'Cooking ' + nm() + '… ' + Math.round(st.cook * 100) + '% (raw)' : burner ? 'Turn on the burner under the pan' : 'Put the pan on the stove';
+      if (s === 'raw') return heat ? 'Cooking ' + nm() + '… ' + Math.round(st.cook * 100) + '% (raw)' : burner ? 'Turn the ' + burner.name + ' knob to start cooking' : 'Put the pan on the stove';
       if (s === 'cooked') return 'Plate the ' + nm() + ' 🍽 (cooked)';
       if (s === 'browning') return 'Plate it now — the ' + nm() + ' is browning!';
       return 'Scrape out the burnt ' + nm() + ' 😬';
@@ -317,7 +317,7 @@ def('pan', 'Frying pan', 'Kitchen', { mount: 'surface', solid: false, small: tru
       const s = stage();
       if (s === 'raw') {
         if (heatHere()) return ctx.msg('Still raw — give it a few more seconds.');
-        const b = ctx.burnerAt(g.getWorldPosition(wp)); if (b) return ctx.toggleBurner(b, true);
+        const b = ctx.burnerAt(g.getWorldPosition(wp)); if (b) return ctx.msg('Turn the ' + b.name + ' knob on the front of the stove.');
         st.food = null; ctx.msg('Took the raw food out. Set the pan on a burner to cook.'); return;
       }
       if (s === 'burnt') { st.food = null; Sfx.noise(0.4, 0.2, 900, 1, 'bandpass', -400); ctx.msg('Into the trash it goes.'); return; }
@@ -411,10 +411,10 @@ def('kettle', 'Tea kettle', 'Kitchen', { mount: 'surface', solid: false, small: 
   const steam = Puffs(g, { n: 6, size: 0.018, height: 0.3, opacity: 0.3, spread: 0.02, x: 0.17, y: 0.17 });
   const st = { temp: 0, whistle: 0 }; const wp = V3(), pp = V3();
   ctx.interact(g, {
-    label: () => st.temp >= 1 ? 'Pour a cup of tea 🍵' : ctx.heatAt(g.getWorldPosition(wp)) ? 'Heating water… ' + Math.round(st.temp * 100) + '%' : ctx.burnerAt(g.getWorldPosition(wp)) ? 'Turn on the burner under the kettle' : 'Put the kettle on the stove',
+    label: () => st.temp >= 1 ? 'Pour a cup of tea 🍵' : ctx.heatAt(g.getWorldPosition(wp)) ? 'Heating water… ' + Math.round(st.temp * 100) + '%' : ctx.burnerAt(g.getWorldPosition(wp)) ? 'Turn the ' + ctx.burnerAt(g.getWorldPosition(wp)).name + ' knob to boil' : 'Put the kettle on the stove',
     action: () => {
       if (st.temp >= 1) { Sfx.noise(0.8, 0.12, 900, 1.5, 'bandpass', -300); ctx.give('mug', { fill: 'tea' }, { rise: true }); ctx.msg('Hot tea! Left-click to sip.'); ctx.task('tea'); st.temp = 0.6; return; }
-      const b = !ctx.heatAt(g.getWorldPosition(wp)) && ctx.burnerAt(g.getWorldPosition(wp)); if (b) ctx.toggleBurner(b, true);
+      const b = !ctx.heatAt(g.getWorldPosition(wp)) && ctx.burnerAt(g.getWorldPosition(wp)); if (b) ctx.msg('Turn the ' + b.name + ' knob on the front of the stove.');
     }
   });
   ctx.onRemove(g, () => st.b && st.b.stop());

@@ -353,17 +353,16 @@ function buildApartment(scene, ctx) {
     const hit = C(R, r, r, 0.01, new THREE.MeshBasicMaterial({ visible: false }), bx, 0.92, bz, 16);
     const h = { on: false, pos: V3(), mat: bm, i, name: BURNER_NAMES[i] };
     h.toggle = (on = !h.on) => { if (on && !ctx.power()) { ctx.msg('No power.'); return; } h.on = on; Sfx.click(); if (h.on) Sfx.noise(0.3, 0.1, 2000, 1); };
-    const def = { label: () => (h.on ? 'Turn off the ' : 'Turn on the ') + h.name + ' burner', action: () => h.toggle() };
-    ctx.interact(hit, def);
+    hit.userData.noRay = true; // burners are switched only with the knobs; the ring is just cooktop you can set a pan on
     burners.push(h); A.heat.push(h); h.hit = hit;
   });
-  // control knobs on the backguard: each one works its burner even when a pan or kettle covers it
+  // control knobs on the front of the range: the only way to switch a burner on or off
   const knobs = [];
   [[-0.3, 2], [-0.18, 0], [0.18, 1], [0.3, 3]].forEach(([kx, bi]) => {
-    const kn = G(R, kx, 1.02, 0.07); markDyn(kn);
+    const kn = G(R, kx, 0.8, 0.668); markDyn(kn); // front-mounted, above the oven door, so pots never block them
     C(kn, 0.02, 0.022, 0.022, black, 0, 0, 0, 14).rotation.x = Math.PI / 2; B(kn, 0.004, 0.022, 0.006, M(0xd8d8d8, 0.4), 0, 0.0, 0.012);
-    const kh = B(R, 0.075, 0.075, 0.03, new THREE.MeshBasicMaterial({ visible: false }), kx, 0.985, 0.08); const h = burners[bi];
-    ctx.interact(kh, { label: () => (h.on ? 'Turn off the ' : 'Turn on the ') + h.name + ' burner', action: () => h.toggle() });
+    const kh = B(R, 0.08, 0.1, 0.03, new THREE.MeshBasicMaterial({ visible: false }), kx, 0.755, 0.675); const h = burners[bi];
+    ctx.interact(kh, { priority: true, label: () => (h.on ? 'Turn off the ' : 'Turn on the ') + h.name + ' burner', action: () => h.toggle() });
     knobs.push([kn, h]);
   });
   // oven door (hinged at bottom)
