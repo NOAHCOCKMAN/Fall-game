@@ -374,6 +374,7 @@ function buildApartment(scene, ctx) {
   const ckm = FOOD_MODELS.cookies(tray, { n: 6, layout: (i) => [-0.12 + (i % 3) * 0.12, 0.012, -0.06 + Math.floor(i / 3) * 0.12] }); markDyn(ckm.g);
   const oven = { on: false, t: 0, hasCookies: true };
   const ovenSmoke = Puffs(R, { n: 6, color: 0x3a3634, size: 0.03, height: 0.5, opacity: 0.4, spread: 0.08, y: 0.95, z: 0.1, speed: 0.35 });
+  const ovenTimer = CookTimer(ctx, R, 0, 0.6, 0.76, 0.24); // floats in front of the oven door
   const ovenSteam = Puffs(tray, { n: 4, size: 0.02, height: 0.2, opacity: 0.18, spread: 0.08, y: 0.03 });
   const odSt = hinge(ctx, od, 'x', 1.45, 'oven', 'door');
   const bake = () => oven.t / 18; // 1 = done, 2+ = burnt
@@ -403,6 +404,7 @@ function buildApartment(scene, ctx) {
     ovenMouth.visible = odSt.v > 0.6; tray.position.z = 0.36 + 0.22 * odSt.v; // rack slides out as the door opens
     ovenSmoke.update(dt, oven.hasCookies && bake() > 1.6 ? clamp((bake() - 1.6) * 2, 0, 1) : 0);
     ovenSteam.update(dt, odSt.v > 0.5 && oven.hasCookies && bake() > 0.6 ? 1 : 0);
+    if (oven.hasCookies && (oven.on || bake() >= 1)) { const b = bake(); if (b < 1) ovenTimer.show('Cookies ' + fmtSecs((1 - b) * 18), b, TIMER_COL.cook); else if (b < 2) ovenTimer.show(oven.on && !odSt.open ? 'Cookies ready · burn ' + fmtSecs((2 - b) * 18) : 'Cookies ready', 1, TIMER_COL.ready); else ovenTimer.show('Cookies burnt', 1, TIMER_COL.burn); } else ovenTimer.hide();
     const txt = !ctx.power() ? '' : oven.on ? (oven.hasCookies && bake() < 1 ? '350° ' + String(Math.max(0, Math.ceil(18 - oven.t))).padStart(2, '0') : '350°') : clockText(); if (txt !== disp.userData.last) { disp.userData.last = txt; const g = disp.userData.ctx; g.fillStyle = '#000'; g.fillRect(0, 0, 128, 32); g.fillStyle = '#4fb3ff'; g.font = 'bold 22px monospace'; g.fillText(txt, 8, 25); disp.needsUpdate = true; } // only re-upload when the text changes
   });
   colK(5.55, 0, 0.06, 6.31, 1.1, 0.74);
@@ -413,6 +415,7 @@ function buildApartment(scene, ctx) {
   const mwLight = M(0xe8e8e8, 0.5, 0, { emissive: 0xffe9b0, emissiveIntensity: 0 }); B(MW, 0.54, 0.01, 0.36, mwLight, -0.08, 0.37, 0.2);
   const turn = G(MW, -0.08, 0.05, 0.2); markMoves(turn); C(turn, 0.14, 0.14, 0.01, M(0xdfe8ee, 0.1, 0, { transparent: true, opacity: 0.6 }), 0, 0, 0, 24);
   const mwBowl = pastaBowl(turn).g; mwBowl.position.y = 0.01; mwBowl.visible = false; markDyn(mwBowl); noRay(mwBowl);
+  const mwTimer = CookTimer(ctx, MW, -0.08, 0.37, 0.5, 0.18);
   const mwSteam = Puffs(turn, { n: 4, size: 0.015, height: 0.16, opacity: 0.22, spread: 0.03, y: 0.07 });
   const mwd = G(MW, -0.38, 0.01, 0.4); B(mwd, 0.05, 0.4, 0.025, ss, 0.025, 0, 0); B(mwd, 0.13, 0.4, 0.025, ss, 0.515, 0, 0); B(mwd, 0.4, 0.07, 0.025, ss, 0.25, 0, 0); B(mwd, 0.4, 0.07, 0.025, ss, 0.25, 0.33, 0); B(mwd, 0.4, 0.26, 0.004, M(0x0d0d0d, 0.1, 0.2, { transparent: true, opacity: 0.45 }), 0.25, 0.07, 0.006); B(mwd, 0.02, 0.3, 0.03, ssDark, 0.53, 0.05, 0.025);
   const mwDoor = hinge(ctx, mwd, 'y', -1.7, 'microwave', 'click');
@@ -421,7 +424,7 @@ function buildApartment(scene, ctx) {
   const mw = { on: false, t: 0, ready: false };
   const takeBowl = () => { if (!mwDoor.open) { mwDoor.open = true; Sfx.click(); } mw.ready = false; mwBowl.visible = false; ctx.give('bowl', { hot: true }, { rise: true }); ctx.msg('Hot leftovers! Left-click to eat.'); };
   ctx.interact(kpd, {
-    label: () => mw.ready ? 'Take the hot leftovers 🍝' : mw.on ? 'Stop microwave (0:' + String(Math.max(0, 30 - Math.floor(mw.t * 3.75))).padStart(2, '0') + ')' : 'Heat leftovers (30s)',
+    label: () => mw.ready ? 'Take the hot leftovers 🍝' : mw.on ? 'Stop microwave (' + fmtSecs(8 - mw.t) + ')' : 'Heat leftovers',
     action: () => {
       if (mw.ready) return takeBowl();
       if (!ctx.power()) return ctx.msg('No power.'); if (mwDoor.open) return ctx.msg('Close the microwave door first.');
@@ -432,9 +435,10 @@ function buildApartment(scene, ctx) {
   ctx.interact(bowlHit, { label: () => mw.ready ? 'Take the hot leftovers 🍝' : '', action: () => { if (mw.ready) takeBowl(); } });
   ctx.tick(MW, dt => {
     mwSteam.update(dt, mw.ready ? 1 : 0); bowlHit.visible = mw.ready;
+    if (mw.on) mwTimer.show('Leftovers ' + fmtSecs(8 - mw.t), mw.t / 8, TIMER_COL.cook); else if (mw.ready) mwTimer.show('Leftovers ready', 1, TIMER_COL.ready); else mwTimer.hide();
     if (mw.on) { mw.t += dt; turn.rotation.y += dt * 1.5; if (mw.t > 8 || !ctx.power() || mwDoor.open) { mw.on = false; mw.snd && mw.snd.stop(); if (mw.t > 8) { mw.ready = true; Sfx.beep(3, 2000); ctx.msg('Ding! Leftovers are hot — open the microwave.'); ctx.task('microwave'); } else mwBowl.visible = false; } }
     mwLight.emissiveIntensity = (mw.on || mwDoor.v > 0.2) && ctx.power() ? 1 : 0;
-    const txt = !ctx.power() ? '' : mw.on ? '0:' + String(Math.max(0, 30 - Math.floor(mw.t * 3.75))).padStart(2, '0') : clockText(); if (txt !== mwDisp.userData.last) { mwDisp.userData.last = txt; const g = mwDisp.userData.ctx; g.fillStyle = '#000'; g.fillRect(0, 0, 64, 24); g.fillStyle = '#4fffa0'; g.font = 'bold 18px monospace'; g.fillText(txt, 4, 19); mwDisp.needsUpdate = true; }
+    const txt = !ctx.power() ? '' : mw.on ? fmtSecs(8 - mw.t) : clockText(); if (txt !== mwDisp.userData.last) { mwDisp.userData.last = txt; const g = mwDisp.userData.ctx; g.fillStyle = '#000'; g.fillRect(0, 0, 64, 24); g.fillStyle = '#4fffa0'; g.font = 'bold 18px monospace'; g.fillText(txt, 4, 19); mwDisp.needsUpdate = true; }
   });
   // ---- fridge ----
   const FR = G(K, 7.2, 0, 2.73, -Math.PI / 2); // local: front faces +z → world -x

@@ -1066,6 +1066,7 @@ def('espresso', 'Espresso machine', 'Kitchen', { mount: 'surface', solid: false,
   const cup = G(g, 0, 0.04, 0.16); C(cup, 0.035, 0.03, 0.08, M(0xf4f1ea, 0.3), 0, 0, 0, 16); const coffee = C(cup, 0.031, 0.031, 0.005, M(0x4a2a14, 0.2), 0, 0.01, 0, 16);
   const stream = C(g, 0.004, 0.004, 0.13, M(0x4a2a14, 0.3), 0, 0.09, 0.16, 6); stream.visible = false; markDyn(cup, stream);
   const steam = []; for (let i = 0; i < 6; i++) { const s = S(g, 0.02, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, depthWrite: false }), 0, 0.15, 0.16, 6, 4); s.visible = false; steam.push(s); } markDyn(steam);
+  const timer = CookTimer(ctx, g, 0, 0.66, 0.05);
   const st = { state: 'idle', t: 0, fill: 0 };
   ctx.interact(g, {
     label: () => st.state === 'idle' ? (cup.visible ? 'Brew espresso ☕' : 'Place a cup & brew') : st.state === 'brewing' ? 'Brewing…' : 'Take your coffee',
@@ -1082,6 +1083,7 @@ def('espresso', 'Espresso machine', 'Kitchen', { mount: 'surface', solid: false,
       if (st.t > 5.5) { st.state = 'done'; stream.visible = false; st.snd && st.snd.stop(); Sfx.beep(2, 1500); }
     }
     coffee.position.y = 0.01 + st.fill * 0.06; coffee.visible = st.fill > 0.02;
+    if (st.state === 'brewing') timer.show('Coffee ' + fmtSecs(5.5 - st.t), st.t / 5.5, TIMER_COL.cook); else if (st.state === 'done') timer.show('Coffee ready', 1, TIMER_COL.ready); else timer.hide();
     steam.forEach((s, i) => { s.visible = st.fill > 0.5 && cup.visible; const k = (t * 0.5 + i / 6) % 1; s.position.set(Math.sin(t + i) * 0.02, 0.12 + k * 0.2, 0.16); s.material.opacity = 0.25 * (1 - k); s.scale.setScalar(1 + k * 2); });
   });
   return g;
@@ -1433,6 +1435,36 @@ function bowlGeo(r, h) {
   });
 }
 
+// ---- floating cook timer: a small card above whatever is cooking (orange = cooking, green = ready, red = burning) ----
+const _tv = new THREE.Vector3(), _tv2 = new THREE.Vector3();
+const fmtSecs = (t) => { const s = Math.max(0, Math.ceil(t)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+function CookTimer(ctx, parent, x, y, z, w = 0.2, maxW = 0.55) {
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 72; const g = cv.getContext('2d');
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false }));
+  sp.scale.set(w, w * 72 / 256, 1); sp.position.set(x, y, z); sp.renderOrder = 10; sp.visible = false; parent.add(sp); markDyn(sp); noRay(sp);
+  let last = '';
+  return {
+    sp,
+    show(text, frac, color) {
+      const d = sp.parent.localToWorld(_tv.set(x, y, z)).distanceTo(_tv2.copy(ctx.playerPos()).setY(1.6)), near = d < 5.5; // only when you're in the kitchen
+      if (sp.visible !== near) sp.visible = near; if (!near) return;
+      const ws = clamp(d * 0.21, w, maxW) / sp.parent.getWorldScale(_tv).x; // grows with distance so it stays readable, and lifts so it never covers the food
+      sp.scale.set(ws, ws * 72 / 256, 1); sp.position.set(x, y + ws * 0.14, z);
+      const key = text + '|' + color + '|' + Math.round(frac * 30); if (key === last) return; last = key; // redraw only when it changes
+      g.clearRect(0, 0, 256, 72);
+      g.fillStyle = 'rgba(22,18,14,0.82)'; g.beginPath(); g.roundRect(2, 2, 252, 68, 34); g.fill();
+      g.lineWidth = 7; g.strokeStyle = 'rgba(255,255,255,0.18)'; g.beginPath(); g.arc(36, 36, 22, 0, Math.PI * 2); g.stroke();
+      g.strokeStyle = color; g.beginPath(); g.arc(36, 36, 22, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamp(frac, 0, 1)); g.stroke();
+      g.fillStyle = '#f6efe6'; g.font = 'bold 27px system-ui, -apple-system, Segoe UI, sans-serif'; g.textBaseline = 'middle';
+      let fs = 27; while (g.measureText(text).width > 180 && fs > 16) { fs -= 1; g.font = 'bold ' + fs + 'px system-ui, -apple-system, Segoe UI, sans-serif'; }
+      g.fillText(text, 70, 37); tex.needsUpdate = true;
+    },
+    hide() { if (sp.visible) { sp.visible = false; } }
+  };
+}
+const TIMER_COL = { cook: '#f2994a', ready: '#8fd18a', burn: '#ff6a5a' };
+
 // ---- steam / smoke puffs ----
 const PUFF_GEO = new THREE.SphereGeometry(1, 8, 6);
 function Puffs(parent, o) {
@@ -1630,6 +1662,7 @@ def('pan', 'Frying pan', 'Kitchen', { mount: 'surface', solid: false, small: tru
   const steam = Puffs(g, { n: 6, size: 0.02, height: 0.3, opacity: 0.22, spread: 0.05, y: 0.04 });
   const smoke = Puffs(g, { n: 6, color: 0x36322f, size: 0.025, height: 0.45, opacity: 0.5, spread: 0.05, y: 0.05, speed: 0.4 });
   const spat = Spatter(g);
+  const timer = CookTimer(ctx, g, 0, 0.32, 0, 0.2, 0.3);
   const st = { food: null, cook: 0, sz: null, choice: 0, flip: -1, plate: -1 }, wp = V3(), pp = V3();
   const nm = () => FOODS[st.food].name;
   const stage = () => st.cook < 1 ? 'raw' : st.cook < 1.6 ? 'cooked' : st.cook < 2 ? 'browning' : 'burnt';
@@ -1672,6 +1705,13 @@ def('pan', 'Frying pan', 'Kitchen', { mount: 'surface', solid: false, small: tru
     if (heat) { st.cook += dt / 9; if (!st.sz) st.sz = Sfx.loop('sizzle', () => g.getWorldPosition(pp), 0.14); st.sz.setVol(st.cook > 1.6 ? 0.2 : 0.14); }
     else if (st.sz) { st.sz.stop(); st.sz = null; }
     if (st.food) models[st.food].set(st.cook);
+    const c = st.cook;
+    if (st.food && st.plate < 0 && (heat || c >= 1)) {
+      if (c < 1) timer.show(FOODS[st.food].name.replace(/^./, m => m.toUpperCase()) + ' ' + fmtSecs((1 - c) * 9), c, TIMER_COL.cook);
+      else if (c < 1.6) timer.show(heat ? 'Ready · burns in ' + fmtSecs((1.6 - c) * 9) : 'Ready to plate', 1, TIMER_COL.ready);
+      else if (c < 2) timer.show('Burning! ' + fmtSecs((2 - c) * 9), (2 - c) / 0.4, TIMER_COL.burn);
+      else timer.show('Burnt', 1, TIMER_COL.burn);
+    } else timer.hide();
     const near = g.getWorldPosition(pp).distanceTo(ctx.playerPos()) < 4;
     steam.update(dt, heat ? clamp(st.cook * 1.2, 0.3, 1) * (st.cook > 1.8 ? 0.4 : 1) : 0);
     smoke.update(dt, st.food && st.cook > 1.6 ? clamp((st.cook - 1.6) * 2, 0, 1) : 0);
@@ -1744,6 +1784,7 @@ def('kettle', 'Tea kettle', 'Kitchen', { mount: 'surface', solid: false, small: 
   const sp = C(g, 0.012, 0.02, 0.12, m, 0.1, 0.08, 0, 8); sp.rotation.z = -0.9;
   T(g, 0.07, 0.01, M(0x1a1a1a), 0, 0.18, 0, Math.PI);
   const steam = Puffs(g, { n: 6, size: 0.018, height: 0.3, opacity: 0.3, spread: 0.02, x: 0.17, y: 0.17 });
+  const timer = CookTimer(ctx, g, 0, 0.42, 0, 0.2, 0.3); // stays under the microwave, beside the pan's card
   const st = { temp: 0, whistle: 0 }; const wp = V3(), pp = V3();
   ctx.interact(g, {
     label: () => st.temp >= 1 ? 'Pour a cup of tea 🍵' : ctx.heatAt(g.getWorldPosition(wp)) ? 'Heating water… ' + Math.round(st.temp * 100) + '%' : ctx.burnerAt(g.getWorldPosition(wp)) ? 'Turn the ' + ctx.burnerAt(g.getWorldPosition(wp)).name + ' knob to boil' : 'Put the kettle on the stove',
@@ -1758,6 +1799,7 @@ def('kettle', 'Tea kettle', 'Kitchen', { mount: 'surface', solid: false, small: 
     st.temp = clamp(st.temp + (heat ? dt / 12 : -dt / 60), 0, 1.2);
     if (st.temp >= 1 && heat) { if (!st.b) st.b = Sfx.loop('boil', () => g.getWorldPosition(pp), 0.1); if ((st.whistle -= dt) < 0) { Sfx.tone(2400, 0.8, 'sine', 0.05, 80); st.whistle = 1.2; } } else if (st.b) { st.b.stop(); st.b = null; }
     steam.update(dt, clamp((st.temp - 0.7) * 3, 0, 1));
+    if (st.temp >= 1) timer.show('Boiled · pour tea', 1, TIMER_COL.ready); else if (heat) timer.show('Boiling ' + fmtSecs((1 - st.temp) * 12), st.temp, TIMER_COL.cook); else timer.hide();
   });
   return g;
 });
@@ -1770,6 +1812,7 @@ def('toaster', 'Toaster', 'Kitchen', { mount: 'surface', solid: false, small: tr
   const crumb = FM(0xf3e6c8, 0.85), crust = FM(0xc68a48, 0.8);
   const toasts = [-0.035, 0.035].map(z => { const s = fmesh(g, breadGeo(0.11, 0.1, 0.012), [crumb, crust], 0, 0.12, z); return s; }); markDyn(toasts);
   const smoke = Puffs(g, { n: 4, color: 0xdddddd, size: 0.014, height: 0.2, opacity: 0.18, spread: 0.04, y: 0.2 });
+  const timer = CookTimer(ctx, g, 0, 0.42, 0);
   const st = { s: 'ready', t: 0, pop: 1 };
   ctx.interact(g, {
     label: () => st.s === 'ready' ? 'Make toast 🍞' : st.s === 'toasting' ? 'Toasting… ' + Math.round(st.t / 6 * 100) + '%' : 'Take the toast',
@@ -1786,6 +1829,7 @@ def('toaster', 'Toaster', 'Kitchen', { mount: 'surface', solid: false, small: tr
     const y = st.s === 'toasting' ? 0.07 : st.s === 'done' ? 0.15 + 0.07 * Math.sin(st.pop * Math.PI) * (1 - st.pop * 0.6) : 0.12; // pops up, then settles
     lever.position.y = st.s === 'toasting' ? 0.04 : 0.13; toasts.forEach(t => { t.position.y = y + 0.05; });
     smoke.update(dt, st.s === 'toasting' && st.t > 3 ? 0.6 : 0);
+    if (st.s === 'toasting') timer.show('Toast ' + fmtSecs(6 - st.t), st.t / 6, TIMER_COL.cook); else if (st.s === 'done') timer.show('Toast ready', 1, TIMER_COL.ready); else timer.hide();
   });
   return g;
 });
@@ -2318,6 +2362,7 @@ function buildApartment(scene, ctx) {
   const ckm = FOOD_MODELS.cookies(tray, { n: 6, layout: (i) => [-0.12 + (i % 3) * 0.12, 0.012, -0.06 + Math.floor(i / 3) * 0.12] }); markDyn(ckm.g);
   const oven = { on: false, t: 0, hasCookies: true };
   const ovenSmoke = Puffs(R, { n: 6, color: 0x3a3634, size: 0.03, height: 0.5, opacity: 0.4, spread: 0.08, y: 0.95, z: 0.1, speed: 0.35 });
+  const ovenTimer = CookTimer(ctx, R, 0, 0.6, 0.76, 0.24); // floats in front of the oven door
   const ovenSteam = Puffs(tray, { n: 4, size: 0.02, height: 0.2, opacity: 0.18, spread: 0.08, y: 0.03 });
   const odSt = hinge(ctx, od, 'x', 1.45, 'oven', 'door');
   const bake = () => oven.t / 18; // 1 = done, 2+ = burnt
@@ -2347,6 +2392,7 @@ function buildApartment(scene, ctx) {
     ovenMouth.visible = odSt.v > 0.6; tray.position.z = 0.36 + 0.22 * odSt.v; // rack slides out as the door opens
     ovenSmoke.update(dt, oven.hasCookies && bake() > 1.6 ? clamp((bake() - 1.6) * 2, 0, 1) : 0);
     ovenSteam.update(dt, odSt.v > 0.5 && oven.hasCookies && bake() > 0.6 ? 1 : 0);
+    if (oven.hasCookies && (oven.on || bake() >= 1)) { const b = bake(); if (b < 1) ovenTimer.show('Cookies ' + fmtSecs((1 - b) * 18), b, TIMER_COL.cook); else if (b < 2) ovenTimer.show(oven.on && !odSt.open ? 'Cookies ready · burn ' + fmtSecs((2 - b) * 18) : 'Cookies ready', 1, TIMER_COL.ready); else ovenTimer.show('Cookies burnt', 1, TIMER_COL.burn); } else ovenTimer.hide();
     const txt = !ctx.power() ? '' : oven.on ? (oven.hasCookies && bake() < 1 ? '350° ' + String(Math.max(0, Math.ceil(18 - oven.t))).padStart(2, '0') : '350°') : clockText(); if (txt !== disp.userData.last) { disp.userData.last = txt; const g = disp.userData.ctx; g.fillStyle = '#000'; g.fillRect(0, 0, 128, 32); g.fillStyle = '#4fb3ff'; g.font = 'bold 22px monospace'; g.fillText(txt, 8, 25); disp.needsUpdate = true; } // only re-upload when the text changes
   });
   colK(5.55, 0, 0.06, 6.31, 1.1, 0.74);
@@ -2357,6 +2403,7 @@ function buildApartment(scene, ctx) {
   const mwLight = M(0xe8e8e8, 0.5, 0, { emissive: 0xffe9b0, emissiveIntensity: 0 }); B(MW, 0.54, 0.01, 0.36, mwLight, -0.08, 0.37, 0.2);
   const turn = G(MW, -0.08, 0.05, 0.2); markMoves(turn); C(turn, 0.14, 0.14, 0.01, M(0xdfe8ee, 0.1, 0, { transparent: true, opacity: 0.6 }), 0, 0, 0, 24);
   const mwBowl = pastaBowl(turn).g; mwBowl.position.y = 0.01; mwBowl.visible = false; markDyn(mwBowl); noRay(mwBowl);
+  const mwTimer = CookTimer(ctx, MW, -0.08, 0.37, 0.5, 0.18);
   const mwSteam = Puffs(turn, { n: 4, size: 0.015, height: 0.16, opacity: 0.22, spread: 0.03, y: 0.07 });
   const mwd = G(MW, -0.38, 0.01, 0.4); B(mwd, 0.05, 0.4, 0.025, ss, 0.025, 0, 0); B(mwd, 0.13, 0.4, 0.025, ss, 0.515, 0, 0); B(mwd, 0.4, 0.07, 0.025, ss, 0.25, 0, 0); B(mwd, 0.4, 0.07, 0.025, ss, 0.25, 0.33, 0); B(mwd, 0.4, 0.26, 0.004, M(0x0d0d0d, 0.1, 0.2, { transparent: true, opacity: 0.45 }), 0.25, 0.07, 0.006); B(mwd, 0.02, 0.3, 0.03, ssDark, 0.53, 0.05, 0.025);
   const mwDoor = hinge(ctx, mwd, 'y', -1.7, 'microwave', 'click');
@@ -2365,7 +2412,7 @@ function buildApartment(scene, ctx) {
   const mw = { on: false, t: 0, ready: false };
   const takeBowl = () => { if (!mwDoor.open) { mwDoor.open = true; Sfx.click(); } mw.ready = false; mwBowl.visible = false; ctx.give('bowl', { hot: true }, { rise: true }); ctx.msg('Hot leftovers! Left-click to eat.'); };
   ctx.interact(kpd, {
-    label: () => mw.ready ? 'Take the hot leftovers 🍝' : mw.on ? 'Stop microwave (0:' + String(Math.max(0, 30 - Math.floor(mw.t * 3.75))).padStart(2, '0') + ')' : 'Heat leftovers (30s)',
+    label: () => mw.ready ? 'Take the hot leftovers 🍝' : mw.on ? 'Stop microwave (' + fmtSecs(8 - mw.t) + ')' : 'Heat leftovers',
     action: () => {
       if (mw.ready) return takeBowl();
       if (!ctx.power()) return ctx.msg('No power.'); if (mwDoor.open) return ctx.msg('Close the microwave door first.');
@@ -2376,9 +2423,10 @@ function buildApartment(scene, ctx) {
   ctx.interact(bowlHit, { label: () => mw.ready ? 'Take the hot leftovers 🍝' : '', action: () => { if (mw.ready) takeBowl(); } });
   ctx.tick(MW, dt => {
     mwSteam.update(dt, mw.ready ? 1 : 0); bowlHit.visible = mw.ready;
+    if (mw.on) mwTimer.show('Leftovers ' + fmtSecs(8 - mw.t), mw.t / 8, TIMER_COL.cook); else if (mw.ready) mwTimer.show('Leftovers ready', 1, TIMER_COL.ready); else mwTimer.hide();
     if (mw.on) { mw.t += dt; turn.rotation.y += dt * 1.5; if (mw.t > 8 || !ctx.power() || mwDoor.open) { mw.on = false; mw.snd && mw.snd.stop(); if (mw.t > 8) { mw.ready = true; Sfx.beep(3, 2000); ctx.msg('Ding! Leftovers are hot — open the microwave.'); ctx.task('microwave'); } else mwBowl.visible = false; } }
     mwLight.emissiveIntensity = (mw.on || mwDoor.v > 0.2) && ctx.power() ? 1 : 0;
-    const txt = !ctx.power() ? '' : mw.on ? '0:' + String(Math.max(0, 30 - Math.floor(mw.t * 3.75))).padStart(2, '0') : clockText(); if (txt !== mwDisp.userData.last) { mwDisp.userData.last = txt; const g = mwDisp.userData.ctx; g.fillStyle = '#000'; g.fillRect(0, 0, 64, 24); g.fillStyle = '#4fffa0'; g.font = 'bold 18px monospace'; g.fillText(txt, 4, 19); mwDisp.needsUpdate = true; }
+    const txt = !ctx.power() ? '' : mw.on ? fmtSecs(8 - mw.t) : clockText(); if (txt !== mwDisp.userData.last) { mwDisp.userData.last = txt; const g = mwDisp.userData.ctx; g.fillStyle = '#000'; g.fillRect(0, 0, 64, 24); g.fillStyle = '#4fffa0'; g.font = 'bold 18px monospace'; g.fillText(txt, 4, 19); mwDisp.needsUpdate = true; }
   });
   // ---- fridge ----
   const FR = G(K, 7.2, 0, 2.73, -Math.PI / 2); // local: front faces +z → world -x

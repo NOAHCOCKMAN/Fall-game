@@ -433,6 +433,7 @@ def('espresso', 'Espresso machine', 'Kitchen', { mount: 'surface', solid: false,
   const cup = G(g, 0, 0.04, 0.16); C(cup, 0.035, 0.03, 0.08, M(0xf4f1ea, 0.3), 0, 0, 0, 16); const coffee = C(cup, 0.031, 0.031, 0.005, M(0x4a2a14, 0.2), 0, 0.01, 0, 16);
   const stream = C(g, 0.004, 0.004, 0.13, M(0x4a2a14, 0.3), 0, 0.09, 0.16, 6); stream.visible = false; markDyn(cup, stream);
   const steam = []; for (let i = 0; i < 6; i++) { const s = S(g, 0.02, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, depthWrite: false }), 0, 0.15, 0.16, 6, 4); s.visible = false; steam.push(s); } markDyn(steam);
+  const timer = CookTimer(ctx, g, 0, 0.66, 0.05);
   const st = { state: 'idle', t: 0, fill: 0 };
   ctx.interact(g, {
     label: () => st.state === 'idle' ? (cup.visible ? 'Brew espresso ☕' : 'Place a cup & brew') : st.state === 'brewing' ? 'Brewing…' : 'Take your coffee',
@@ -449,6 +450,7 @@ def('espresso', 'Espresso machine', 'Kitchen', { mount: 'surface', solid: false,
       if (st.t > 5.5) { st.state = 'done'; stream.visible = false; st.snd && st.snd.stop(); Sfx.beep(2, 1500); }
     }
     coffee.position.y = 0.01 + st.fill * 0.06; coffee.visible = st.fill > 0.02;
+    if (st.state === 'brewing') timer.show('Coffee ' + fmtSecs(5.5 - st.t), st.t / 5.5, TIMER_COL.cook); else if (st.state === 'done') timer.show('Coffee ready', 1, TIMER_COL.ready); else timer.hide();
     steam.forEach((s, i) => { s.visible = st.fill > 0.5 && cup.visible; const k = (t * 0.5 + i / 6) % 1; s.position.set(Math.sin(t + i) * 0.02, 0.12 + k * 0.2, 0.16); s.material.opacity = 0.25 * (1 - k); s.scale.setScalar(1 + k * 2); });
   });
   return g;

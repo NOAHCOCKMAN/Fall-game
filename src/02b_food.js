@@ -101,6 +101,36 @@ function bowlGeo(r, h) {
   });
 }
 
+// ---- floating cook timer: a small card above whatever is cooking (orange = cooking, green = ready, red = burning) ----
+const _tv = new THREE.Vector3(), _tv2 = new THREE.Vector3();
+const fmtSecs = (t) => { const s = Math.max(0, Math.ceil(t)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+function CookTimer(ctx, parent, x, y, z, w = 0.2, maxW = 0.55) {
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 72; const g = cv.getContext('2d');
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false }));
+  sp.scale.set(w, w * 72 / 256, 1); sp.position.set(x, y, z); sp.renderOrder = 10; sp.visible = false; parent.add(sp); markDyn(sp); noRay(sp);
+  let last = '';
+  return {
+    sp,
+    show(text, frac, color) {
+      const d = sp.parent.localToWorld(_tv.set(x, y, z)).distanceTo(_tv2.copy(ctx.playerPos()).setY(1.6)), near = d < 5.5; // only when you're in the kitchen
+      if (sp.visible !== near) sp.visible = near; if (!near) return;
+      const ws = clamp(d * 0.21, w, maxW) / sp.parent.getWorldScale(_tv).x; // grows with distance so it stays readable, and lifts so it never covers the food
+      sp.scale.set(ws, ws * 72 / 256, 1); sp.position.set(x, y + ws * 0.14, z);
+      const key = text + '|' + color + '|' + Math.round(frac * 30); if (key === last) return; last = key; // redraw only when it changes
+      g.clearRect(0, 0, 256, 72);
+      g.fillStyle = 'rgba(22,18,14,0.82)'; g.beginPath(); g.roundRect(2, 2, 252, 68, 34); g.fill();
+      g.lineWidth = 7; g.strokeStyle = 'rgba(255,255,255,0.18)'; g.beginPath(); g.arc(36, 36, 22, 0, Math.PI * 2); g.stroke();
+      g.strokeStyle = color; g.beginPath(); g.arc(36, 36, 22, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamp(frac, 0, 1)); g.stroke();
+      g.fillStyle = '#f6efe6'; g.font = 'bold 27px system-ui, -apple-system, Segoe UI, sans-serif'; g.textBaseline = 'middle';
+      let fs = 27; while (g.measureText(text).width > 180 && fs > 16) { fs -= 1; g.font = 'bold ' + fs + 'px system-ui, -apple-system, Segoe UI, sans-serif'; }
+      g.fillText(text, 70, 37); tex.needsUpdate = true;
+    },
+    hide() { if (sp.visible) { sp.visible = false; } }
+  };
+}
+const TIMER_COL = { cook: '#f2994a', ready: '#8fd18a', burn: '#ff6a5a' };
+
 // ---- steam / smoke puffs ----
 const PUFF_GEO = new THREE.SphereGeometry(1, 8, 6);
 function Puffs(parent, o) {
@@ -298,6 +328,7 @@ def('pan', 'Frying pan', 'Kitchen', { mount: 'surface', solid: false, small: tru
   const steam = Puffs(g, { n: 6, size: 0.02, height: 0.3, opacity: 0.22, spread: 0.05, y: 0.04 });
   const smoke = Puffs(g, { n: 6, color: 0x36322f, size: 0.025, height: 0.45, opacity: 0.5, spread: 0.05, y: 0.05, speed: 0.4 });
   const spat = Spatter(g);
+  const timer = CookTimer(ctx, g, 0, 0.32, 0, 0.2, 0.3);
   const st = { food: null, cook: 0, sz: null, choice: 0, flip: -1, plate: -1 }, wp = V3(), pp = V3();
   const nm = () => FOODS[st.food].name;
   const stage = () => st.cook < 1 ? 'raw' : st.cook < 1.6 ? 'cooked' : st.cook < 2 ? 'browning' : 'burnt';
@@ -340,6 +371,13 @@ def('pan', 'Frying pan', 'Kitchen', { mount: 'surface', solid: false, small: tru
     if (heat) { st.cook += dt / 9; if (!st.sz) st.sz = Sfx.loop('sizzle', () => g.getWorldPosition(pp), 0.14); st.sz.setVol(st.cook > 1.6 ? 0.2 : 0.14); }
     else if (st.sz) { st.sz.stop(); st.sz = null; }
     if (st.food) models[st.food].set(st.cook);
+    const c = st.cook;
+    if (st.food && st.plate < 0 && (heat || c >= 1)) {
+      if (c < 1) timer.show(FOODS[st.food].name.replace(/^./, m => m.toUpperCase()) + ' ' + fmtSecs((1 - c) * 9), c, TIMER_COL.cook);
+      else if (c < 1.6) timer.show(heat ? 'Ready · burns in ' + fmtSecs((1.6 - c) * 9) : 'Ready to plate', 1, TIMER_COL.ready);
+      else if (c < 2) timer.show('Burning! ' + fmtSecs((2 - c) * 9), (2 - c) / 0.4, TIMER_COL.burn);
+      else timer.show('Burnt', 1, TIMER_COL.burn);
+    } else timer.hide();
     const near = g.getWorldPosition(pp).distanceTo(ctx.playerPos()) < 4;
     steam.update(dt, heat ? clamp(st.cook * 1.2, 0.3, 1) * (st.cook > 1.8 ? 0.4 : 1) : 0);
     smoke.update(dt, st.food && st.cook > 1.6 ? clamp((st.cook - 1.6) * 2, 0, 1) : 0);
@@ -412,6 +450,7 @@ def('kettle', 'Tea kettle', 'Kitchen', { mount: 'surface', solid: false, small: 
   const sp = C(g, 0.012, 0.02, 0.12, m, 0.1, 0.08, 0, 8); sp.rotation.z = -0.9;
   T(g, 0.07, 0.01, M(0x1a1a1a), 0, 0.18, 0, Math.PI);
   const steam = Puffs(g, { n: 6, size: 0.018, height: 0.3, opacity: 0.3, spread: 0.02, x: 0.17, y: 0.17 });
+  const timer = CookTimer(ctx, g, 0, 0.42, 0, 0.2, 0.3); // stays under the microwave, beside the pan's card
   const st = { temp: 0, whistle: 0 }; const wp = V3(), pp = V3();
   ctx.interact(g, {
     label: () => st.temp >= 1 ? 'Pour a cup of tea 🍵' : ctx.heatAt(g.getWorldPosition(wp)) ? 'Heating water… ' + Math.round(st.temp * 100) + '%' : ctx.burnerAt(g.getWorldPosition(wp)) ? 'Turn the ' + ctx.burnerAt(g.getWorldPosition(wp)).name + ' knob to boil' : 'Put the kettle on the stove',
@@ -426,6 +465,7 @@ def('kettle', 'Tea kettle', 'Kitchen', { mount: 'surface', solid: false, small: 
     st.temp = clamp(st.temp + (heat ? dt / 12 : -dt / 60), 0, 1.2);
     if (st.temp >= 1 && heat) { if (!st.b) st.b = Sfx.loop('boil', () => g.getWorldPosition(pp), 0.1); if ((st.whistle -= dt) < 0) { Sfx.tone(2400, 0.8, 'sine', 0.05, 80); st.whistle = 1.2; } } else if (st.b) { st.b.stop(); st.b = null; }
     steam.update(dt, clamp((st.temp - 0.7) * 3, 0, 1));
+    if (st.temp >= 1) timer.show('Boiled · pour tea', 1, TIMER_COL.ready); else if (heat) timer.show('Boiling ' + fmtSecs((1 - st.temp) * 12), st.temp, TIMER_COL.cook); else timer.hide();
   });
   return g;
 });
@@ -438,6 +478,7 @@ def('toaster', 'Toaster', 'Kitchen', { mount: 'surface', solid: false, small: tr
   const crumb = FM(0xf3e6c8, 0.85), crust = FM(0xc68a48, 0.8);
   const toasts = [-0.035, 0.035].map(z => { const s = fmesh(g, breadGeo(0.11, 0.1, 0.012), [crumb, crust], 0, 0.12, z); return s; }); markDyn(toasts);
   const smoke = Puffs(g, { n: 4, color: 0xdddddd, size: 0.014, height: 0.2, opacity: 0.18, spread: 0.04, y: 0.2 });
+  const timer = CookTimer(ctx, g, 0, 0.42, 0);
   const st = { s: 'ready', t: 0, pop: 1 };
   ctx.interact(g, {
     label: () => st.s === 'ready' ? 'Make toast 🍞' : st.s === 'toasting' ? 'Toasting… ' + Math.round(st.t / 6 * 100) + '%' : 'Take the toast',
@@ -454,6 +495,7 @@ def('toaster', 'Toaster', 'Kitchen', { mount: 'surface', solid: false, small: tr
     const y = st.s === 'toasting' ? 0.07 : st.s === 'done' ? 0.15 + 0.07 * Math.sin(st.pop * Math.PI) * (1 - st.pop * 0.6) : 0.12; // pops up, then settles
     lever.position.y = st.s === 'toasting' ? 0.04 : 0.13; toasts.forEach(t => { t.position.y = y + 0.05; });
     smoke.update(dt, st.s === 'toasting' && st.t > 3 ? 0.6 : 0);
+    if (st.s === 'toasting') timer.show('Toast ' + fmtSecs(6 - st.t), st.t / 6, TIMER_COL.cook); else if (st.s === 'done') timer.show('Toast ready', 1, TIMER_COL.ready); else timer.hide();
   });
   return g;
 });
