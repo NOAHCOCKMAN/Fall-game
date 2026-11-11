@@ -3302,9 +3302,11 @@ function placeHeld() { if (!held) return; if (!placeTarget) return toast(sinkBlo
 function dropHeld() { if (!held) return; const p = P.pos.clone(); p.x -= Math.sin(P.yaw) * 0.5; p.z -= Math.cos(P.yaw) * 0.5; p.y = 0; releaseTo(p); Sfx.noise(0.12, 0.3, 300, 1, 'lowpass'); }
 const labelOf = (d, k = 'label') => { const v = d && d[k]; return typeof v === 'function' ? v() : v; };
 // Right click: use / interact (doors, appliances, eat, sit, set down what you hold)
+function freshAim() { camera.updateMatrixWorld(); castFrame(); updateHover(); } // clicks use exactly what the crosshair is on right now
 function primary() {
   Sfx.init();
   if (P.action || P.anim) return;
+  freshAim();
   if (hover && hover.int) { const d = hover.int; try { d.action && d.action(); } catch (e) { console.error(e); } return; }
   const nd = nearDoor(); if (nd) { nd.def.action(); return; }
   if (held) { if (placeTarget || sinkBlocked) return placeHeld(); if (held.userData.item.food) return bite(held); return toast('Aim at a table, counter or the floor to set it down.'); }
@@ -3314,7 +3316,10 @@ let handHintT = 0;
 function leftAction() {
   Sfx.init();
   if (P.action || P.anim) return;
+  freshAim();
   if (held && held.userData.item.food) return bite(held); // food in hand: left click always takes a bite
+  const aimed = hover && hover.root, af = aimed && aimed.userData.item.food;
+  if (af && !(af.empty && af.empty()) && aimed.userData.item.d.left > 0) return bite(aimed); // food on a table or counter: eat it where it sits
   if (hover && hover.int && hover.int.alt && labelOf(hover.int, 'altLabel')) { try { hover.int.alt(); } catch (e) { console.error(e); } return; }
   if (held) {
     const it = held.userData.item; if (it.handUse) return it.handUse();
@@ -3326,6 +3331,7 @@ function leftAction() {
 // E: pick up the item you're looking at
 function pickUp() {
   if (P.action || P.anim) return;
+  freshAim();
   if (held) return toast('Your hands are full — right-click a surface to set it down, or press Q to drop it.');
   const r = hover && hover.root; if (!r) return;
   if (!CATALOG[r.userData.item.t].small) return toast('That\'s too big to carry.');
@@ -3381,9 +3387,9 @@ function punchHit() {
   P.shake = 0.15;
   if (/door/i.test(lab) && !/oven|microwave|fridge|freezer|cabinet|dishwasher|washer|dryer|shower|closet|pizza|laptop/i.test(lab)) { Sfx.knock(); return; }
   const r = ctx.rootOf(h.object);
+  if (r && r.userData.item && r.userData.item.food) { Sfx.thud(); return; } // never knock food off the table
   if (r && r !== held && r.userData.item && CATALOG[r.userData.item.t].small) { // bonk: nudge it away and give it a wobble
     const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); r.position.x += fx * 0.07; r.position.z += fz * 0.07;
-    if (r.userData.item.food && inSink(r.position)) { r.position.x -= fx * 0.07; r.position.z -= fz * 0.07; } // never knock food into a sink
     r.rotation.y += rand(-0.5, 0.5);
     Object.assign(r.userData.item, { x: r.position.x, z: r.position.z, r: r.rotation.y }); r.userData.wiggle = 0.6; itemBox(r); Sfx.thud(); Sfx.noise(0.1, 0.2, 1200, 1); return;
   }
@@ -3521,6 +3527,7 @@ function updatePrompt() {
   const RK = isTouch ? 'Use' : 'Right-click', LK = isTouch ? 'Eat/Hit' : 'Left-click', QK = isTouch ? 'Grab' : 'Q';
   if (!P.action && !(P.anim && P.anim.kind !== 'punch')) {
     if (hover && hover.int) { const lab = labelOf(hover.int); if (lab) html = `<b>${RK}</b> ${lab}`; const al = hover.int.alt && labelOf(hover.int, 'altLabel'); if (al) html += ` <b>${LK}</b> ${al}`; }
+    const af = !held && hover && hover.root && hover.root.userData.item.food; if (af && !(af.empty && af.empty()) && hover.root.userData.item.d.left > 0) html = `<b>${LK}</b> or <b>${RK}</b> ${af.mode === 'drink' ? 'take a sip' : af.verb} (${hover.root.userData.item.d.left} left)`;
     if (!html && !(hover && hover.int)) { const nd = nearDoor(); if (nd) html = `<b>${RK}</b> ${nd.def.label()}`; }
     if (!held && hover && hover.root && CATALOG[hover.root.userData.item.t].small) html += (html ? ' · ' : '') + (isTouch ? '<b>Grab</b> to pick up' : 'Press <b>E</b> to pick up');
     if (held) {
