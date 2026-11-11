@@ -30,8 +30,7 @@ const STATIC = [];
 let TICKS = [], CLEANUPS = [];
 const NEAR_R2 = 6 * 6, FAR_STRIDE = 4; // updates for objects more than 6 m away run every 4th frame (with accumulated time)
 let frameNo = 0, ticksRun = 0;
-let power = true, lightCount = 0;
-const MAX_LIGHTS = 18;
+let power = true;
 const NEEDS = ['hunger', 'energy', 'hygiene', 'bladder', 'fun'];
 const saved = store.get('state', null);
 const P = {
@@ -45,17 +44,25 @@ const itemsGroup = new THREE.Group();
 const hour = () => P.minutes / 60;
 const fmtTime = (m) => { const h = Math.floor(m / 60) % 24, mm = Math.floor(m % 60); return ((h + 11) % 12 + 1) + ':' + String(mm).padStart(2, '0') + (h < 12 ? ' AM' : ' PM'); };
 
+// ---- light pool: at most POOL_SIZE real point lights; every lamp/ceiling light is a virtual source ----
+const POOL_SIZE = 6, FADE_S = 0.3;
+const SOURCES = [];
+const POOL = [];
+const NEIGHBORS = { living: ['balcony', 'bedroom', 'bath', 'laundry', 'mech', 'corridor'], bedroom: ['living', 'bath'], bath: ['bedroom', 'living', 'closet'], closet: ['bath'], laundry: ['living'], mech: ['living'], balcony: ['living'], corridor: ['living'] };
+const lightStats = { active: 0, sources: 0 };
 const ctx = {
   flags,
   interact(obj, def) { obj.userData.int = def; },
   tick(owner, fn, always) { TICKS.push({ owner, fn, always: !!always, acc: 0, slot: TICKS.length % FAR_STRIDE }); },
   onRemove(owner, fn) { CLEANUPS.push({ owner, fn }); },
   addCollider(box, upd, door) { STATIC.push({ box, upd, door }); },
+  // item lights (lamps, tree, fireplace) are virtual sources too, anchored to the item so they follow it
   light(parent, color, intensity, dist, x, y, z) {
-    if (lightCount >= MAX_LIGHTS) return { intensity: 0 };
-    const l = new THREE.PointLight(color, intensity, dist, 1.5); l.position.set(x, y, z); parent.add(l); lightCount++;
-    ctx.onRemove(parent, () => lightCount--); return l;
+    const anchor = new THREE.Object3D(); anchor.position.set(x, y, z); parent.add(anchor);
+    const src = ctx.lightSource({ anchor, color, distance: dist, decay: 1.5 }); src.intensity = intensity;
+    ctx.onRemove(parent, () => { const i = SOURCES.indexOf(src); if (i >= 0) SOURCES.splice(i, 1); }); return src;
   },
+  lightSource(o) { const src = { intensity: 0, level: 0, slot: -1, color: new THREE.Color(o.color), distance: o.distance || 8, decay: o.decay || 1.5, anchor: o.anchor || null, pos: o.pos ? o.pos.clone() : V3() }; SOURCES.push(src); return src; },
   power: () => power,
   setPower(v) { power = v; },
   hour,
@@ -95,8 +102,37 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 
 // ---- build apartment and items ----
 const A = buildApartment(scene, ctx);
-lightCount = Object.values(A.lights).reduce((s, L) => s + L.lights.length, 0);
 A.world.add(itemsGroup);
+for (let i = 0; i < POOL_SIZE; i++) { const l = new THREE.PointLight(0xffffff, 0, 8, 1.5); l.userData.src = null; scene.add(l); POOL.push(l); } // fixed count: shaders never recompile
+const _lp = V3();
+function updateLightPool(dt) {
+  let here = roomAt(P.pos.x, P.pos.z); if (!NEIGHBORS[here]) here = 'living';
+  const near = new Set([here, ...NEIGHBORS[here]]);
+  // 1. which sources deserve a real light: lit, in this room or a neighbor; own room first, then nearest
+  const cand = [];
+  for (const s of SOURCES) {
+    if (s.anchor) s.anchor.getWorldPosition(s.pos);
+    if (!(s.intensity > 0)) continue;
+    const r = roomAt(s.pos.x, s.pos.z); if (!near.has(r)) continue;
+    s._score = (r === here ? 0 : 100) + Math.hypot(s.pos.x - P.pos.x, s.pos.z - P.pos.z); cand.push(s);
+  }
+  cand.sort((a, b) => a._score - b._score);
+  const want = new Set(cand.slice(0, POOL_SIZE));
+  // 2. fade out lights whose source is no longer wanted (or switched off), freeing the slot at zero
+  for (const l of POOL) { const s = l.userData.src; if (!s) continue; if (!want.has(s)) { s.level -= dt / FADE_S; if (s.level <= 0) { s.level = 0; s.slot = -1; l.userData.src = null; } } }
+  // 3. give free slots to wanted sources (they fade in from zero)
+  for (const s of cand) { if (!want.has(s) || s.slot >= 0) continue; const free = POOL.findIndex(l => !l.userData.src); if (free < 0) break; s.slot = free; s.level = 0; POOL[free].userData.src = s; }
+  // 4. drive the real lights
+  let active = 0;
+  for (const l of POOL) {
+    const s = l.userData.src; if (!s) { l.intensity = 0; continue; }
+    if (want.has(s)) s.level = Math.min(1, s.level + dt / FADE_S);
+    if (s.intensity > 0) s.lastIntensity = s.intensity; // keep fading out at the last brightness after a switch-off
+    l.position.copy(s.pos); l.color.copy(s.color); l.distance = s.distance; l.decay = s.decay;
+    l.intensity = (s.intensity > 0 ? s.intensity : (s.lastIntensity || 0)) * s.level; if (l.intensity > 0) active++;
+  }
+  lightStats.active = active; lightStats.sources = SOURCES.length;
+}
 function itemBox(g) {
   const def = CATALOG[g.userData.item.t]; if (!def.solid || def.mount !== 'floor') { g.userData.box = null; return; }
   g.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(g); if (b.max.y < 0.3) { g.userData.box = null; return; }
@@ -591,6 +627,7 @@ function frame(now) {
   castFrame(); updateHover(); updateHeld(dt); updatePrompt();
   runTicks(playing ? dt : 0);
   for (let i = TWEENS.length - 1; i >= 0; i--) if (TWEENS[i](now)) TWEENS.splice(i, 1);
+  updateLightPool(dt);
   for (const g of itemsGroup.children) if (g.userData.wiggle > 0) { g.userData.wiggle -= dt; g.scale.setScalar(1 + Math.sin(g.userData.wiggle * 20) * 0.03 * g.userData.wiggle); }
   updateDay(dt);
   if (P.caffeine > 0) P.caffeine -= dt;
@@ -618,7 +655,8 @@ frame ${(sum / n).toFixed(1)} ms  worst ${worst.toFixed(1)} ms
 logic ${(lg / n).toFixed(2)} ms  render ${(rd / n).toFixed(2)} ms
 draw calls ${i.render.calls}  tris ${(i.render.triangles / 1000).toFixed(0)}k
 programs ${i.programs.length}  tex ${i.memory.textures}  geo ${i.memory.geometries}
-updates ${ticksRun}/${TICKS.length}  split-out ${detachedCount}  pixel ratio ${renderer.getPixelRatio().toFixed(2)}`;
+updates ${ticksRun}/${TICKS.length}  split-out ${detachedCount}
+lights ${lightStats.active}/${POOL_SIZE} real (${lightStats.sources} sources)  pixel ratio ${renderer.getPixelRatio().toFixed(2)}`;
 }
 function setPerf(on) { stats.show = on; EL.perf.hidden = !on; settings.perf = on; store.set('settings', settings); const cb = $('#perfToggle'); if (cb) cb.checked = on; }
 addEventListener('keydown', (e) => { if (e.code === 'F3') { e.preventDefault(); setPerf(!stats.show); } });
@@ -642,4 +680,4 @@ P.pos.set(A.spawn.x, 0, A.spawn.z); P.yaw = A.spawn.yaw; P.day = P.dayTarget = d
 updateHud(); renderTasks();
 camera.position.set(P.pos.x, P.eye, P.pos.z); camera.rotation.set(P.pitch, P.yaw, 0); camera.updateMatrixWorld();
 precompile().then(() => requestAnimationFrame(frame));
-window.__game = { optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
+window.__game = { POOL, SOURCES, lightStats, optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };

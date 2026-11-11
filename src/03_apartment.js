@@ -34,7 +34,8 @@ function buildApartment(scene, ctx) {
   // ---------- lights registry ----------
   function lightKey(key, cfg) {
     const L = A.lights[key] = { on: cfg.on !== false, lights: [], mats: [], base: cfg.intensity || 6, fan: null };
-    (cfg.points || []).forEach(p => { const l = new THREE.PointLight(cfg.color || 0xfff1dc, 0, cfg.dist || 9, 1.4); l.position.set(...p); W.add(l); L.lights.push(l); ctx.lightCount++; });
+    // virtual light sources: the light pool decides which ones get a real PointLight
+    (cfg.points || []).forEach(p => { L.lights.push(ctx.lightSource({ pos: V3(...p), color: cfg.color || 0xfff1dc, distance: cfg.dist || 9, decay: 1.4 })); });
     return L;
   }
   function recessed(key, x, z) { const m = E(0xfff6e6, 2); const c = new THREE.Mesh(new THREE.CircleGeometry(0.08, 20), m); c.rotation.x = Math.PI / 2; c.position.set(x, WALL_H - 0.005, z); W.add(c); T(W, 0.085, 0.01, white, x, WALL_H - 0.01, z).rotation.x = Math.PI / 2; A.lights[key].mats.push(m); }
@@ -43,9 +44,9 @@ function buildApartment(scene, ctx) {
   lightKey('bedroom', { points: [[2.05, 2.3, 1.7]], intensity: 6, on: false });
   lightKey('bath', { points: [[1.2, 2.2, 4.9]], intensity: 5, on: false });
   lightKey('hall', { points: [[3.5, 2.3, 4.85]], intensity: 2.5, dist: 5, on: false });
-  lightKey('closet', { points: [[0.9, 2.3, 8.2]], intensity: 2.5, dist: 4, on: false });
-  lightKey('laundry', { points: [[5.97, 2.2, 9.45]], intensity: 1.6, dist: 3, on: false });
-  lightKey('mech', { points: [[7.0, 2.2, 9.45]], intensity: 1.4, dist: 3, on: false });
+  lightKey('closet', { points: [[0.9, 2.3, 8.2]], intensity: 9, dist: 6, on: false }); // brighter: it no longer borrows spill from the kitchen through the wall
+  lightKey('laundry', { points: [[5.97, 2.2, 9.45]], intensity: 2.3, dist: 3.5, on: false });
+  lightKey('mech', { points: [[7.0, 2.2, 9.45]], intensity: 2, dist: 3.5, on: false });
   lightKey('balcony', { points: [[5.85, 2.3, 0.7]], intensity: 3, dist: 6, on: false, color: 0xffd9a0 });
   lightKey('corridor', { points: [[8.7, 2.3, 8]], intensity: 2.5, dist: 6 });
   A.lightOn = (k) => A.lights[k] && A.lights[k].on && ctx.power();
