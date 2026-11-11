@@ -245,10 +245,37 @@ function updateAction(dt) {
 }
 
 // ---- player ----
-function blocked(x, z, feet) {
-  const r = 0.19, y0 = feet + 0.3, y1 = feet + (P.crouch ? 1.1 : 1.75);
-  for (const c of STATIC) { const b = c.box; if (b.isEmpty()) continue; if (b.max.y > y0 && b.min.y < y1 && x + r > b.min.x && x - r < b.max.x && z + r > b.min.z && z - r < b.max.z) return c; }
-  for (const g of itemsGroup.children) { const b = g.userData.box; if (!b) continue; if (b.max.y > y0 && b.min.y < y1 && x + r > b.min.x && x - r < b.max.x && z + r > b.min.z && z - r < b.max.z) return g; }
+// ---- collision: the player is a circle, colliders are boxes; push out along the shortest direction ----
+const PR = 0.19; // player radius
+const _cand = [];
+function gatherColliders(feet, cx, cz, reach) { // broad phase: boxes at body height near the player
+  _cand.length = 0; const y0 = feet + 0.3, y1 = feet + (P.crouch ? 1.1 : 1.75);
+  const test = (b, ref) => { if (!b || b.isEmpty() || b.max.y <= y0 || b.min.y >= y1) return; if (cx + reach < b.min.x || cx - reach > b.max.x || cz + reach < b.min.z || cz - reach > b.max.z) return; _cand.push(b, ref); };
+  for (const c of STATIC) test(c.box, c);
+  for (const g of itemsGroup.children) test(g.userData.box, g);
+  return _cand;
+}
+// penetration of a circle at (x,z) into box b: returns push vector length (0 if none) into _push
+const _push = { x: 0, z: 0, d: 0 };
+function penetration(x, z, b) {
+  const qx = clamp(x, b.min.x, b.max.x), qz = clamp(z, b.min.z, b.max.z), dx = x - qx, dz = z - qz, d2 = dx * dx + dz * dz;
+  if (d2 >= PR * PR) { _push.d = 0; return 0; }
+  if (d2 > 1e-10) { const d = Math.sqrt(d2), k = (PR - d) / d; _push.x = dx * k; _push.z = dz * k; _push.d = PR - d; return _push.d; }
+  // centre is inside the box: leave by the nearest face that has free space beyond it
+  const exits = [[-(x - b.min.x + PR + 0.01), 0], [b.max.x - x + PR + 0.01, 0], [0, -(z - b.min.z + PR + 0.01)], [0, b.max.z - z + PR + 0.01]].sort((p, q) => Math.abs(p[0] + p[1]) - Math.abs(q[0] + q[1]));
+  let pick = exits[0]; for (const e of exits) { if (!blockedExcept(x + e[0], z + e[1], b)) { pick = e; break; } }
+  _push.x = pick[0]; _push.z = pick[1]; _push.d = Math.abs(pick[0] + pick[1]); return _push.d;
+}
+function blockedExcept(x, z, skip) { // is a circle at (x,z) overlapping anything other than box `skip`? (shallow test, no recursion)
+  const y0 = P.pos.y + 0.3, y1 = P.pos.y + (P.crouch ? 1.1 : 1.75);
+  const hit = (b) => { if (!b || b === skip || b.isEmpty() || b.max.y <= y0 || b.min.y >= y1) return false; const qx = clamp(x, b.min.x, b.max.x), qz = clamp(z, b.min.z, b.max.z); return (x - qx) ** 2 + (z - qz) ** 2 < PR * PR; };
+  for (const c of STATIC) if (hit(c.box)) return true;
+  for (const g of itemsGroup.children) if (hit(g.userData.box)) return true;
+  return false;
+}
+function blocked(x, z, feet) { // used by tests and helpers: is a circle here overlapping anything?
+  const c = gatherColliders(feet, x, z, PR + 0.01);
+  for (let i = 0; i < c.length; i += 2) if (penetration(x, z, c[i]) > 0.001) return c[i + 1];
   return null;
 }
 let bumpT = 0;
@@ -257,10 +284,37 @@ function bump(hit, dt) { // walking into a closed door opens it
   const d = hit.door; bumpT += dt;
   if (bumpT > 0.12 && !d.open) { bumpT = 0; if (d.locked) { if (!d.toldT || performance.now() - d.toldT > 3000) { d.toldT = performance.now(); toast('🔒 The ' + d.label + ' is locked.'); } } else d.def.action(); }
 }
-// if you ever end up inside something (e.g. standing up next to furniture), nudge out to free space
-function unstick() {
-  if (!blocked(P.pos.x, P.pos.z, P.pos.y)) return;
-  for (let rad = 0.05; rad < 0.8; rad += 0.05) for (let a = 0; a < TAU; a += Math.PI / 8) { const x = P.pos.x + Math.cos(a) * rad, z = P.pos.z + Math.sin(a) * rad; if (!blocked(x, z, P.pos.y)) { P.pos.x = x; P.pos.z = z; return; } }
+function penetrationEscape(c, x, z, dt) {
+  let best = 0, bx = 0, bz = 0; for (let i = 0; i < c.length; i += 2) { const d = penetration(x, z, c[i]); if (d > best) { best = d; bx = _push.x; bz = _push.z; } }
+  if (!best) return; const l = Math.hypot(bx, bz), m = Math.min(l, GLIDE * dt); P.pos.x = x + bx / l * m; P.pos.z = z + bz / l * m;
+}
+const GLIDE = 2.0; // m/s: how fast you're eased out if you ever end up inside something (never a teleport)
+function moveAndSlide(vx, vz, dt) {
+  const dist = Math.hypot(vx, vz), steps = Math.max(1, Math.ceil(dist / (PR * 0.45)));
+  const c = gatherColliders(P.pos.y, P.pos.x + vx / 2, P.pos.z + vz / 2, PR + dist / 2 + 0.3);
+  let doorHit = null;
+  const depth = (x, z) => { let m = 0; for (let i = 0; i < c.length; i += 2) { const d = penetration(x, z, c[i]); if (d > m) m = d; } return m; };
+  for (let s = 0; s < steps; s++) {
+    const sx = P.pos.x, sz = P.pos.z, startDepth = depth(sx, sz);
+    let x = sx + vx / steps, z = sz + vz / steps;
+    let budget = dist / steps + GLIDE * dt / steps; // total correction this substep: shallow contacts resolve fully, deep overlaps glide out
+    for (let it = 0; it < 4 && budget > 1e-6; it++) {
+      let px = 0, pz = 0, any = false;
+      for (let i = 0; i < c.length; i += 2) {
+        if (penetration(x, z, c[i]) <= 0.0005) continue; any = true;
+        px += _push.x; pz += _push.z;
+        const ref = c[i + 1]; if (ref && ref.door && !doorHit) doorHit = ref;
+      }
+      if (!any) break;
+      const pl = Math.hypot(px, pz); if (pl > budget) { px *= budget / pl; pz *= budget / pl; }
+      x += px; z += pz; budget -= Math.min(pl, budget);
+    }
+    // never accept a step that leaves you deeper inside something than where you started (e.g. squeezed between two corners)
+    const endDepth = depth(x, z);
+    if (endDepth > 0.01 && endDepth > startDepth + 0.001) { x = sx; z = sz; if (startDepth > 0.0005) { penetrationEscape(c, sx, sz, dt / steps); x = P.pos.x; z = P.pos.z; } }
+    P.pos.x = x; P.pos.z = z;
+  }
+  return doorHit;
 }
 const keys = {}; const joy = { x: 0, y: 0 };
 const joyRun = () => Math.hypot(joy.x, joy.y) > 0.95;
@@ -283,10 +337,8 @@ function updatePlayer(dt) {
   const s = Math.sin(P.yaw), c = Math.cos(P.yaw);
   const vx = (mx * c + mz * s) * speed * dt, vz = (-mx * s + mz * c) * speed * dt;
   const ox = P.pos.x, oz = P.pos.z;
-  unstick();
-  const hx = blocked(P.pos.x + vx, P.pos.z, P.pos.y); if (!hx) P.pos.x += vx;
-  const hz = blocked(P.pos.x, P.pos.z + vz, P.pos.y); if (!hz) P.pos.z += vz;
-  if (Math.abs(vx) + Math.abs(vz) > 0) bump((hx && hx.door) ? hx : hz, dt);
+  const doorHit = moveAndSlide(vx, vz, dt);
+  if (Math.abs(vx) + Math.abs(vz) > 0) bump(doorHit, dt); else bumpT = 0;
   const moved = Math.hypot(P.pos.x - ox, P.pos.z - oz);
   P.vy -= 9.8 * dt; P.pos.y += P.vy * dt; if (P.pos.y <= 0) { if (P.vy < -2) Sfx.step(); P.pos.y = 0; P.vy = 0; if (keys.Space && !uiOpen() && !P.action) P.vy = 3.6; }
   if (moved > 0.001 && P.pos.y === 0) { P.bob += moved * 3.4; P.stepAcc += moved; if (P.stepAcc > (running ? 0.85 : 0.65)) { P.stepAcc = 0; Sfx.step(P.crouch || roomAt(P.pos.x, P.pos.z) === 'corridor'); } }
@@ -315,10 +367,13 @@ addEventListener('mouseup', (e) => {
 addEventListener('mousemove', (e) => {
   const rect = canvas.getBoundingClientRect(); mouseNDC.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1); mouseInCanvas = e.target === canvas;
   if (locked) { if (skipMoves > 0) { skipMoves--; return; } if (Math.abs(e.movementX) + Math.abs(e.movementY) > 300) return; look(e.movementX, e.movementY); }
-  else if (dragging && lastMouse) { const dx = e.clientX - lastMouse[0], dy = e.clientY - lastMouse[1]; dragDist += Math.abs(dx) + Math.abs(dy); look(dx * 1.2, dy * 1.2); lastMouse = [e.clientX, e.clientY]; }
+  else if (dragging && lastMouse) { const dx = e.clientX - lastMouse[0], dy = e.clientY - lastMouse[1]; dragDist += Math.abs(dx) + Math.abs(dy); dragLook.x += dx * 1.2; dragLook.y += dy * 1.2; lastMouse = [e.clientX, e.clientY]; }
 });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('wheel', (e) => { if (held) held.userData.item.r = (held.userData.item.r || 0) + Math.sign(e.deltaY) * PI / 12; }, { passive: true });
+// drag-to-look only: ease mouse deltas in over ~40 ms (pointer lock and touch stay raw)
+const dragLook = { x: 0, y: 0 };
+function applyDragLook(dt) { if (!dragLook.x && !dragLook.y) return; const k = 1 - Math.exp(-dt / 0.04); const dx = dragLook.x * k, dy = dragLook.y * k; dragLook.x -= dx; dragLook.y -= dy; if (Math.abs(dragLook.x) + Math.abs(dragLook.y) < 0.01) { look(dragLook.x + dx, dragLook.y + dy); dragLook.x = dragLook.y = 0; return; } look(dx, dy); }
 function look(dx, dy) { const k = 0.0022 * settings.sens; P.yaw -= dx * k; P.pitch = clamp(P.pitch - dy * k * (settings.invert ? -1 : 1), -1.45, 1.45); }
 let suppressMenu = false;
 document.addEventListener('pointerlockchange', () => {
@@ -613,7 +668,7 @@ function runTicks(dt) {
 }
 function frame(now) {
   requestAnimationFrame(frame);
-  const rawMs = now - last; const dt = Math.min(0.05, rawMs / 1000); last = now;
+  const rawMs = now - last; const dt = Math.min(0.1, rawMs / 1000); last = now;
   // menus, phone and to-do list freeze the world: draw one last frame, then skip all work
   if (uiOpen()) { if (pausedDrawn) { stats.paused = true; recordFrame(rawMs, 0, 0); return; } pausedDrawn = true; } else pausedDrawn = false;
   stats.paused = false; clockT += dt;
@@ -622,7 +677,7 @@ function frame(now) {
   const gameMin = playing ? dt : 0; // 1 real second = 1 game minute
   if (playing) { advanceTime(gameMin); updateNeeds(dt, gameMin); updateEvents(gameMin); }
   for (const c of STATIC) if (c.upd) c.upd();
-  updatePlayer(dt); camera.updateMatrixWorld();
+  applyDragLook(dt); updatePlayer(dt); camera.updateMatrixWorld();
   updateAction(dt);
   castFrame(); updateHover(); updateHeld(dt); updatePrompt();
   runTicks(playing ? dt : 0);
@@ -680,4 +735,4 @@ P.pos.set(A.spawn.x, 0, A.spawn.z); P.yaw = A.spawn.yaw; P.day = P.dayTarget = d
 updateHud(); renderTasks();
 camera.position.set(P.pos.x, P.eye, P.pos.z); camera.rotation.set(P.pitch, P.yaw, 0); camera.updateMatrixWorld();
 precompile().then(() => requestAnimationFrame(frame));
-window.__game = { POOL, SOURCES, lightStats, optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
+window.__game = { STATIC_LIST: () => STATIC, moveAndSlide, dragLook, PR, POOL, SOURCES, lightStats, optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
