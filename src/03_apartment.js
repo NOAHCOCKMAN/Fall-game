@@ -18,7 +18,7 @@ function roomAt(x, z) {
 let _clockMin = -1, _clockStr = '';
 function clockText() { const d = new Date(); if (d.getMinutes() !== _clockMin) { _clockMin = d.getMinutes(); _clockStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/ ?[AP]M/, ''); } return _clockStr; }
 function buildApartment(scene, ctx) {
-  const A = { world: new THREE.Group(), outdoor: new THREE.Group(), lights: {}, heat: [], wallMats: {}, floorMats: {}, floorMeshes: {} };
+  const A = { world: new THREE.Group(), outdoor: new THREE.Group(), lights: {}, heat: [], sinks: [], wallMats: {}, floorMats: {}, floorMeshes: {} };
   const W = A.world; scene.add(W); scene.add(A.outdoor);
   const white = M(0xf7f6f2, 0.6), trim = M(0xf4f3ef, 0.5), nickel = M(0xb9bcbf, 0.3, 0.85), black = M(0x1b1b1d, 0.4, 0.3);
   const ss = M(0xc9cccf, 0.28, 0.9), ssDark = M(0x8d9094, 0.3, 0.9), quartz = M(0xffffff, 0.25, 0, { map: getTex('quartz') });
@@ -492,7 +492,7 @@ function buildApartment(scene, ctx) {
   // island top with sink cut-out (sink centered at local x 0, z -0.15)
   const it0 = (x0, x1, z0, z1) => B(IS, x1 - x0, 0.035, z1 - z0, quartz, (x0 + x1) / 2, 0.9, (z0 + z1) / 2);
   it0(-1.2, -0.38, -0.55, 0.85); it0(0.38, 1.2, -0.55, 0.85); it0(-0.38, 0.38, -0.55, -0.4); it0(-0.38, 0.38, 0.1, 0.85);
-  const sinkM = M(0xb9bdc1, 0.25, 0.9); B(IS, 0.76, 0.01, 0.5, sinkM, 0, 0.7, -0.15); B(IS, 0.76, 0.21, 0.01, sinkM, 0, 0.7, -0.4); B(IS, 0.76, 0.21, 0.01, sinkM, 0, 0.7, 0.1); B(IS, 0.01, 0.21, 0.5, sinkM, -0.38, 0.7, -0.15); B(IS, 0.01, 0.21, 0.5, sinkM, 0.38, 0.7, -0.15);
+  const sinkM = M(0xb9bdc1, 0.25, 0.9); A.sinks.push(B(IS, 0.76, 0.01, 0.5, sinkM, 0, 0.7, -0.15)); // no-food zone B(IS, 0.76, 0.21, 0.01, sinkM, 0, 0.7, -0.4); B(IS, 0.76, 0.21, 0.01, sinkM, 0, 0.7, 0.1); B(IS, 0.01, 0.21, 0.5, sinkM, -0.38, 0.7, -0.15); B(IS, 0.01, 0.21, 0.5, sinkM, 0.38, 0.7, -0.15);
   C(IS, 0.03, 0.03, 0.005, M(0x333333), 0, 0.711, -0.15, 12);
   // dirty dishes
   const dishes = []; for (let i = 0; i < 4; i++) { const d = C(IS, 0.11, 0.1, 0.012, M(i % 2 ? 0xf4f1ea : 0xdde4f2, 0.3), -0.18 + i * 0.1, 0.72 + i * 0.02, -0.15 + (i % 2) * 0.05, 18); d.rotation.z = 0.3; dishes.push(d); } markDyn(dishes);
@@ -552,7 +552,7 @@ function buildApartment(scene, ctx) {
   const basin = M(0xffffff, 0.2);
   const mirrors = [];
   for (const sx of [-0.48, 0.48]) {
-    B(vg, 0.42, 0.01, 0.3, basin, sx, 0.78, 0.3); B(vg, 0.44, 0.08, 0.02, basin, sx, 0.79, 0.15); B(vg, 0.44, 0.08, 0.02, basin, sx, 0.79, 0.45); B(vg, 0.02, 0.08, 0.3, basin, sx - 0.21, 0.79, 0.3); B(vg, 0.02, 0.08, 0.3, basin, sx + 0.21, 0.79, 0.3);
+    A.sinks.push(B(vg, 0.42, 0.01, 0.3, basin, sx, 0.78, 0.3)); B(vg, 0.44, 0.08, 0.02, basin, sx, 0.79, 0.15); B(vg, 0.44, 0.08, 0.02, basin, sx, 0.79, 0.45); B(vg, 0.02, 0.08, 0.3, basin, sx - 0.21, 0.79, 0.3); B(vg, 0.02, 0.08, 0.3, basin, sx + 0.21, 0.79, 0.3);
     const bf = G(vg, sx, 0.9, 0.06); C(bf, 0.02, 0.025, 0.2, nickel, 0, 0, 0, 10); B(bf, 0.025, 0.025, 0.14, nickel, 0, 0.17, 0.06);
     const bwater = C(vg, 0.006, 0.006, 0.17, M(0xcfe8ff, 0.05, 0, { transparent: true, opacity: 0.6 }), sx, 0.79, 0.19, 6); bwater.visible = false;
     const bs = { on: false }; ctx.interact(bf, { label: () => bs.on ? 'Turn off faucet' : 'Wash your hands 🧼', action: () => { bs.on = !bs.on; Sfx.click(); if (bs.on) { bs.s = Sfx.loop('water', V3(0.4, 0.9, 4.55 - sx), 0.1); ctx.task('hands'); ctx.need('hygiene', 0.05); } else bs.s && bs.s.stop(); bwater.visible = bs.on; } });

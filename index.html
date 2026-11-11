@@ -1959,7 +1959,7 @@ function roomAt(x, z) {
 let _clockMin = -1, _clockStr = '';
 function clockText() { const d = new Date(); if (d.getMinutes() !== _clockMin) { _clockMin = d.getMinutes(); _clockStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/ ?[AP]M/, ''); } return _clockStr; }
 function buildApartment(scene, ctx) {
-  const A = { world: new THREE.Group(), outdoor: new THREE.Group(), lights: {}, heat: [], wallMats: {}, floorMats: {}, floorMeshes: {} };
+  const A = { world: new THREE.Group(), outdoor: new THREE.Group(), lights: {}, heat: [], sinks: [], wallMats: {}, floorMats: {}, floorMeshes: {} };
   const W = A.world; scene.add(W); scene.add(A.outdoor);
   const white = M(0xf7f6f2, 0.6), trim = M(0xf4f3ef, 0.5), nickel = M(0xb9bcbf, 0.3, 0.85), black = M(0x1b1b1d, 0.4, 0.3);
   const ss = M(0xc9cccf, 0.28, 0.9), ssDark = M(0x8d9094, 0.3, 0.9), quartz = M(0xffffff, 0.25, 0, { map: getTex('quartz') });
@@ -2433,7 +2433,7 @@ function buildApartment(scene, ctx) {
   // island top with sink cut-out (sink centered at local x 0, z -0.15)
   const it0 = (x0, x1, z0, z1) => B(IS, x1 - x0, 0.035, z1 - z0, quartz, (x0 + x1) / 2, 0.9, (z0 + z1) / 2);
   it0(-1.2, -0.38, -0.55, 0.85); it0(0.38, 1.2, -0.55, 0.85); it0(-0.38, 0.38, -0.55, -0.4); it0(-0.38, 0.38, 0.1, 0.85);
-  const sinkM = M(0xb9bdc1, 0.25, 0.9); B(IS, 0.76, 0.01, 0.5, sinkM, 0, 0.7, -0.15); B(IS, 0.76, 0.21, 0.01, sinkM, 0, 0.7, -0.4); B(IS, 0.76, 0.21, 0.01, sinkM, 0, 0.7, 0.1); B(IS, 0.01, 0.21, 0.5, sinkM, -0.38, 0.7, -0.15); B(IS, 0.01, 0.21, 0.5, sinkM, 0.38, 0.7, -0.15);
+  const sinkM = M(0xb9bdc1, 0.25, 0.9); A.sinks.push(B(IS, 0.76, 0.01, 0.5, sinkM, 0, 0.7, -0.15)); // no-food zone B(IS, 0.76, 0.21, 0.01, sinkM, 0, 0.7, -0.4); B(IS, 0.76, 0.21, 0.01, sinkM, 0, 0.7, 0.1); B(IS, 0.01, 0.21, 0.5, sinkM, -0.38, 0.7, -0.15); B(IS, 0.01, 0.21, 0.5, sinkM, 0.38, 0.7, -0.15);
   C(IS, 0.03, 0.03, 0.005, M(0x333333), 0, 0.711, -0.15, 12);
   // dirty dishes
   const dishes = []; for (let i = 0; i < 4; i++) { const d = C(IS, 0.11, 0.1, 0.012, M(i % 2 ? 0xf4f1ea : 0xdde4f2, 0.3), -0.18 + i * 0.1, 0.72 + i * 0.02, -0.15 + (i % 2) * 0.05, 18); d.rotation.z = 0.3; dishes.push(d); } markDyn(dishes);
@@ -2493,7 +2493,7 @@ function buildApartment(scene, ctx) {
   const basin = M(0xffffff, 0.2);
   const mirrors = [];
   for (const sx of [-0.48, 0.48]) {
-    B(vg, 0.42, 0.01, 0.3, basin, sx, 0.78, 0.3); B(vg, 0.44, 0.08, 0.02, basin, sx, 0.79, 0.15); B(vg, 0.44, 0.08, 0.02, basin, sx, 0.79, 0.45); B(vg, 0.02, 0.08, 0.3, basin, sx - 0.21, 0.79, 0.3); B(vg, 0.02, 0.08, 0.3, basin, sx + 0.21, 0.79, 0.3);
+    A.sinks.push(B(vg, 0.42, 0.01, 0.3, basin, sx, 0.78, 0.3)); B(vg, 0.44, 0.08, 0.02, basin, sx, 0.79, 0.15); B(vg, 0.44, 0.08, 0.02, basin, sx, 0.79, 0.45); B(vg, 0.02, 0.08, 0.3, basin, sx - 0.21, 0.79, 0.3); B(vg, 0.02, 0.08, 0.3, basin, sx + 0.21, 0.79, 0.3);
     const bf = G(vg, sx, 0.9, 0.06); C(bf, 0.02, 0.025, 0.2, nickel, 0, 0, 0, 10); B(bf, 0.025, 0.025, 0.14, nickel, 0, 0.17, 0.06);
     const bwater = C(vg, 0.006, 0.006, 0.17, M(0xcfe8ff, 0.05, 0, { transparent: true, opacity: 0.6 }), sx, 0.79, 0.19, 6); bwater.visible = false;
     const bs = { on: false }; ctx.interact(bf, { label: () => bs.on ? 'Turn off faucet' : 'Wash your hands 🧼', action: () => { bs.on = !bs.on; Sfx.click(); if (bs.on) { bs.s = Sfx.loop('water', V3(0.4, 0.9, 4.55 - sx), 0.1); ctx.task('hands'); ctx.need('hygiene', 0.05); } else bs.s && bs.s.stop(); bwater.visible = bs.on; } });
@@ -3250,6 +3250,13 @@ function visibleBox(g) { // bounds of the visible, solid parts only (ignores ste
   (function walk(o) { if (!o.visible || o.userData.noRay) return; if (o.isMesh && o.geometry) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); _vbb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld); _vb.union(_vbb); } for (const c of o.children) walk(c); })(g);
   return _vb;
 }
+// sinks are no-food zones: food goes on counters and tables, never in a sink
+let SINK_BOXES = null; const _sb = new THREE.Box3();
+function inSink(p) {
+  if (!SINK_BOXES) SINK_BOXES = A.sinks.map(m => { m.updateWorldMatrix(true, false); const b = new THREE.Box3().setFromObject(m); b.expandByVector(V3(0.06, 0, 0.06)); b.max.y = b.min.y + 0.55; b.min.y -= 0.05; return b; });
+  return SINK_BOXES.some(b => b.containsPoint(p));
+}
+let sinkBlocked = false;
 function startHold(g, opts) {
   if (!g) return;
   held = g; heldSet.clear(); g.traverse(o => heldSet.add(o));
@@ -3280,7 +3287,9 @@ function updateHeld(dt) {
   if (F && F.handTilt) rx += F.handTilt;
   held.position.copy(F ? HAND_FOOD : HAND).add(off); held.rotation.set(rx, F ? (F.handYaw || 0) : (inst.r || 0) - P.yaw, rz);
   const h = a ? null : firstHit(3, { solidOnly: true }); placeTarget = null;
+  sinkBlocked = false;
   if (h) { const n = h.face ? _n.copy(h.face.normal).transformDirection(h.object.matrixWorld) : _n.set(0, 1, 0); if (n.y > 0.6) placeTarget = _place.copy(h.point); }
+  if (placeTarget && F && inSink(placeTarget)) { placeTarget = null; sinkBlocked = true; }
   if (placeTarget) { const sz = held.userData.size; helper.box.setFromCenterAndSize(_ctr.copy(placeTarget).setY(placeTarget.y + sz.y / 2), sz); helper.visible = true; } else helper.visible = false;
 }
 function releaseTo(pos) {
@@ -3289,7 +3298,7 @@ function releaseTo(pos) {
   camera.remove(g); itemsGroup.add(g); g.scale.setScalar(1); g.position.copy(pos); g.rotation.set(0, it.r || 0, 0);
   Object.assign(it, { x: pos.x, y: pos.y, z: pos.z }); itemBox(g); return g;
 }
-function placeHeld() { if (!held) return; if (!placeTarget) return toast('Aim at a table, counter or the floor to set it down.'); releaseTo(placeTarget); Sfx.noise(0.12, 0.25, 400, 1, 'lowpass'); }
+function placeHeld() { if (!held) return; if (!placeTarget) return toast(sinkBlocked ? 'Not in the sink — set food down on the counter.' : 'Aim at a table, counter or the floor to set it down.'); releaseTo(placeTarget); Sfx.noise(0.12, 0.25, 400, 1, 'lowpass'); }
 function dropHeld() { if (!held) return; const p = P.pos.clone(); p.x -= Math.sin(P.yaw) * 0.5; p.z -= Math.cos(P.yaw) * 0.5; p.y = 0; releaseTo(p); Sfx.noise(0.12, 0.3, 300, 1, 'lowpass'); }
 const labelOf = (d, k = 'label') => { const v = d && d[k]; return typeof v === 'function' ? v() : v; };
 // Right click: use / interact (doors, appliances, eat, sit, set down what you hold)
@@ -3298,7 +3307,7 @@ function primary() {
   if (P.action || P.anim) return;
   if (hover && hover.int) { const d = hover.int; try { d.action && d.action(); } catch (e) { console.error(e); } return; }
   const nd = nearDoor(); if (nd) { nd.def.action(); return; }
-  if (held) { if (placeTarget) return placeHeld(); if (held.userData.item.food) return bite(held); return toast('Aim at a table, counter or the floor to set it down.'); }
+  if (held) { if (placeTarget || sinkBlocked) return placeHeld(); if (held.userData.item.food) return bite(held); return toast('Aim at a table, counter or the floor to set it down.'); }
 }
 // Left click: the aimed thing's grab action (flip, switch…), else a bite of what you hold, else a punch
 let handHintT = 0;
@@ -3373,7 +3382,9 @@ function punchHit() {
   if (/door/i.test(lab) && !/oven|microwave|fridge|freezer|cabinet|dishwasher|washer|dryer|shower|closet|pizza|laptop/i.test(lab)) { Sfx.knock(); return; }
   const r = ctx.rootOf(h.object);
   if (r && r !== held && r.userData.item && CATALOG[r.userData.item.t].small) { // bonk: nudge it away and give it a wobble
-    const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); r.position.x += fx * 0.07; r.position.z += fz * 0.07; r.rotation.y += rand(-0.5, 0.5);
+    const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); r.position.x += fx * 0.07; r.position.z += fz * 0.07;
+    if (r.userData.item.food && inSink(r.position)) { r.position.x -= fx * 0.07; r.position.z -= fz * 0.07; } // never knock food into a sink
+    r.rotation.y += rand(-0.5, 0.5);
     Object.assign(r.userData.item, { x: r.position.x, z: r.position.z, r: r.rotation.y }); r.userData.wiggle = 0.6; itemBox(r); Sfx.thud(); Sfx.noise(0.1, 0.2, 1200, 1); return;
   }
   Sfx.thud();
@@ -3516,7 +3527,7 @@ function updatePrompt() {
       const d = CATALOG[held.userData.item.t], i = held.userData.item, F = i.food; let use = '';
       if (F && !(F.empty && F.empty()) && i.d.left > 0) use = ` <b>${LK}</b> ${F.mode === 'drink' ? 'sip' : F.verb} (${i.d.left} left)`; else if (i.handUse) use = ` <b>${LK}</b> ${i.handLabel || 'use'}`;
       const nm = F && F.name !== 'drink' && F.name !== 'food' ? F.name.charAt(0).toUpperCase() + F.name.slice(1) : d.name;
-      html += (html ? ' · ' : '') + `<span class="nm">${nm}</span>${use} <b>${RK}</b> set down <b>${QK}</b> drop`;
+      html += (html ? ' · ' : '') + `<span class="nm">${nm}</span>${use} ${sinkBlocked ? 'Not in the sink — use the counter' : `<b>${RK}</b> set down`} <b>${QK}</b> drop`;
     }
     if (!html && P.sit) html = P.sit.lie ? 'Resting… move to get up' : 'Move to stand up';
   }
@@ -3619,7 +3630,7 @@ P.pos.set(A.spawn.x, 0, A.spawn.z); P.yaw = A.spawn.yaw; P.day = P.dayTarget = d
 updateHud(); renderTasks();
 camera.position.set(P.pos.x, P.eye, P.pos.z); camera.rotation.set(P.pitch, P.yaw, 0); camera.updateMatrixWorld();
 precompile().then(() => requestAnimationFrame(frame));
-window.__game = { STATIC_LIST: () => STATIC, moveAndSlide, dragLook, PR, POOL, SOURCES, lightStats, optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, leftAction, pickUp, bite, Crumbs, clock: () => clockT, FOOD: { FOOD_MODELS, FRUIT, pastaBowl, pizzaSlice }, held: () => held, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
+window.__game = { STATIC_LIST: () => STATIC, moveAndSlide, dragLook, PR, POOL, SOURCES, lightStats, optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, leftAction, pickUp, bite, Crumbs, inSink, sinkBlocked: () => sinkBlocked, clock: () => clockT, FOOD: { FOOD_MODELS, FRUIT, pastaBowl, pizzaSlice }, held: () => held, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
 
 </script>
 

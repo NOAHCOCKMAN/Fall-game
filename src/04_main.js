@@ -454,6 +454,13 @@ function visibleBox(g) { // bounds of the visible, solid parts only (ignores ste
   (function walk(o) { if (!o.visible || o.userData.noRay) return; if (o.isMesh && o.geometry) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); _vbb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld); _vb.union(_vbb); } for (const c of o.children) walk(c); })(g);
   return _vb;
 }
+// sinks are no-food zones: food goes on counters and tables, never in a sink
+let SINK_BOXES = null; const _sb = new THREE.Box3();
+function inSink(p) {
+  if (!SINK_BOXES) SINK_BOXES = A.sinks.map(m => { m.updateWorldMatrix(true, false); const b = new THREE.Box3().setFromObject(m); b.expandByVector(V3(0.06, 0, 0.06)); b.max.y = b.min.y + 0.55; b.min.y -= 0.05; return b; });
+  return SINK_BOXES.some(b => b.containsPoint(p));
+}
+let sinkBlocked = false;
 function startHold(g, opts) {
   if (!g) return;
   held = g; heldSet.clear(); g.traverse(o => heldSet.add(o));
@@ -484,7 +491,9 @@ function updateHeld(dt) {
   if (F && F.handTilt) rx += F.handTilt;
   held.position.copy(F ? HAND_FOOD : HAND).add(off); held.rotation.set(rx, F ? (F.handYaw || 0) : (inst.r || 0) - P.yaw, rz);
   const h = a ? null : firstHit(3, { solidOnly: true }); placeTarget = null;
+  sinkBlocked = false;
   if (h) { const n = h.face ? _n.copy(h.face.normal).transformDirection(h.object.matrixWorld) : _n.set(0, 1, 0); if (n.y > 0.6) placeTarget = _place.copy(h.point); }
+  if (placeTarget && F && inSink(placeTarget)) { placeTarget = null; sinkBlocked = true; }
   if (placeTarget) { const sz = held.userData.size; helper.box.setFromCenterAndSize(_ctr.copy(placeTarget).setY(placeTarget.y + sz.y / 2), sz); helper.visible = true; } else helper.visible = false;
 }
 function releaseTo(pos) {
@@ -493,7 +502,7 @@ function releaseTo(pos) {
   camera.remove(g); itemsGroup.add(g); g.scale.setScalar(1); g.position.copy(pos); g.rotation.set(0, it.r || 0, 0);
   Object.assign(it, { x: pos.x, y: pos.y, z: pos.z }); itemBox(g); return g;
 }
-function placeHeld() { if (!held) return; if (!placeTarget) return toast('Aim at a table, counter or the floor to set it down.'); releaseTo(placeTarget); Sfx.noise(0.12, 0.25, 400, 1, 'lowpass'); }
+function placeHeld() { if (!held) return; if (!placeTarget) return toast(sinkBlocked ? 'Not in the sink — set food down on the counter.' : 'Aim at a table, counter or the floor to set it down.'); releaseTo(placeTarget); Sfx.noise(0.12, 0.25, 400, 1, 'lowpass'); }
 function dropHeld() { if (!held) return; const p = P.pos.clone(); p.x -= Math.sin(P.yaw) * 0.5; p.z -= Math.cos(P.yaw) * 0.5; p.y = 0; releaseTo(p); Sfx.noise(0.12, 0.3, 300, 1, 'lowpass'); }
 const labelOf = (d, k = 'label') => { const v = d && d[k]; return typeof v === 'function' ? v() : v; };
 // Right click: use / interact (doors, appliances, eat, sit, set down what you hold)
@@ -502,7 +511,7 @@ function primary() {
   if (P.action || P.anim) return;
   if (hover && hover.int) { const d = hover.int; try { d.action && d.action(); } catch (e) { console.error(e); } return; }
   const nd = nearDoor(); if (nd) { nd.def.action(); return; }
-  if (held) { if (placeTarget) return placeHeld(); if (held.userData.item.food) return bite(held); return toast('Aim at a table, counter or the floor to set it down.'); }
+  if (held) { if (placeTarget || sinkBlocked) return placeHeld(); if (held.userData.item.food) return bite(held); return toast('Aim at a table, counter or the floor to set it down.'); }
 }
 // Left click: the aimed thing's grab action (flip, switch…), else a bite of what you hold, else a punch
 let handHintT = 0;
@@ -577,7 +586,9 @@ function punchHit() {
   if (/door/i.test(lab) && !/oven|microwave|fridge|freezer|cabinet|dishwasher|washer|dryer|shower|closet|pizza|laptop/i.test(lab)) { Sfx.knock(); return; }
   const r = ctx.rootOf(h.object);
   if (r && r !== held && r.userData.item && CATALOG[r.userData.item.t].small) { // bonk: nudge it away and give it a wobble
-    const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); r.position.x += fx * 0.07; r.position.z += fz * 0.07; r.rotation.y += rand(-0.5, 0.5);
+    const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); r.position.x += fx * 0.07; r.position.z += fz * 0.07;
+    if (r.userData.item.food && inSink(r.position)) { r.position.x -= fx * 0.07; r.position.z -= fz * 0.07; } // never knock food into a sink
+    r.rotation.y += rand(-0.5, 0.5);
     Object.assign(r.userData.item, { x: r.position.x, z: r.position.z, r: r.rotation.y }); r.userData.wiggle = 0.6; itemBox(r); Sfx.thud(); Sfx.noise(0.1, 0.2, 1200, 1); return;
   }
   Sfx.thud();
@@ -720,7 +731,7 @@ function updatePrompt() {
       const d = CATALOG[held.userData.item.t], i = held.userData.item, F = i.food; let use = '';
       if (F && !(F.empty && F.empty()) && i.d.left > 0) use = ` <b>${LK}</b> ${F.mode === 'drink' ? 'sip' : F.verb} (${i.d.left} left)`; else if (i.handUse) use = ` <b>${LK}</b> ${i.handLabel || 'use'}`;
       const nm = F && F.name !== 'drink' && F.name !== 'food' ? F.name.charAt(0).toUpperCase() + F.name.slice(1) : d.name;
-      html += (html ? ' · ' : '') + `<span class="nm">${nm}</span>${use} <b>${RK}</b> set down <b>${QK}</b> drop`;
+      html += (html ? ' · ' : '') + `<span class="nm">${nm}</span>${use} ${sinkBlocked ? 'Not in the sink — use the counter' : `<b>${RK}</b> set down`} <b>${QK}</b> drop`;
     }
     if (!html && P.sit) html = P.sit.lie ? 'Resting… move to get up' : 'Move to stand up';
   }
@@ -823,4 +834,4 @@ P.pos.set(A.spawn.x, 0, A.spawn.z); P.yaw = A.spawn.yaw; P.day = P.dayTarget = d
 updateHud(); renderTasks();
 camera.position.set(P.pos.x, P.eye, P.pos.z); camera.rotation.set(P.pitch, P.yaw, 0); camera.updateMatrixWorld();
 precompile().then(() => requestAnimationFrame(frame));
-window.__game = { STATIC_LIST: () => STATIC, moveAndSlide, dragLook, PR, POOL, SOURCES, lightStats, optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, leftAction, pickUp, bite, Crumbs, clock: () => clockT, FOOD: { FOOD_MODELS, FRUIT, pastaBowl, pizzaSlice }, held: () => held, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
+window.__game = { STATIC_LIST: () => STATIC, moveAndSlide, dragLook, PR, POOL, SOURCES, lightStats, optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, leftAction, pickUp, bite, Crumbs, inSink, sinkBlocked: () => sinkBlocked, clock: () => clockT, FOOD: { FOOD_MODELS, FRUIT, pastaBowl, pizzaSlice }, held: () => held, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
