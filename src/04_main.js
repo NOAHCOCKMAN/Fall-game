@@ -728,7 +728,7 @@ if (isTouch) {
   addEventListener('touchend', e => { for (const t of e.changedTouches) { if (t.identifier === sid) { sid = null; joy.x = joy.y = 0; knob.style.transform = ''; } if (t.identifier === lookId) { lookId = null; if (lmoved < 10 && performance.now() - ltime < 300) primary(); } } });
   canvas.addEventListener('touchstart', e => { Sfx.init(); const t = e.changedTouches[0]; if (lookId === null) { lookId = t.identifier; lp = [t.clientX, t.clientY]; ltime = performance.now(); lmoved = 0; } }, { passive: true });
   const btn = (id, fn) => { const el = $(id); el.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); Sfx.init(); fn(); }, { passive: false }); };
-  btn('#tUse', primary); btn('#tGrab', () => held ? (placeTarget ? placeHeld() : dropHeld()) : pickUp()); btn('#bigAct', () => primary()); btn('#tUseHeld', leftAction); btn('#tJump', () => { if (P.pos.y === 0) P.vy = 3.6; if (P.sit && !P.sit.locked) { P.pos.copy(P.sit.prev); P.sit = null; } });
+  btn('#tUse', primary); btn('#tGrab', () => held ? (placeTarget ? placeHeld() : dropHeld()) : pickUp()); btn('#bigAct', () => primary()); btn('#bigAlt', () => leftAction()); btn('#tUseHeld', leftAction); btn('#tJump', () => { if (P.pos.y === 0) P.vy = 3.6; if (P.sit && !P.sit.locked) { P.pos.copy(P.sit.prev); P.sit = null; } });
   btn('#tCrouch', () => { P.crouchToggle = !P.crouchToggle; $('#tCrouch').classList.toggle('on', P.crouchToggle); }); btn('#tMenu', () => openMenu()); btn('#tPhone', () => togglePhone());
 }
 
@@ -741,7 +741,7 @@ function updateHud() {
 let lastPrompt = null;
 // big pop-up action for cooking: a tap target on phones, a large card on desktop
 const KITCHEN_ITEMS = new Set(['pan', 'kettle', 'toaster', 'espresso', 'fruit_bowl', 'pizza', 'takeout', 'stand_mixer']);
-let lastBig = null;
+let lastBig = null, lastBigAlt = null;
 function bigAction() {
   if (P.action || (P.anim && P.anim.kind !== 'punch')) return '';
   if (held && held.userData.item.food && placeTarget) return '⬇ Set it down here';
@@ -751,8 +751,12 @@ function bigAction() {
   const lab = labelOf(hover.int); return lab || '';
 }
 function updatePrompt() {
-  const big = bigAction(), bigEl = $('#bigAct');
-  if (big !== lastBig) { lastBig = big; bigEl.hidden = !big; document.body.classList.toggle('hasbig', !!big); if (big) bigEl.innerHTML = (isTouch ? '' : '<b>Right-click</b>') + '<span>' + big + '</span>'; }
+  const big = bigAction(), alt = big && isTouch && !held && hover && hover.int && hover.int.alt ? labelOf(hover.int, 'altLabel') : '';
+  if (big !== lastBig || alt !== lastBigAlt) {
+    lastBig = big; lastBigAlt = alt; $('#bigRow').hidden = !big; document.body.classList.toggle('hasbig', !!big);
+    if (big) $('#bigAct').innerHTML = (isTouch ? '' : '<b>Right-click</b>') + '<span>' + big + '</span>';
+    $('#bigAlt').hidden = !alt; if (alt) $('#bigAlt').textContent = '↻ ' + alt;
+  }
   const pr = EL.prompt; let html = '';
   const RK = isTouch ? 'Use' : 'Right-click', LK = isTouch ? 'Eat/Hit' : 'Left-click', QK = isTouch ? 'Grab' : 'Q';
   if (!P.action && !(P.anim && P.anim.kind !== 'punch')) {
