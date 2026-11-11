@@ -288,9 +288,11 @@ const FOODS = {
 const PAN_ORDER = ['egg', 'pancake', 'bacon', 'grilled'];
 def('pan', 'Frying pan', 'Kitchen', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
   const g = new THREE.Group(), blk = M(0x202022, 0.4, 0.5);
-  C(g, 0.13, 0.11, 0.045, blk, 0, 0, 0, 28); C(g, 0.118, 0.118, 0.002, M(0x2c2c30, 0.25, 0.6), 0, 0.012, 0, 28);
+  // open skillet (a solid cylinder would hide the food inside it): base, flared wall, rolled lip, non-stick floor
+  fmesh(g, fgeo('skillet', () => new THREE.LatheGeometry([[0, 0], [0.105, 0], [0.112, 0.004], [0.13, 0.042], [0.132, 0.046], [0.127, 0.047], [0.11, 0.01], [0.102, 0.006], [0, 0.006]].map(([x, y]) => new THREE.Vector2(x, y)), 32)), blk);
+  C(g, 0.103, 0.103, 0.001, M(0x2c2c30, 0.25, 0.6), 0, 0.006, 0, 28);
   const hdl = B(g, 0.03, 0.02, 0.2, M(0x1a1a1a, 0.6), 0, 0.03, 0.22); hdl.rotation.x = -0.12;
-  const food = G(g, 0, 0.013, 0); markDyn(food);
+  const FY = 0.008, food = G(g, 0, FY, 0); markDyn(food);
   const models = {}; for (const k of PAN_ORDER) { models[k] = FOOD_MODELS[k](food); models[k].g.visible = false; }
   noRay(food);
   const steam = Puffs(g, { n: 6, size: 0.02, height: 0.3, opacity: 0.22, spread: 0.05, y: 0.04 });
@@ -323,11 +325,12 @@ def('pan', 'Frying pan', 'Kitchen', { mount: 'surface', solid: false, small: tru
       if (s === 'burnt') { st.food = null; Sfx.noise(0.4, 0.2, 900, 1, 'bandpass', -400); ctx.msg('Into the trash it goes.'); return; }
       st.plate = 0; Sfx.noise(0.25, 0.12, 1400, 1, 'bandpass', 600); // scoop it out
     },
-    altLabel: () => st.plate >= 0 ? '' : !st.food ? 'switch to ' + FOODS[PAN_ORDER[(st.choice + 1) % PAN_ORDER.length]].name : stage() !== 'burnt' && heatHere() ? 'flip it' : '',
+    altLabel: () => st.plate >= 0 ? '' : !st.food ? 'switch to ' + FOODS[PAN_ORDER[(st.choice + 1) % PAN_ORDER.length]].name : stage() !== 'burnt' && heatHere() ? 'flip it' : stage() === 'raw' ? 'take the raw ' + nm() + ' out' : '',
     alt: () => {
       if (st.plate >= 0) return;
       if (!st.food) { st.choice = (st.choice + 1) % PAN_ORDER.length; Sfx.click(); return; }
-      if (st.flip < 0 && heatHere()) { st.flip = 0; Sfx.whoosh(); }
+      if (st.flip < 0 && heatHere()) { st.flip = 0; Sfx.whoosh(); return; }
+      if (stage() === 'raw') { st.food = null; st.cook = 0; Sfx.noise(0.2, 0.12, 900, 1); }
     }
   });
   ctx.onRemove(g, () => st.sz && st.sz.stop());
@@ -343,13 +346,13 @@ def('pan', 'Frying pan', 'Kitchen', { mount: 'surface', solid: false, small: tru
     spat.update(dt, heat ? (st.food === 'bacon' ? 6 : 3) : 0, near);
     if (st.flip >= 0) {
       st.flip += dt / 0.55; const k = Math.min(1, st.flip);
-      food.position.y = 0.013 + Math.sin(k * Math.PI) * 0.13; food.rotation.x = k * TAU * (st.food === 'bacon' ? 0.5 : 1); food.rotation.z = Math.sin(k * Math.PI) * 0.2;
-      if (k >= 1) { st.flip = -1; food.position.y = 0.013; food.rotation.set(0, 0, 0); Sfx.noise(0.12, 0.3, 500, 1, 'lowpass'); }
+      food.position.y = FY + Math.sin(k * Math.PI) * 0.13; food.rotation.x = k * TAU * (st.food === 'bacon' ? 0.5 : 1); food.rotation.z = Math.sin(k * Math.PI) * 0.2;
+      if (k >= 1) { st.flip = -1; food.position.y = FY; food.rotation.set(0, 0, 0); Sfx.noise(0.12, 0.3, 500, 1, 'lowpass'); }
     }
     if (st.plate >= 0) { // the food lifts out of the pan toward you, then lands on a plate in your hand
       st.plate += dt / 0.35; const k = Math.min(1, st.plate);
-      food.position.y = 0.013 + k * 0.22; food.scale.setScalar(1 - k * 0.4);
-      if (k >= 1) { const f = st.food; st.food = null; st.plate = -1; food.position.y = 0.013; food.scale.setScalar(1); ctx.give('plate', { food: f, fresh: true, hot: true }, { rise: true }); ctx.task('cook'); }
+      food.position.y = FY + k * 0.22; food.scale.setScalar(1 - k * 0.4);
+      if (k >= 1) { const f = st.food; st.food = null; st.plate = -1; food.position.y = FY; food.scale.setScalar(1); ctx.give('plate', { food: f, fresh: true, hot: true }, { rise: true }); ctx.task('cook'); }
     }
   });
   return g;
