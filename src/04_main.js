@@ -79,6 +79,7 @@ const ctx = {
   burnerAt(p) { return A.heat.find(h => Math.hypot(h.pos.x - p.x, h.pos.z - p.z) < 0.14 && p.y - h.pos.y > -0.03 && p.y - h.pos.y < 0.12) || null; },
   toggleBurner(b, on) { if (b.toggle) b.toggle(on); else b.on = on; },
   bite(g) { bite(g); },
+  puzzle(d, onSolve, onChange) { openPuzzle(d, onSolve, onChange); },
   removeItem(g) { removeItem(g); },
   sit(pos, yaw, lie) {
     P.sit = { pos: pos.clone(), yaw, lie, prev: P.pos.clone(), root: arguments[3] || null }; P.yaw = yaw; P.pitch = lie ? 0.9 : -0.1;
@@ -358,7 +359,7 @@ function updatePlayer(dt) {
 // ---- input ----
 let skipMoves = 0, locked = false, dragging = false, dragDist = 0, lastMouse = null; const mouseNDC = new THREE.Vector2(0, 0); let mouseInCanvas = false;
 const EL = { menu: $('#menu'), start: $('#start'), tasks: $('#tasks'), phone: $('#phone'), prompt: $('#prompt'), vignette: $('#vignette'), wet: $('#wet'), action: $('#action'), perf: $('#perfHud') };
-const uiOpen = () => !EL.menu.hidden || !EL.start.hidden || !EL.tasks.hidden || !EL.phone.hidden;
+const uiOpen = () => !EL.menu.hidden || !EL.start.hidden || !EL.tasks.hidden || !EL.phone.hidden || !$('#puzzle').hidden;
 const tryLock = () => { if (isTouch) return; try { const p = canvas.requestPointerLock(); p && p.catch && p.catch(() => { }); } catch (e) { } };
 // mouse: right click = use / interact, left click = hit, bite or the aimed thing's grab action
 canvas.addEventListener('mousedown', (e) => {
@@ -399,6 +400,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyW' && !e.repeat) { const now = e.timeStamp; if (now - lastW < 300) P.sprintLatch = true; lastW = now; } // double-tap W to sprint
   keys[e.code] = true;
   if (e.code === 'F1') { toggleHud(); return; }
+  if (!$('#puzzle').hidden) { const b = Puzzle.blank(), dir = { ArrowUp: 3, KeyW: 3, ArrowDown: -3, KeyS: -3, ArrowLeft: 1, KeyA: 1, ArrowRight: -1, KeyD: -1 }[e.code]; if (e.code === 'Escape') { closePuzzle(); return; } if (dir !== undefined) { e.preventDefault(); const i = b + dir; if (i >= 0 && i < 9 && (Math.abs(dir) === 3 || Math.floor(i / 3) === Math.floor(b / 3))) slidePz(i); } return; }
   if (e.code === 'Escape') { if (!$('#phone').hidden) { closePhone(); return; } if (!$('#tasks').hidden) { $('#tasks').hidden = true; return; } if (!$('#menu').hidden) { closeMenu(); return; } if (!locked && $('#start').hidden) openMenu(); return; }
   if (uiOpen() || e.repeat) return;
   if (e.code === 'KeyE') pickUp();
@@ -437,7 +439,7 @@ function updateHover() {
   const h = hits[0]; if (!h) return;
   let pick = h, io = findIntDeep(h.object);
   for (const k of hits) { if (k.distance > h.distance + 0.4) break; const ki = findIntDeep(k.object); if (ki && ki.userData.int.priority) { pick = k; io = ki; break; } } // stove knobs win over a pan handle hanging in front of them
-  if (!(io && io.userData.int.priority)) for (const k of hits) { if (k.distance > h.distance + 0.06) break; const ki = findIntDeep(k.object); if (ki && (!io || ki !== io && k.object.userData.int)) { pick = k; io = ki; break; } }
+  if (!(io && io.userData.int.priority)) for (const k of hits) { if (k.distance > h.distance + 0.06) break; const ki = findIntDeep(k.object); if (ki && (!io || ki !== io && k.object.userData.int && ctx.rootOf(k.object) === ctx.rootOf(h.object))) { pick = k; io = ki; break; } } // a button set into the thing you aim at wins, but a neighbouring object (the tree behind a present) never steals the click
   const reach = io && io.userData.int.reach || 2.6;
   if (pick.distance > reach) io = null;
   if (!io && h.distance > 2.6) return;
@@ -611,6 +613,59 @@ function punchHit() {
     Object.assign(r.userData.item, { x: r.position.x, z: r.position.z, r: r.rotation.y }); r.userData.wiggle = 0.6; itemBox(r); Sfx.thud(); Sfx.noise(0.1, 0.2, 1200, 1); return;
   }
   Sfx.thud();
+}
+
+// ---- sliding block puzzle (the red present under the tree) ----
+const Puzzle = { d: null, onSolve: null, onChange: null, t0: 0, done: false, tiles: [], blank() { return Puzzle.d ? Puzzle.d.pz.indexOf(0) : -1; } };
+const pzNbrs = (i) => [i - 3, i + 3, i % 3 ? i - 1 : -1, i % 3 < 2 ? i + 1 : -1].filter(k => k >= 0 && k < 9);
+const pzSolved = (a) => a.every((v, i) => v === (i < 8 ? i + 1 : 0));
+function shufflePz() { // random legal slides from the solved board, so it is always solvable (and quick: about a minute)
+  const a = [1, 2, 3, 4, 5, 6, 7, 8, 0]; let b = 8, prev = -1;
+  for (let i = 0; i < 36 || pzSolved(a); i++) { const n = pzNbrs(b).filter(k => k !== prev); const k = n[(Math.random() * n.length) | 0]; a[b] = a[k]; a[k] = 0; prev = b; b = k; }
+  return a;
+}
+(function buildPzBoard() {
+  const board = $('#pzBoard'), url = puzzlePicture().toDataURL();
+  for (let n = 1; n <= 8; n++) {
+    const t = document.createElement('button'); t.className = 'pztile'; t.setAttribute('aria-label', 'Tile ' + n);
+    t.style.backgroundImage = `url(${url})`; t.style.backgroundPosition = `${((n - 1) % 3) * 50}% ${Math.floor((n - 1) / 3) * 50}%`; t.innerHTML = `<span>${n}</span>`;
+    t.addEventListener('pointerdown', (e) => { e.preventDefault(); slidePz(Puzzle.d.pz.indexOf(n)); });
+    board.appendChild(t); Puzzle.tiles.push(t);
+  }
+  $('#puzzle').addEventListener('pointerdown', (e) => { if (e.target === $('#puzzle')) closePuzzle(); }); // tap outside the board to put it down
+  $('#pzClose').onclick = closePuzzle;
+  $('#pzShuffle').onclick = () => { if (!Puzzle.d) return; Puzzle.d.pz = shufflePz(); Puzzle.d.moves = 0; Puzzle.d.secs = 0; Puzzle.t0 = performance.now(); Puzzle.done = false; renderPz(); Puzzle.onChange && Puzzle.onChange(); };
+})();
+function pzTime() { return (Puzzle.d.secs || 0) + (Puzzle.done ? 0 : (performance.now() - Puzzle.t0) / 1000); }
+function renderPz() {
+  const a = Puzzle.d.pz;
+  Puzzle.tiles.forEach((t, k) => { const i = a.indexOf(k + 1); t.style.transform = `translate(${(i % 3) * 100}%, ${Math.floor(i / 3) * 100}%)`; });
+  $('#pzStats').textContent = 'Moves ' + (Puzzle.d.moves || 0) + ' · ' + fmtClock(pzTime());
+  $('#pzBoard').classList.toggle('solved', Puzzle.done);
+}
+const fmtClock = (t) => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+function openPuzzle(d, onSolve, onChange) {
+  if (!d.pz) { d.pz = shufflePz(); d.moves = 0; d.secs = 0; }
+  Object.assign(Puzzle, { d, onSolve, onChange, t0: performance.now(), done: false });
+  $('#pzMsg').textContent = 'Slide the tiles back into the picture. Tap a tile next to the gap' + (isTouch ? '.' : ' (or use the arrow keys).');
+  renderPz(); $('#puzzle').hidden = false; unlock();
+  clearInterval(Puzzle.timer); Puzzle.timer = setInterval(() => { if (Puzzle.d && !Puzzle.done) $('#pzStats').textContent = 'Moves ' + (Puzzle.d.moves || 0) + ' · ' + fmtClock(pzTime()); }, 500);
+}
+function closePuzzle() {
+  if ($('#puzzle').hidden) return; clearInterval(Puzzle.timer);
+  if (Puzzle.d && !Puzzle.done) Puzzle.d.secs = pzTime(); // keep your progress for next time
+  $('#puzzle').hidden = true; Puzzle.d = null; tryLock();
+}
+function slidePz(i) {
+  const d = Puzzle.d; if (!d || Puzzle.done) return; const b = d.pz.indexOf(0);
+  if (!pzNbrs(b).includes(i)) { Sfx.tone(260, 0.06, 'square', 0.03); return; }
+  d.pz[b] = d.pz[i]; d.pz[i] = 0; d.moves = (d.moves || 0) + 1; Sfx.noise(0.06, 0.18, 1400, 2); Sfx.tone(320 + Math.random() * 40, 0.05, 'sine', 0.05);
+  Puzzle.onChange && Puzzle.onChange();
+  if (pzSolved(d.pz)) {
+    Puzzle.done = true; const moves = d.moves, secs = pzTime(); renderPz();
+    $('#pzMsg').textContent = '🎉 Solved in ' + moves + ' moves and ' + fmtClock(secs) + '!'; Sfx.chime(); setTimeout(() => Sfx.chime(), 260);
+    const cb = Puzzle.onSolve; setTimeout(() => { d.pz = null; d.best = Math.min(d.best || 1e9, moves); closePuzzle(); cb && cb(moves, secs); }, 1300);
+  } else renderPz();
 }
 
 // ---- tasks ----

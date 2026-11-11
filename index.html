@@ -179,6 +179,14 @@ body.touch.hasbig #prompt { display: none !important; }
   body.touch #bigAlt { font-size: 13px; padding: 10px 14px; }
 }
 @keyframes bigpop { from { opacity: 0; } to { opacity: 1; } }
+/* sliding puzzle */
+.pzcard { width: min(440px, 100%); }
+.pzhead { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; } .pzhead h2 { margin: 0; flex: 1; } #pzStats { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+#pzBoard { position: relative; width: min(360px, 76vw, 52vh); aspect-ratio: 1; margin: 0 auto; border-radius: 12px; background: rgba(0,0,0,.35); box-shadow: inset 0 0 0 2px rgba(255,255,255,.08); touch-action: none; }
+.pztile { position: absolute; left: 0; top: 0; width: calc(100% / 3); height: calc(100% / 3); padding: 0; border: 2px solid rgba(30,16,8,.55); border-radius: 10px; background-size: 300% 300%; transition: transform .14s ease-out; box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 3px 8px rgba(0,0,0,.3); touch-action: none; }
+.pztile span { position: absolute; left: 6px; top: 4px; font: 700 12px var(--display); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
+#pzBoard.solved .pztile { border-color: transparent; border-radius: 0; box-shadow: none; } #pzBoard.solved .pztile span { opacity: 0; }
+.pzmsg { color: var(--muted); font-size: 14px; text-align: center; margin: 12px 0; min-height: 1.4em; } .pzhint { color: var(--muted); font-size: 12px; align-self: center; }
 #enter:disabled { opacity: .6; cursor: progress; }
 @media (max-width: 640px) { .stats { min-width: 110px; padding: 6px 8px; } .mood { font-size: 11px; } #panel { top: calc(56px + env(safe-area-inset-top, 0px)); bottom: calc(180px + env(safe-area-inset-bottom, 0px)); } .card-big { padding: 20px; } }
 @media (prefers-reduced-motion: reduce) { #toast, #fade, #cross { transition: none; } }
@@ -281,6 +289,15 @@ body.touch.hasbig #prompt { display: none !important; }
       <p class="lede" style="font-size:14px">If the mouse won't lock in your browser, click-and-drag to look and click on things to use them.</p>
       <div class="btns"><button class="ghostbtn" data-open="main">Back</button></div>
     </div>
+  </div>
+</div>
+
+<div id="puzzle" class="overlay" hidden>
+  <div class="card-big glass pzcard">
+    <div class="pzhead"><h2>Sliding puzzle 🧩</h2><span id="pzStats"></span><button id="pzClose" class="x" aria-label="Put the puzzle down">×</button></div>
+    <div id="pzBoard"></div>
+    <p id="pzMsg" class="pzmsg"></p>
+    <div class="btns"><button id="pzShuffle" class="ghostbtn">Shuffle</button><span class="pzhint">Close any time; your progress stays in the box.</span></div>
   </div>
 </div>
 
@@ -1229,13 +1246,83 @@ def('xmas_tree', 'Pencil Christmas tree', 'Holiday', { shrink: 0.3 }, (ctx, it) 
   ctx.tick(g, (dt, t) => { const on = st.on && ctx.power(); bm.emissiveIntensity = on ? 2 + Math.sin(t * 2) * 0.3 : 0; L.intensity = on ? 1.6 : 0; });
   return g;
 });
+// picture on the sliding-puzzle tiles: a fall evening with a pumpkin and a maple tree (drawn once, shared by the 3D toy and the puzzle screen)
+let _pzPic = null;
+function puzzlePicture() {
+  if (_pzPic) return _pzPic;
+  const c = document.createElement('canvas'); c.width = c.height = 300; const g = c.getContext('2d');
+  const sky = g.createLinearGradient(0, 0, 0, 200); sky.addColorStop(0, '#f6c27a'); sky.addColorStop(1, '#e8735a'); g.fillStyle = sky; g.fillRect(0, 0, 300, 300);
+  g.fillStyle = '#ffe3a3'; g.beginPath(); g.arc(225, 82, 34, 0, TAU); g.fill();
+  g.fillStyle = '#8a4b3a'; g.beginPath(); g.moveTo(0, 210); g.quadraticCurveTo(90, 150, 180, 200); g.quadraticCurveTo(250, 235, 300, 190); g.lineTo(300, 300); g.lineTo(0, 300); g.fill();
+  g.fillStyle = '#6b3b2c'; g.fillRect(0, 245, 300, 55);
+  g.fillStyle = '#5a3524'; g.fillRect(70, 120, 16, 110); // maple trunk
+  const leaves = ['#d9622b', '#c0392b', '#f2994a', '#e0b13a']; for (let i = 0; i < 70; i++) { const a = i * 2.39, r = 14 + (i % 9) * 5; g.fillStyle = leaves[i % 4]; g.beginPath(); g.arc(78 + Math.cos(a) * r * 1.25, 105 + Math.sin(a) * r * 0.85, 11, 0, TAU); g.fill(); }
+  for (let i = 0; i < 18; i++) { g.fillStyle = leaves[i % 4]; g.beginPath(); g.ellipse(20 + i * 16, 255 + (i * 37 % 30), 6, 3, i, 0, TAU); g.fill(); }
+  // pumpkin
+  for (let k = -2; k <= 2; k++) { g.fillStyle = k % 2 ? '#e5762a' : '#f08a32'; g.beginPath(); g.ellipse(205 + k * 13, 238, 22, 30, 0, 0, TAU); g.fill(); }
+  g.fillStyle = '#4b6b2a'; g.fillRect(201, 200, 8, 14);
+  g.strokeStyle = 'rgba(40,20,10,.35)'; g.lineWidth = 3; g.strokeRect(1.5, 1.5, 297, 297);
+  return (_pzPic = c);
+}
 def('present', 'Wrapped present', 'Holiday', { mount: 'surface', solid: false, small: true, color: '#b3141f', colorable: true }, (ctx, it) => {
-  const g = new THREE.Group(); B(g, 0.25, 0.18, 0.25, M(it.c || '#b3141f', 0.6), 0, 0, 0);
-  const lid = G(g, 0, 0.18, 0); B(lid, 0.27, 0.05, 0.27, M(it.c || '#b3141f', 0.6), 0, 0, 0); markMoves(lid); B(lid, 0.04, 0.052, 0.272, M(0xd4af37, 0.3, 0.6), 0, 0, 0); B(lid, 0.272, 0.052, 0.04, M(0xd4af37, 0.3, 0.6), 0, 0, 0);
-  const gifts = ['cozy socks 🧦', 'a pumpkin candle 🎃', 'a new mug ☕', 'concert tickets 🎟', 'a scarf 🧣', 'a puzzle 🧩'];
-  const st = { open: false };
-  ctx.interact(g, { label: () => st.open ? 'Close the box' : 'Open present 🎁', action: () => { st.open = !st.open; if (st.open) { Sfx.chime(); ctx.msg('You got ' + gifts[(Math.random() * gifts.length) | 0] + '!'); ctx.task('gift'); } } });
-  ctx.tick(g, dt => { lid.position.y = lerp(lid.position.y, st.open ? 0.4 : 0.18, dt * 6); lid.rotation.z = lerp(lid.rotation.z, st.open ? 0.5 : 0, dt * 6); });
+  const d = it.d || (it.d = {}); const kind = d.toy || (it.c === '#2e5a3a' ? 'globe' : 'puzzle'); d.toy = kind;
+  const g = new THREE.Group(), wrap = M(it.c || '#b3141f', 0.6), gold = M(0xd4af37, 0.3, 0.6);
+  B(g, 0.25, 0.18, 0.25, wrap, 0, 0, 0); B(g, 0.04, 0.182, 0.252, gold, 0, 0, 0); B(g, 0.252, 0.182, 0.04, gold, 0, 0, 0);
+  const lid = G(g, 0, 0.18, 0); B(lid, 0.27, 0.05, 0.27, wrap, 0, 0, 0); markMoves(lid); B(lid, 0.04, 0.052, 0.272, gold, 0, 0, 0); B(lid, 0.272, 0.052, 0.04, gold, 0, 0, 0);
+  for (const s of [-1, 1]) { const bow = T(lid, 0.035, 0.012, gold, s * 0.035, 0.065, 0); bow.rotation.set(0, Math.PI / 2, s * 0.5); bow.scale.set(1, 0.7, 1); }
+  const toy = G(g, 0, 0.2, 0); toy.visible = false; markDyn(toy);
+  const st = { open: false, rise: 0, shake: 0, closeAt: 0 };
+  let tiles = [], snow = [], tune = null;
+  if (kind === 'puzzle') {
+    // wooden tray with 8 picture tiles that match your progress in the puzzle
+    const wood = M(0xa4764d, 0.6); B(toy, 0.21, 0.015, 0.21, wood, 0, 0, 0); for (const [w, dd, x, z] of [[0.21, 0.012, 0, -0.099], [0.21, 0.012, 0, 0.099], [0.012, 0.21, -0.099, 0], [0.012, 0.21, 0.099, 0]]) B(toy, w, 0.03, dd, wood, x, 0, z);
+    const pic = new THREE.CanvasTexture(puzzlePicture()); pic.colorSpace = THREE.SRGBColorSpace;
+    for (let n = 1; n <= 8; n++) {
+      const t = pic.clone(); t.repeat.set(1 / 3, 1 / 3); t.offset.set(((n - 1) % 3) / 3, 1 - (Math.floor((n - 1) / 3) + 1) / 3); t.needsUpdate = true;
+      const tile = B(toy, 0.058, 0.014, 0.058, [M(0xc8a070, 0.6), M(0xc8a070, 0.6), M(0xffffff, 0.55, 0, { map: t }), M(0xc8a070, 0.6), M(0xc8a070, 0.6), M(0xc8a070, 0.6)], 0, 0.015, 0);
+      tiles.push(tile);
+    }
+    toy.rotation.x = 0.5; // tilted toward you so you can see the picture
+  } else {
+    // snow globe: wooden base, glass dome, a tiny pine tree and a cottage, and snow that swirls when you shake it
+    C(toy, 0.07, 0.08, 0.04, M(0x6b4532, 0.5), 0, 0, 0, 24); T(toy, 0.072, 0.006, gold, 0, 0.04, 0).rotation.x = Math.PI / 2;
+    const glass = S(toy, 0.085, M(0xdfeef7, 0.05, 0, { transparent: true, opacity: 0.22, depthWrite: false }), 0, 0.115, 0, 24, 18);
+    C(toy, 0.065, 0.065, 0.012, M(0xf4f6f8, 0.9), 0, 0.04, 0, 24);
+    C(toy, 0, 0.03, 0.07, M(0x2f6b3a, 0.8), -0.022, 0.052, 0, 10); C(toy, 0, 0.022, 0.05, M(0x3a7a44, 0.8), -0.022, 0.09, 0, 10);
+    B(toy, 0.035, 0.03, 0.03, M(0xb3141f, 0.6), 0.03, 0.052, 0.005); const roof = C(toy, 0, 0.03, 0.022, M(0xf4f6f8, 0.8), 0.03, 0.082, 0.005, 4); roof.rotation.y = Math.PI / 4;
+    const flake = M(0xffffff, 0.4, 0, { emissive: 0xffffff, emissiveIntensity: 0.25 });
+    for (let i = 0; i < 40; i++) { const f = S(toy, 0.0035, flake, 0, 0.06, 0, 5, 4); f.userData.a = Math.random() * TAU; f.userData.r = Math.random() * 0.06; f.userData.h = Math.random(); f.userData.v = 0; snow.push(f); }
+  }
+  const setTiles = () => { if (!tiles.length) return; const pz = d.pz; for (let n = 1; n <= 8; n++) { const i = pz ? pz.indexOf(n) : n - 1; tiles[n - 1].position.set(((i % 3) - 1) * 0.062, 0.015, (Math.floor(i / 3) - 1) * 0.062); } };
+  setTiles();
+  const openBox = () => { st.open = true; Sfx.chime(); Sfx.noise(0.5, 0.18, 2600, 0.8, 'bandpass', -1500); ctx.task('gift'); if (!d.seen) { d.seen = true; ctx.msg(kind === 'puzzle' ? '🧩 A sliding block puzzle! Right-click to play.' : '❄️ A snow globe! Right-click to shake it.'); } };
+  const closeBox = () => { st.open = false; Sfx.noise(0.25, 0.12, 900, 1); };
+  ctx.interact(g, {
+    label: () => !st.open ? 'Open present 🎁' : st.rise < 0.9 ? '' : kind === 'puzzle' ? (d.pz ? 'Keep playing the sliding puzzle 🧩' : 'Play the sliding puzzle 🧩') : 'Shake the snow globe ❄️',
+    action: () => {
+      if (!st.open) return openBox();
+      if (st.rise < 0.9) return;
+      if (kind === 'puzzle') ctx.puzzle(d, (moves, secs) => { setTiles(); ctx.need('fun', 0.25); ctx.msg('🎉 Solved in ' + moves + ' moves (' + Math.round(secs) + 's)! Back in the box it goes.'); st.closeAt = performance.now() + 1400; }, setTiles);
+      else { st.shake = 1; Sfx.noise(0.4, 0.2, 3000, 1.2, 'bandpass', -1800); snow.forEach(f => { f.userData.v = 0.5 + Math.random() * 0.6; f.userData.h = Math.random() * 0.3; }); ctx.need('fun', 0.05); }
+    },
+    altLabel: () => st.open && st.rise > 0.9 ? (kind === 'globe' ? 'wind it up ♪' : 'close the box') : '',
+    alt: () => {
+      if (kind === 'globe') { if (tune) return; const notes = [784, 659, 698, 784, 880, 784, 659, 587, 523]; notes.forEach((f, i) => Sfx.tone(f, 0.5, 'sine', 0.07, 0, i * 0.32)); notes.forEach((f, i) => Sfx.tone(f * 2, 0.25, 'triangle', 0.02, 0, i * 0.32)); tune = setTimeout(() => tune = null, notes.length * 320); ctx.need('fun', 0.03); }
+      else closeBox();
+    }
+  });
+  ctx.tick(g, (dt, t) => {
+    if (st.closeAt && performance.now() > st.closeAt) { st.closeAt = 0; closeBox(); }
+    st.rise = clamp(st.rise + (st.open ? dt * 1.6 : -dt * 2.2), 0, 1); const e = st.rise * st.rise * (3 - 2 * st.rise);
+    const lidUp = st.open ? 1 : st.rise > 0.05 ? 1 : 0; // the lid stays off until the toy is back inside
+    lid.position.y = lerp(lid.position.y, lidUp ? 0.36 : 0.18, dt * 6); lid.position.x = lerp(lid.position.x, lidUp ? -0.2 : 0, dt * 6); lid.rotation.z = lerp(lid.rotation.z, lidUp ? 0.7 : 0, dt * 6);
+    toy.visible = st.rise > 0.01; toy.position.y = lerp(0.02, 0.24, e); toy.rotation.y = (1 - e) * 1.2;
+    if (snow.length && toy.visible) {
+      st.shake = Math.max(0, st.shake - dt * 0.25); toy.position.x = Math.sin(t * 40) * 0.006 * Math.min(1, st.shake * 4);
+      for (const f of snow) { const u = f.userData; u.a += dt * (0.4 + st.shake * 5); if (u.v > 0) { u.h += u.v * dt; u.v -= dt * 1.2; } else u.h = Math.max(0, u.h - dt * (0.04 + st.shake * 0.02)); f.position.set(Math.cos(u.a) * u.r, 0.052 + Math.min(1, u.h) * 0.12, Math.sin(u.a) * u.r); }
+    }
+  });
+  ctx.onRemove(g, () => tune && clearTimeout(tune));
   return g;
 });
 def('wreath', 'Wreath', 'Holiday', { mount: 'wall', solid: false }, (ctx, it) => {
@@ -2942,6 +3029,7 @@ const ctx = {
   burnerAt(p) { return A.heat.find(h => Math.hypot(h.pos.x - p.x, h.pos.z - p.z) < 0.14 && p.y - h.pos.y > -0.03 && p.y - h.pos.y < 0.12) || null; },
   toggleBurner(b, on) { if (b.toggle) b.toggle(on); else b.on = on; },
   bite(g) { bite(g); },
+  puzzle(d, onSolve, onChange) { openPuzzle(d, onSolve, onChange); },
   removeItem(g) { removeItem(g); },
   sit(pos, yaw, lie) {
     P.sit = { pos: pos.clone(), yaw, lie, prev: P.pos.clone(), root: arguments[3] || null }; P.yaw = yaw; P.pitch = lie ? 0.9 : -0.1;
@@ -3221,7 +3309,7 @@ function updatePlayer(dt) {
 // ---- input ----
 let skipMoves = 0, locked = false, dragging = false, dragDist = 0, lastMouse = null; const mouseNDC = new THREE.Vector2(0, 0); let mouseInCanvas = false;
 const EL = { menu: $('#menu'), start: $('#start'), tasks: $('#tasks'), phone: $('#phone'), prompt: $('#prompt'), vignette: $('#vignette'), wet: $('#wet'), action: $('#action'), perf: $('#perfHud') };
-const uiOpen = () => !EL.menu.hidden || !EL.start.hidden || !EL.tasks.hidden || !EL.phone.hidden;
+const uiOpen = () => !EL.menu.hidden || !EL.start.hidden || !EL.tasks.hidden || !EL.phone.hidden || !$('#puzzle').hidden;
 const tryLock = () => { if (isTouch) return; try { const p = canvas.requestPointerLock(); p && p.catch && p.catch(() => { }); } catch (e) { } };
 // mouse: right click = use / interact, left click = hit, bite or the aimed thing's grab action
 canvas.addEventListener('mousedown', (e) => {
@@ -3262,6 +3350,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyW' && !e.repeat) { const now = e.timeStamp; if (now - lastW < 300) P.sprintLatch = true; lastW = now; } // double-tap W to sprint
   keys[e.code] = true;
   if (e.code === 'F1') { toggleHud(); return; }
+  if (!$('#puzzle').hidden) { const b = Puzzle.blank(), dir = { ArrowUp: 3, KeyW: 3, ArrowDown: -3, KeyS: -3, ArrowLeft: 1, KeyA: 1, ArrowRight: -1, KeyD: -1 }[e.code]; if (e.code === 'Escape') { closePuzzle(); return; } if (dir !== undefined) { e.preventDefault(); const i = b + dir; if (i >= 0 && i < 9 && (Math.abs(dir) === 3 || Math.floor(i / 3) === Math.floor(b / 3))) slidePz(i); } return; }
   if (e.code === 'Escape') { if (!$('#phone').hidden) { closePhone(); return; } if (!$('#tasks').hidden) { $('#tasks').hidden = true; return; } if (!$('#menu').hidden) { closeMenu(); return; } if (!locked && $('#start').hidden) openMenu(); return; }
   if (uiOpen() || e.repeat) return;
   if (e.code === 'KeyE') pickUp();
@@ -3300,7 +3389,7 @@ function updateHover() {
   const h = hits[0]; if (!h) return;
   let pick = h, io = findIntDeep(h.object);
   for (const k of hits) { if (k.distance > h.distance + 0.4) break; const ki = findIntDeep(k.object); if (ki && ki.userData.int.priority) { pick = k; io = ki; break; } } // stove knobs win over a pan handle hanging in front of them
-  if (!(io && io.userData.int.priority)) for (const k of hits) { if (k.distance > h.distance + 0.06) break; const ki = findIntDeep(k.object); if (ki && (!io || ki !== io && k.object.userData.int)) { pick = k; io = ki; break; } }
+  if (!(io && io.userData.int.priority)) for (const k of hits) { if (k.distance > h.distance + 0.06) break; const ki = findIntDeep(k.object); if (ki && (!io || ki !== io && k.object.userData.int && ctx.rootOf(k.object) === ctx.rootOf(h.object))) { pick = k; io = ki; break; } } // a button set into the thing you aim at wins, but a neighbouring object (the tree behind a present) never steals the click
   const reach = io && io.userData.int.reach || 2.6;
   if (pick.distance > reach) io = null;
   if (!io && h.distance > 2.6) return;
@@ -3474,6 +3563,59 @@ function punchHit() {
     Object.assign(r.userData.item, { x: r.position.x, z: r.position.z, r: r.rotation.y }); r.userData.wiggle = 0.6; itemBox(r); Sfx.thud(); Sfx.noise(0.1, 0.2, 1200, 1); return;
   }
   Sfx.thud();
+}
+
+// ---- sliding block puzzle (the red present under the tree) ----
+const Puzzle = { d: null, onSolve: null, onChange: null, t0: 0, done: false, tiles: [], blank() { return Puzzle.d ? Puzzle.d.pz.indexOf(0) : -1; } };
+const pzNbrs = (i) => [i - 3, i + 3, i % 3 ? i - 1 : -1, i % 3 < 2 ? i + 1 : -1].filter(k => k >= 0 && k < 9);
+const pzSolved = (a) => a.every((v, i) => v === (i < 8 ? i + 1 : 0));
+function shufflePz() { // random legal slides from the solved board, so it is always solvable (and quick: about a minute)
+  const a = [1, 2, 3, 4, 5, 6, 7, 8, 0]; let b = 8, prev = -1;
+  for (let i = 0; i < 36 || pzSolved(a); i++) { const n = pzNbrs(b).filter(k => k !== prev); const k = n[(Math.random() * n.length) | 0]; a[b] = a[k]; a[k] = 0; prev = b; b = k; }
+  return a;
+}
+(function buildPzBoard() {
+  const board = $('#pzBoard'), url = puzzlePicture().toDataURL();
+  for (let n = 1; n <= 8; n++) {
+    const t = document.createElement('button'); t.className = 'pztile'; t.setAttribute('aria-label', 'Tile ' + n);
+    t.style.backgroundImage = `url(${url})`; t.style.backgroundPosition = `${((n - 1) % 3) * 50}% ${Math.floor((n - 1) / 3) * 50}%`; t.innerHTML = `<span>${n}</span>`;
+    t.addEventListener('pointerdown', (e) => { e.preventDefault(); slidePz(Puzzle.d.pz.indexOf(n)); });
+    board.appendChild(t); Puzzle.tiles.push(t);
+  }
+  $('#puzzle').addEventListener('pointerdown', (e) => { if (e.target === $('#puzzle')) closePuzzle(); }); // tap outside the board to put it down
+  $('#pzClose').onclick = closePuzzle;
+  $('#pzShuffle').onclick = () => { if (!Puzzle.d) return; Puzzle.d.pz = shufflePz(); Puzzle.d.moves = 0; Puzzle.d.secs = 0; Puzzle.t0 = performance.now(); Puzzle.done = false; renderPz(); Puzzle.onChange && Puzzle.onChange(); };
+})();
+function pzTime() { return (Puzzle.d.secs || 0) + (Puzzle.done ? 0 : (performance.now() - Puzzle.t0) / 1000); }
+function renderPz() {
+  const a = Puzzle.d.pz;
+  Puzzle.tiles.forEach((t, k) => { const i = a.indexOf(k + 1); t.style.transform = `translate(${(i % 3) * 100}%, ${Math.floor(i / 3) * 100}%)`; });
+  $('#pzStats').textContent = 'Moves ' + (Puzzle.d.moves || 0) + ' · ' + fmtClock(pzTime());
+  $('#pzBoard').classList.toggle('solved', Puzzle.done);
+}
+const fmtClock = (t) => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+function openPuzzle(d, onSolve, onChange) {
+  if (!d.pz) { d.pz = shufflePz(); d.moves = 0; d.secs = 0; }
+  Object.assign(Puzzle, { d, onSolve, onChange, t0: performance.now(), done: false });
+  $('#pzMsg').textContent = 'Slide the tiles back into the picture. Tap a tile next to the gap' + (isTouch ? '.' : ' (or use the arrow keys).');
+  renderPz(); $('#puzzle').hidden = false; unlock();
+  clearInterval(Puzzle.timer); Puzzle.timer = setInterval(() => { if (Puzzle.d && !Puzzle.done) $('#pzStats').textContent = 'Moves ' + (Puzzle.d.moves || 0) + ' · ' + fmtClock(pzTime()); }, 500);
+}
+function closePuzzle() {
+  if ($('#puzzle').hidden) return; clearInterval(Puzzle.timer);
+  if (Puzzle.d && !Puzzle.done) Puzzle.d.secs = pzTime(); // keep your progress for next time
+  $('#puzzle').hidden = true; Puzzle.d = null; tryLock();
+}
+function slidePz(i) {
+  const d = Puzzle.d; if (!d || Puzzle.done) return; const b = d.pz.indexOf(0);
+  if (!pzNbrs(b).includes(i)) { Sfx.tone(260, 0.06, 'square', 0.03); return; }
+  d.pz[b] = d.pz[i]; d.pz[i] = 0; d.moves = (d.moves || 0) + 1; Sfx.noise(0.06, 0.18, 1400, 2); Sfx.tone(320 + Math.random() * 40, 0.05, 'sine', 0.05);
+  Puzzle.onChange && Puzzle.onChange();
+  if (pzSolved(d.pz)) {
+    Puzzle.done = true; const moves = d.moves, secs = pzTime(); renderPz();
+    $('#pzMsg').textContent = '🎉 Solved in ' + moves + ' moves and ' + fmtClock(secs) + '!'; Sfx.chime(); setTimeout(() => Sfx.chime(), 260);
+    const cb = Puzzle.onSolve; setTimeout(() => { d.pz = null; d.best = Math.min(d.best || 1e9, moves); closePuzzle(); cb && cb(moves, secs); }, 1300);
+  } else renderPz();
 }
 
 // ---- tasks ----

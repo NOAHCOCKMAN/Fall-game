@@ -579,13 +579,83 @@ def('xmas_tree', 'Pencil Christmas tree', 'Holiday', { shrink: 0.3 }, (ctx, it) 
   ctx.tick(g, (dt, t) => { const on = st.on && ctx.power(); bm.emissiveIntensity = on ? 2 + Math.sin(t * 2) * 0.3 : 0; L.intensity = on ? 1.6 : 0; });
   return g;
 });
+// picture on the sliding-puzzle tiles: a fall evening with a pumpkin and a maple tree (drawn once, shared by the 3D toy and the puzzle screen)
+let _pzPic = null;
+function puzzlePicture() {
+  if (_pzPic) return _pzPic;
+  const c = document.createElement('canvas'); c.width = c.height = 300; const g = c.getContext('2d');
+  const sky = g.createLinearGradient(0, 0, 0, 200); sky.addColorStop(0, '#f6c27a'); sky.addColorStop(1, '#e8735a'); g.fillStyle = sky; g.fillRect(0, 0, 300, 300);
+  g.fillStyle = '#ffe3a3'; g.beginPath(); g.arc(225, 82, 34, 0, TAU); g.fill();
+  g.fillStyle = '#8a4b3a'; g.beginPath(); g.moveTo(0, 210); g.quadraticCurveTo(90, 150, 180, 200); g.quadraticCurveTo(250, 235, 300, 190); g.lineTo(300, 300); g.lineTo(0, 300); g.fill();
+  g.fillStyle = '#6b3b2c'; g.fillRect(0, 245, 300, 55);
+  g.fillStyle = '#5a3524'; g.fillRect(70, 120, 16, 110); // maple trunk
+  const leaves = ['#d9622b', '#c0392b', '#f2994a', '#e0b13a']; for (let i = 0; i < 70; i++) { const a = i * 2.39, r = 14 + (i % 9) * 5; g.fillStyle = leaves[i % 4]; g.beginPath(); g.arc(78 + Math.cos(a) * r * 1.25, 105 + Math.sin(a) * r * 0.85, 11, 0, TAU); g.fill(); }
+  for (let i = 0; i < 18; i++) { g.fillStyle = leaves[i % 4]; g.beginPath(); g.ellipse(20 + i * 16, 255 + (i * 37 % 30), 6, 3, i, 0, TAU); g.fill(); }
+  // pumpkin
+  for (let k = -2; k <= 2; k++) { g.fillStyle = k % 2 ? '#e5762a' : '#f08a32'; g.beginPath(); g.ellipse(205 + k * 13, 238, 22, 30, 0, 0, TAU); g.fill(); }
+  g.fillStyle = '#4b6b2a'; g.fillRect(201, 200, 8, 14);
+  g.strokeStyle = 'rgba(40,20,10,.35)'; g.lineWidth = 3; g.strokeRect(1.5, 1.5, 297, 297);
+  return (_pzPic = c);
+}
 def('present', 'Wrapped present', 'Holiday', { mount: 'surface', solid: false, small: true, color: '#b3141f', colorable: true }, (ctx, it) => {
-  const g = new THREE.Group(); B(g, 0.25, 0.18, 0.25, M(it.c || '#b3141f', 0.6), 0, 0, 0);
-  const lid = G(g, 0, 0.18, 0); B(lid, 0.27, 0.05, 0.27, M(it.c || '#b3141f', 0.6), 0, 0, 0); markMoves(lid); B(lid, 0.04, 0.052, 0.272, M(0xd4af37, 0.3, 0.6), 0, 0, 0); B(lid, 0.272, 0.052, 0.04, M(0xd4af37, 0.3, 0.6), 0, 0, 0);
-  const gifts = ['cozy socks 🧦', 'a pumpkin candle 🎃', 'a new mug ☕', 'concert tickets 🎟', 'a scarf 🧣', 'a puzzle 🧩'];
-  const st = { open: false };
-  ctx.interact(g, { label: () => st.open ? 'Close the box' : 'Open present 🎁', action: () => { st.open = !st.open; if (st.open) { Sfx.chime(); ctx.msg('You got ' + gifts[(Math.random() * gifts.length) | 0] + '!'); ctx.task('gift'); } } });
-  ctx.tick(g, dt => { lid.position.y = lerp(lid.position.y, st.open ? 0.4 : 0.18, dt * 6); lid.rotation.z = lerp(lid.rotation.z, st.open ? 0.5 : 0, dt * 6); });
+  const d = it.d || (it.d = {}); const kind = d.toy || (it.c === '#2e5a3a' ? 'globe' : 'puzzle'); d.toy = kind;
+  const g = new THREE.Group(), wrap = M(it.c || '#b3141f', 0.6), gold = M(0xd4af37, 0.3, 0.6);
+  B(g, 0.25, 0.18, 0.25, wrap, 0, 0, 0); B(g, 0.04, 0.182, 0.252, gold, 0, 0, 0); B(g, 0.252, 0.182, 0.04, gold, 0, 0, 0);
+  const lid = G(g, 0, 0.18, 0); B(lid, 0.27, 0.05, 0.27, wrap, 0, 0, 0); markMoves(lid); B(lid, 0.04, 0.052, 0.272, gold, 0, 0, 0); B(lid, 0.272, 0.052, 0.04, gold, 0, 0, 0);
+  for (const s of [-1, 1]) { const bow = T(lid, 0.035, 0.012, gold, s * 0.035, 0.065, 0); bow.rotation.set(0, Math.PI / 2, s * 0.5); bow.scale.set(1, 0.7, 1); }
+  const toy = G(g, 0, 0.2, 0); toy.visible = false; markDyn(toy);
+  const st = { open: false, rise: 0, shake: 0, closeAt: 0 };
+  let tiles = [], snow = [], tune = null;
+  if (kind === 'puzzle') {
+    // wooden tray with 8 picture tiles that match your progress in the puzzle
+    const wood = M(0xa4764d, 0.6); B(toy, 0.21, 0.015, 0.21, wood, 0, 0, 0); for (const [w, dd, x, z] of [[0.21, 0.012, 0, -0.099], [0.21, 0.012, 0, 0.099], [0.012, 0.21, -0.099, 0], [0.012, 0.21, 0.099, 0]]) B(toy, w, 0.03, dd, wood, x, 0, z);
+    const pic = new THREE.CanvasTexture(puzzlePicture()); pic.colorSpace = THREE.SRGBColorSpace;
+    for (let n = 1; n <= 8; n++) {
+      const t = pic.clone(); t.repeat.set(1 / 3, 1 / 3); t.offset.set(((n - 1) % 3) / 3, 1 - (Math.floor((n - 1) / 3) + 1) / 3); t.needsUpdate = true;
+      const tile = B(toy, 0.058, 0.014, 0.058, [M(0xc8a070, 0.6), M(0xc8a070, 0.6), M(0xffffff, 0.55, 0, { map: t }), M(0xc8a070, 0.6), M(0xc8a070, 0.6), M(0xc8a070, 0.6)], 0, 0.015, 0);
+      tiles.push(tile);
+    }
+    toy.rotation.x = 0.5; // tilted toward you so you can see the picture
+  } else {
+    // snow globe: wooden base, glass dome, a tiny pine tree and a cottage, and snow that swirls when you shake it
+    C(toy, 0.07, 0.08, 0.04, M(0x6b4532, 0.5), 0, 0, 0, 24); T(toy, 0.072, 0.006, gold, 0, 0.04, 0).rotation.x = Math.PI / 2;
+    const glass = S(toy, 0.085, M(0xdfeef7, 0.05, 0, { transparent: true, opacity: 0.22, depthWrite: false }), 0, 0.115, 0, 24, 18);
+    C(toy, 0.065, 0.065, 0.012, M(0xf4f6f8, 0.9), 0, 0.04, 0, 24);
+    C(toy, 0, 0.03, 0.07, M(0x2f6b3a, 0.8), -0.022, 0.052, 0, 10); C(toy, 0, 0.022, 0.05, M(0x3a7a44, 0.8), -0.022, 0.09, 0, 10);
+    B(toy, 0.035, 0.03, 0.03, M(0xb3141f, 0.6), 0.03, 0.052, 0.005); const roof = C(toy, 0, 0.03, 0.022, M(0xf4f6f8, 0.8), 0.03, 0.082, 0.005, 4); roof.rotation.y = Math.PI / 4;
+    const flake = M(0xffffff, 0.4, 0, { emissive: 0xffffff, emissiveIntensity: 0.25 });
+    for (let i = 0; i < 40; i++) { const f = S(toy, 0.0035, flake, 0, 0.06, 0, 5, 4); f.userData.a = Math.random() * TAU; f.userData.r = Math.random() * 0.06; f.userData.h = Math.random(); f.userData.v = 0; snow.push(f); }
+  }
+  const setTiles = () => { if (!tiles.length) return; const pz = d.pz; for (let n = 1; n <= 8; n++) { const i = pz ? pz.indexOf(n) : n - 1; tiles[n - 1].position.set(((i % 3) - 1) * 0.062, 0.015, (Math.floor(i / 3) - 1) * 0.062); } };
+  setTiles();
+  const openBox = () => { st.open = true; Sfx.chime(); Sfx.noise(0.5, 0.18, 2600, 0.8, 'bandpass', -1500); ctx.task('gift'); if (!d.seen) { d.seen = true; ctx.msg(kind === 'puzzle' ? '🧩 A sliding block puzzle! Right-click to play.' : '❄️ A snow globe! Right-click to shake it.'); } };
+  const closeBox = () => { st.open = false; Sfx.noise(0.25, 0.12, 900, 1); };
+  ctx.interact(g, {
+    label: () => !st.open ? 'Open present 🎁' : st.rise < 0.9 ? '' : kind === 'puzzle' ? (d.pz ? 'Keep playing the sliding puzzle 🧩' : 'Play the sliding puzzle 🧩') : 'Shake the snow globe ❄️',
+    action: () => {
+      if (!st.open) return openBox();
+      if (st.rise < 0.9) return;
+      if (kind === 'puzzle') ctx.puzzle(d, (moves, secs) => { setTiles(); ctx.need('fun', 0.25); ctx.msg('🎉 Solved in ' + moves + ' moves (' + Math.round(secs) + 's)! Back in the box it goes.'); st.closeAt = performance.now() + 1400; }, setTiles);
+      else { st.shake = 1; Sfx.noise(0.4, 0.2, 3000, 1.2, 'bandpass', -1800); snow.forEach(f => { f.userData.v = 0.5 + Math.random() * 0.6; f.userData.h = Math.random() * 0.3; }); ctx.need('fun', 0.05); }
+    },
+    altLabel: () => st.open && st.rise > 0.9 ? (kind === 'globe' ? 'wind it up ♪' : 'close the box') : '',
+    alt: () => {
+      if (kind === 'globe') { if (tune) return; const notes = [784, 659, 698, 784, 880, 784, 659, 587, 523]; notes.forEach((f, i) => Sfx.tone(f, 0.5, 'sine', 0.07, 0, i * 0.32)); notes.forEach((f, i) => Sfx.tone(f * 2, 0.25, 'triangle', 0.02, 0, i * 0.32)); tune = setTimeout(() => tune = null, notes.length * 320); ctx.need('fun', 0.03); }
+      else closeBox();
+    }
+  });
+  ctx.tick(g, (dt, t) => {
+    if (st.closeAt && performance.now() > st.closeAt) { st.closeAt = 0; closeBox(); }
+    st.rise = clamp(st.rise + (st.open ? dt * 1.6 : -dt * 2.2), 0, 1); const e = st.rise * st.rise * (3 - 2 * st.rise);
+    const lidUp = st.open ? 1 : st.rise > 0.05 ? 1 : 0; // the lid stays off until the toy is back inside
+    lid.position.y = lerp(lid.position.y, lidUp ? 0.36 : 0.18, dt * 6); lid.position.x = lerp(lid.position.x, lidUp ? -0.2 : 0, dt * 6); lid.rotation.z = lerp(lid.rotation.z, lidUp ? 0.7 : 0, dt * 6);
+    toy.visible = st.rise > 0.01; toy.position.y = lerp(0.02, 0.24, e); toy.rotation.y = (1 - e) * 1.2;
+    if (snow.length && toy.visible) {
+      st.shake = Math.max(0, st.shake - dt * 0.25); toy.position.x = Math.sin(t * 40) * 0.006 * Math.min(1, st.shake * 4);
+      for (const f of snow) { const u = f.userData; u.a += dt * (0.4 + st.shake * 5); if (u.v > 0) { u.h += u.v * dt; u.v -= dt * 1.2; } else u.h = Math.max(0, u.h - dt * (0.04 + st.shake * 0.02)); f.position.set(Math.cos(u.a) * u.r, 0.052 + Math.min(1, u.h) * 0.12, Math.sin(u.a) * u.r); }
+    }
+  });
+  ctx.onRemove(g, () => tune && clearTimeout(tune));
   return g;
 });
 def('wreath', 'Wreath', 'Holiday', { mount: 'wall', solid: false }, (ctx, it) => {

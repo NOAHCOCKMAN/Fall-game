@@ -174,6 +174,14 @@ body.touch.hasbig #prompt { display: none !important; }
   body.touch #bigAlt { font-size: 13px; padding: 10px 14px; }
 }
 @keyframes bigpop { from { opacity: 0; } to { opacity: 1; } }
+/* sliding puzzle */
+.pzcard { width: min(440px, 100%); }
+.pzhead { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; } .pzhead h2 { margin: 0; flex: 1; } #pzStats { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+#pzBoard { position: relative; width: min(360px, 76vw, 52vh); aspect-ratio: 1; margin: 0 auto; border-radius: 12px; background: rgba(0,0,0,.35); box-shadow: inset 0 0 0 2px rgba(255,255,255,.08); touch-action: none; }
+.pztile { position: absolute; left: 0; top: 0; width: calc(100% / 3); height: calc(100% / 3); padding: 0; border: 2px solid rgba(30,16,8,.55); border-radius: 10px; background-size: 300% 300%; transition: transform .14s ease-out; box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 3px 8px rgba(0,0,0,.3); touch-action: none; }
+.pztile span { position: absolute; left: 6px; top: 4px; font: 700 12px var(--display); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
+#pzBoard.solved .pztile { border-color: transparent; border-radius: 0; box-shadow: none; } #pzBoard.solved .pztile span { opacity: 0; }
+.pzmsg { color: var(--muted); font-size: 14px; text-align: center; margin: 12px 0; min-height: 1.4em; } .pzhint { color: var(--muted); font-size: 12px; align-self: center; }
 #enter:disabled { opacity: .6; cursor: progress; }
 @media (max-width: 640px) { .stats { min-width: 110px; padding: 6px 8px; } .mood { font-size: 11px; } #panel { top: calc(56px + env(safe-area-inset-top, 0px)); bottom: calc(180px + env(safe-area-inset-bottom, 0px)); } .card-big { padding: 20px; } }
 @media (prefers-reduced-motion: reduce) { #toast, #fade, #cross { transition: none; } }
@@ -273,6 +281,15 @@ body.touch.hasbig #prompt { display: none !important; }
       <p class="lede" style="font-size:14px">If the mouse won't lock in your browser, click-and-drag to look and click on things to use them.</p>
       <div class="btns"><button class="ghostbtn" data-open="main">Back</button></div>
     </div>
+  </div>
+</div>
+
+<div id="puzzle" class="overlay" hidden>
+  <div class="card-big glass pzcard">
+    <div class="pzhead"><h2>Sliding puzzle 🧩</h2><span id="pzStats"></span><button id="pzClose" class="x" aria-label="Put the puzzle down">×</button></div>
+    <div id="pzBoard"></div>
+    <p id="pzMsg" class="pzmsg"></p>
+    <div class="btns"><button id="pzShuffle" class="ghostbtn">Shuffle</button><span class="pzhint">Close any time; your progress stays in the box.</span></div>
   </div>
 </div>
 
