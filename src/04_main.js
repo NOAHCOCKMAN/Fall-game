@@ -481,6 +481,7 @@ function updateHeld(dt) {
     if (a.kind === 'sip') { off.x -= 0.22 * up; off.y += 0.24 * up; off.z += 0.28 * up; rx -= 0.9 * up; rz += 0.3 * up; }
     else { off.x -= 0.2 * up; off.y += 0.2 * up; off.z += 0.3 * up; rx += 0.35 * up; }
   }
+  if (F && F.handTilt) rx += F.handTilt;
   held.position.copy(F ? HAND_FOOD : HAND).add(off); held.rotation.set(rx, F ? (F.handYaw || 0) : (inst.r || 0) - P.yaw, rz);
   const h = a ? null : firstHit(3, { solidOnly: true }); placeTarget = null;
   if (h) { const n = h.face ? _n.copy(h.face.normal).transformDirection(h.object.matrixWorld) : _n.set(0, 1, 0); if (n.y > 0.6) placeTarget = _place.copy(h.point); }

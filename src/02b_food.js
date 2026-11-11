@@ -497,7 +497,7 @@ function pizzaSlice(p, o = {}) {
 def('slice', 'Pizza slice', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
   const g = new THREE.Group(), d = it.d || (it.d = {});
   const part = G(g); pizzaSlice(part, { cold: d.cold }); part.rotation.y = Math.PI; // tip toward you
-  makeEdible(ctx, it, g, part, { bites: 4, hunger: 0.2, sound: 'soft', crumb: 0xe0a85a, flesh: 0xf3d27a, name: 'pizza', msg: d.cold ? 'Cold pizza: underrated. 🍕' : '🍕 So good.' });
+  makeEdible(ctx, it, g, part, { bites: 4, hunger: 0.2, sound: 'soft', crumb: 0xe0a85a, flesh: 0xf3d27a, name: 'pizza', handTilt: 0.85, msg: d.cold ? 'Cold pizza: underrated. 🍕' : '🍕 So good.' });
   return g;
 });
 def('snack', 'Snack', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
@@ -522,7 +522,7 @@ def('snack', 'Snack', 'Kitchen', { mount: 'surface', solid: false, small: true, 
     it.food.onSip = (first) => { if (first) ctx.need('energy', 0.05); };
   } else {
     const part = G(g); pizzaSlice(part, { cold: true }); part.rotation.y = Math.PI;
-    makeEdible(ctx, it, g, part, { bites: 4, hunger: 0.2, sound: 'soft', crumb: 0xe0a85a, flesh: 0xf3d27a, name: 'cold pizza', msg: 'Cold pizza: underrated. 🍕' });
+    makeEdible(ctx, it, g, part, { bites: 4, hunger: 0.2, sound: 'soft', crumb: 0xe0a85a, flesh: 0xf3d27a, name: 'cold pizza', handTilt: 0.85, msg: 'Cold pizza: underrated. 🍕' });
   }
   return g;
 });
