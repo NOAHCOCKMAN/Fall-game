@@ -105,8 +105,8 @@ textarea { width: 100%; box-sizing: border-box; min-height: 70px; font-family: u
 .touchui { display: none; }
 body.touch .touchui { display: block; }
 body.touch #hint { display: none; }
-#stick { position: fixed; z-index: 3; left: max(24px, env(safe-area-inset-left, 0px)); bottom: calc(28px + env(safe-area-inset-bottom, 0px)); width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,.08); border: 1px solid var(--line); touch-action: none; }
-#knob { position: absolute; left: 35px; top: 35px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,.55); box-shadow: 0 2px 10px rgba(0,0,0,.3); }
+#stick { position: fixed; z-index: 3; left: max(24px, env(safe-area-inset-left, 0px)); bottom: calc(52px + env(safe-area-inset-bottom, 0px)); width: 148px; height: 148px; border-radius: 50%; background: rgba(255,255,255,.08); border: 1px solid var(--line); touch-action: none; }
+#knob { position: absolute; left: 44px; top: 44px; width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,.55); box-shadow: 0 2px 10px rgba(0,0,0,.3); }
 #tbtns { position: fixed; z-index: 3; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(3, 64px); gap: 8px; }
 #tbuild { position: fixed; z-index: 3; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); display: none; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 32px); }
 body.build #tbuild.bonly { display: flex !important; }
@@ -158,6 +158,13 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
 #perfHud { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(60px + env(safe-area-inset-bottom, 0px)); margin: 0; padding: 8px 10px; font: 12px/1.45 ui-monospace, 'SF Mono', Menlo, Consolas, monospace; color: #c8f7c5; background: rgba(0,0,0,.72); border-radius: 8px; white-space: pre; pointer-events: none; z-index: 4; }
 body.nohud #hud > *:not(#perfHud) { display: none !important; }
 #tCrouch.on { background: var(--accent); color: var(--accent-ink); }
+/* big pop-up cooking action: desktop shows the key, phones tap it */
+#bigAct { position: absolute; left: 50%; bottom: calc(118px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: max-content; display: flex; align-items: center; gap: 12px; max-width: min(88vw, 560px); padding: 14px 24px; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-family: var(--display); font-weight: 800; font-size: 20px; line-height: 1.2; text-align: left; box-shadow: 0 8px 28px rgba(0,0,0,.35); animation: bigpop .18s ease-out; }
+#bigAct b { padding: 3px 9px; border-radius: 8px; background: rgba(42,22,10,.85); color: var(--ink); font-size: 13px; white-space: nowrap; }
+body:not(.touch) #bigAct { pointer-events: none; }
+body.touch.hasbig #prompt { bottom: calc(300px + env(safe-area-inset-bottom, 0px)); }
+body.touch #bigAct { bottom: calc(220px + env(safe-area-inset-bottom, 0px)); font-size: 22px; padding: 18px 28px; min-height: 64px; }
+@keyframes bigpop { from { transform: translateX(-50%) scale(.85); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
 #enter:disabled { opacity: .6; cursor: progress; }
 @media (max-width: 640px) { .stats { min-width: 110px; padding: 6px 8px; } .mood { font-size: 11px; } #panel { top: calc(56px + env(safe-area-inset-top, 0px)); bottom: calc(180px + env(safe-area-inset-bottom, 0px)); } .card-big { padding: 20px; } }
 @media (prefers-reduced-motion: reduce) { #toast, #fade, #cross { transition: none; } }
@@ -184,6 +191,7 @@ body.nohud #hud > *:not(#perfHud) { display: none !important; }
     </div>
   </div>
   <div id="prompt" class="glass" hidden></div>
+  <button id="bigAct" class="hudbtn" hidden></button>
   <pre id="perfHud" hidden></pre>
   <div id="toast" class="glass"></div>
   <div id="hint" class="glass"><kbd>Right-click</kbd> use · <kbd>Left-click</kbd> eat / hit · <kbd>E</kbd> pick up · <kbd>Q</kbd> drop · <kbd>Esc</kbd> menu &amp; phone</div>

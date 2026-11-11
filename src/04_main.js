@@ -503,7 +503,19 @@ function releaseTo(pos) {
   camera.remove(g); itemsGroup.add(g); g.scale.setScalar(1); g.position.copy(pos); g.rotation.set(0, it.r || 0, 0);
   Object.assign(it, { x: pos.x, y: pos.y, z: pos.z }); itemBox(g); return g;
 }
-function placeHeld() { if (!held) return; if (!placeTarget) return toast(sinkBlocked ? 'Not in the sink — set food down on the counter.' : 'Aim at a table, counter or the floor to set it down.'); releaseTo(placeTarget); Sfx.noise(0.12, 0.25, 400, 1, 'lowpass'); }
+function placeHeld() {
+  if (!held) return; if (!placeTarget) return toast(sinkBlocked ? 'Not in the sink — set food down on the counter.' : 'Aim at a table, counter or the floor to set it down.');
+  // set it down gently: it glides from your hand to the spot, lowers onto it and settles
+  const g = held, from = g.getWorldPosition(V3()), fromS = g.getWorldScale(V3()).x;
+  releaseTo(placeTarget); const to = g.position.clone(), t0 = performance.now(), dur = 260;
+  g.position.copy(from); g.scale.setScalar(fromS);
+  TWEENS.push((now) => {
+    const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    g.position.lerpVectors(from, to, e); g.position.y = lerp(from.y, to.y, e) + Math.sin(Math.min(1, k * 1.2) * Math.PI) * 0.04 * (1 - k);
+    g.scale.setScalar(lerp(fromS, 1, e));
+    if (k >= 1) { g.position.copy(to); g.scale.setScalar(1); g.userData.wiggle = 0.25; Sfx.noise(0.08, 0.12, 700, 1, 'lowpass'); if (g.userData.item.t === 'plate' || g.userData.item.t === 'bowl' || g.userData.item.t === 'mug') Sfx.clink(); return true; }
+  });
+}
 function dropHeld() { if (!held) return; const p = P.pos.clone(); p.x -= Math.sin(P.yaw) * 0.5; p.z -= Math.cos(P.yaw) * 0.5; p.y = 0; releaseTo(p); Sfx.noise(0.12, 0.3, 300, 1, 'lowpass'); }
 const labelOf = (d, k = 'label') => { const v = d && d[k]; return typeof v === 'function' ? v() : v; };
 // Right click: use / interact (doors, appliances, eat, sit, set down what you hold)
@@ -670,7 +682,7 @@ function updateEvents(gameMin) {
   nextPackage -= gameMin;
   if (nextPackage <= 0) { nextPackage = 60 * (5 + Math.random() * 6); if (hour() > 8 && hour() < 20) { spawnAtDoor('package', {}); Sfx.knock(); toast('📦 *knock knock* A package was left at your door.'); addText('Amazon', 'Delivered: your package is at the front door.'); } }
   nextText -= gameMin;
-  if (nextText <= 0) { nextText = 60 * (2 + Math.random() * 4); const m = [['Mom', 'How\'s the new place? Send pics of the tree! 🎄'], ['Leah', 'Did you remember to water the plants? 🪴'], ['Leah', 'Want to order Thai tonight?'], ['Jake', 'Game night this weekend?'], ['Avalon Lake Norman', 'Reminder: the fitness center is open 24/7.'], ['Leah', 'Can you start the laundry? 🧺']][(Math.random() * 6) | 0]; addText(m[0], m[1]); toast('💬 New message from ' + m[0] + ' (Tab opens your phone)'); }
+  if (nextText <= 0) { nextText = 60 * (2 + Math.random() * 4); const m = [['Mom', 'How\'s the new place? Send pics of the tree! 🎄'], ['Lilah', 'Did you remember to water the plants? 🪴'], ['Lilah', 'Want to order Thai tonight?'], ['Joe', 'Game night this weekend?'], ['Avalon Lake Norman', 'Reminder: the fitness center is open 24/7.'], ['Lilah', 'Can you start the laundry? 🧺']][(Math.random() * 6) | 0]; addText(m[0], m[1]); toast('💬 New message from ' + m[0] + (isTouch ? ' (tap Phone)' : ' (Esc → Open phone)')); }
 }
 
 // ---- toast / fade ----
@@ -709,14 +721,14 @@ if (isTouch) {
   let lookId = null, lp = null, ltime = 0, lmoved = 0;
   addEventListener('touchmove', e => {
     for (const t of e.changedTouches) {
-      if (t.identifier === sid) { let dx = (t.clientX - sc[0]) / 50, dy = (t.clientY - sc[1]) / 50; const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; } joy.x = dx; joy.y = dy; knob.style.transform = `translate(${dx * 36}px,${dy * 36}px)`; }
+      if (t.identifier === sid) { let dx = (t.clientX - sc[0]) / 62, dy = (t.clientY - sc[1]) / 62; const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; } joy.x = dx; joy.y = dy; knob.style.transform = `translate(${dx * 46}px,${dy * 46}px)`; }
       if (t.identifier === lookId) { const dx = t.clientX - lp[0], dy = t.clientY - lp[1]; lmoved += Math.abs(dx) + Math.abs(dy); look(dx * 1.6, dy * 1.6); lp = [t.clientX, t.clientY]; }
     }
   }, { passive: true });
   addEventListener('touchend', e => { for (const t of e.changedTouches) { if (t.identifier === sid) { sid = null; joy.x = joy.y = 0; knob.style.transform = ''; } if (t.identifier === lookId) { lookId = null; if (lmoved < 10 && performance.now() - ltime < 300) primary(); } } });
   canvas.addEventListener('touchstart', e => { Sfx.init(); const t = e.changedTouches[0]; if (lookId === null) { lookId = t.identifier; lp = [t.clientX, t.clientY]; ltime = performance.now(); lmoved = 0; } }, { passive: true });
   const btn = (id, fn) => { const el = $(id); el.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); Sfx.init(); fn(); }, { passive: false }); };
-  btn('#tUse', primary); btn('#tGrab', () => held ? dropHeld() : pickUp()); btn('#tUseHeld', leftAction); btn('#tJump', () => { if (P.pos.y === 0) P.vy = 3.6; if (P.sit && !P.sit.locked) { P.pos.copy(P.sit.prev); P.sit = null; } });
+  btn('#tUse', primary); btn('#tGrab', () => held ? (placeTarget ? placeHeld() : dropHeld()) : pickUp()); btn('#bigAct', () => primary()); btn('#tUseHeld', leftAction); btn('#tJump', () => { if (P.pos.y === 0) P.vy = 3.6; if (P.sit && !P.sit.locked) { P.pos.copy(P.sit.prev); P.sit = null; } });
   btn('#tCrouch', () => { P.crouchToggle = !P.crouchToggle; $('#tCrouch').classList.toggle('on', P.crouchToggle); }); btn('#tMenu', () => openMenu()); btn('#tPhone', () => togglePhone());
 }
 
@@ -727,11 +739,24 @@ function updateHud() {
   $('#taskChip').textContent = '✓ ' + done.size + '/' + TASKS.length;
 }
 let lastPrompt = null;
+// big pop-up action for cooking: a tap target on phones, a large card on desktop
+const KITCHEN_ITEMS = new Set(['pan', 'kettle', 'toaster', 'espresso', 'fruit_bowl', 'pizza', 'takeout', 'stand_mixer']);
+let lastBig = null;
+function bigAction() {
+  if (P.action || (P.anim && P.anim.kind !== 'punch')) return '';
+  if (held && held.userData.item.food && placeTarget) return '⬇ Set it down here';
+  if (!hover || !hover.int) return '';
+  const r = hover.root, t = r && r.userData.item.t, food = r && r.userData.item.food;
+  if (!(hover.int.cook || KITCHEN_ITEMS.has(t) || food)) return '';
+  const lab = labelOf(hover.int); return lab || '';
+}
 function updatePrompt() {
+  const big = bigAction(), bigEl = $('#bigAct');
+  if (big !== lastBig) { lastBig = big; bigEl.hidden = !big; document.body.classList.toggle('hasbig', !!big); if (big) bigEl.innerHTML = (isTouch ? '' : '<b>Right-click</b>') + '<span>' + big + '</span>'; }
   const pr = EL.prompt; let html = '';
   const RK = isTouch ? 'Use' : 'Right-click', LK = isTouch ? 'Eat/Hit' : 'Left-click', QK = isTouch ? 'Grab' : 'Q';
   if (!P.action && !(P.anim && P.anim.kind !== 'punch')) {
-    if (hover && hover.int) { const lab = labelOf(hover.int); if (lab) html = `<b>${RK}</b> ${lab}`; const al = hover.int.alt && labelOf(hover.int, 'altLabel'); if (al) html += ` <b>${LK}</b> ${al}`; }
+    if (hover && hover.int) { const lab = labelOf(hover.int); if (lab && !big) html = `<b>${RK}</b> ${lab}`; const al = hover.int.alt && labelOf(hover.int, 'altLabel'); if (al) html += ` <b>${LK}</b> ${al}`; }
     const af = !held && hover && hover.root && hover.root.userData.item.food; if (af && !(af.empty && af.empty()) && hover.root.userData.item.d.left > 0) html = `<b>${LK}</b> or <b>${RK}</b> ${af.mode === 'drink' ? 'take a sip' : af.verb} (${hover.root.userData.item.d.left} left)`;
     if (!html && !(hover && hover.int)) { const nd = nearDoor(); if (nd) html = `<b>${RK}</b> ${nd.def.label()}`; }
     if (!held && hover && hover.root && CATALOG[hover.root.userData.item.t].small) html += (html ? ' · ' : '') + (isTouch ? '<b>Grab</b> to pick up' : 'Press <b>E</b> to pick up');
@@ -739,11 +764,11 @@ function updatePrompt() {
       const d = CATALOG[held.userData.item.t], i = held.userData.item, F = i.food; let use = '';
       if (F && !(F.empty && F.empty()) && i.d.left > 0) use = ` <b>${LK}</b> ${F.mode === 'drink' ? 'sip' : F.verb} (${i.d.left} left)`; else if (i.handUse) use = ` <b>${LK}</b> ${i.handLabel || 'use'}`;
       const nm = F && F.name !== 'drink' && F.name !== 'food' ? F.name.charAt(0).toUpperCase() + F.name.slice(1) : d.name;
-      html += (html ? ' · ' : '') + `<span class="nm">${nm}</span>${use} ${sinkBlocked ? 'Not in the sink — use the counter' : `<b>${RK}</b> set down`} <b>${QK}</b> drop`;
+      html += (html ? ' · ' : '') + `<span class="nm">${nm}</span>${use} ${sinkBlocked ? 'Not in the sink — use the counter' : big ? '' : `<b>${RK}</b> set down`} <b>${QK}</b> drop`;
     }
     if (!html && P.sit) html = P.sit.lie ? 'Resting… move to get up' : 'Move to stand up';
   }
-  if (html !== lastPrompt) { lastPrompt = html; pr.innerHTML = html; pr.hidden = !html; }
+  html = html.trim(); if (html !== lastPrompt) { lastPrompt = html; pr.innerHTML = html; pr.hidden = !html; }
   document.body.classList.toggle('canuse', !!(hover && hover.int));
 }
 

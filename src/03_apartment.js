@@ -362,7 +362,7 @@ function buildApartment(scene, ctx) {
     const kn = G(R, kx, 0.8, 0.668); markDyn(kn); // front-mounted, above the oven door, so pots never block them
     C(kn, 0.02, 0.022, 0.022, black, 0, 0, 0, 14).rotation.x = Math.PI / 2; B(kn, 0.004, 0.022, 0.006, M(0xd8d8d8, 0.4), 0, 0.0, 0.012);
     const kh = B(R, 0.08, 0.1, 0.03, new THREE.MeshBasicMaterial({ visible: false }), kx, 0.755, 0.675); const h = burners[bi];
-    ctx.interact(kh, { priority: true, label: () => (h.on ? 'Turn off the ' : 'Turn on the ') + h.name + ' burner', action: () => h.toggle() });
+    ctx.interact(kh, { priority: true, cook: true, label: () => (h.on ? 'Turn off the ' : 'Turn on the ') + h.name + ' burner', action: () => h.toggle() });
     knobs.push([kn, h]);
   });
   // oven door (hinged at bottom)
@@ -378,7 +378,7 @@ function buildApartment(scene, ctx) {
   const ovenSteam = Puffs(tray, { n: 4, size: 0.02, height: 0.2, opacity: 0.18, spread: 0.08, y: 0.03 });
   const odSt = hinge(ctx, od, 'x', 1.45, 'oven', 'door');
   const bake = () => oven.t / 18; // 1 = done, 2+ = burnt
-  const trayDef = {
+  const trayDef = { cook: true,
     label: () => !oven.hasCookies ? 'Put new cookie dough in' : bake() >= 1 ? (bake() >= 2 ? 'Take out the burnt cookies 😬' : 'Take the cookies 🍪') : oven.on ? 'Baking… ' + Math.round(bake() * 100) + '% (close the door)' : 'Cookie dough — turn the oven on',
     action: () => {
       if (!oven.hasCookies) { oven.hasCookies = true; oven.t = 0; ckm.set(0); Sfx.noise(0.2, 0.15, 800, 1); return; }
@@ -391,7 +391,7 @@ function buildApartment(scene, ctx) {
   const ovenMouth = B(R, 0.6, 0.6, 0.02, new THREE.MeshBasicMaterial({ visible: false }), 0, 0.13, 0.62); markDyn(ovenMouth); ovenMouth.visible = false;
   ctx.interact(ovenMouth, trayDef);
   const panelHit = B(R, 0.26, 0.12, 0.02, new THREE.MeshBasicMaterial({ visible: false }), 0, 0.98, 0.07);
-  ctx.interact(panelHit, { label: () => oven.on ? (oven.hasCookies && bake() < 1 ? 'Turn oven off (baking ' + Math.round(bake() * 100) + '%)' : 'Turn oven off') : 'Preheat oven to 350°F', action: () => { if (!ctx.power()) return ctx.msg('No power.'); oven.on = !oven.on; Sfx.beep(1, 1400); } });
+  ctx.interact(panelHit, { cook: true, label: () => oven.on ? (oven.hasCookies && bake() < 1 ? 'Turn oven off (baking ' + Math.round(bake() * 100) + '%)' : 'Turn oven off') : 'Preheat oven to 350°F', action: () => { if (!ctx.power()) return ctx.msg('No power.'); oven.on = !oven.on; Sfx.beep(1, 1400); } });
   ctx.tick(R, (dt) => {
     if (!R.userData.posDone) { R.updateWorldMatrix(true, false); burners.forEach(h => { h.pos.copy(h.hit.position); h.pos.y = 0.93; R.localToWorld(h.pos); }); R.userData.posDone = true; } // the range never moves
     burners.forEach(h => { if (!ctx.power()) h.on = false; const t = h.on ? 1.6 : 0; if (h.mat.emissiveIntensity !== t) { h.mat.emissiveIntensity = lerp(h.mat.emissiveIntensity, t, dt * 2); if (Math.abs(h.mat.emissiveIntensity - t) < 0.01) h.mat.emissiveIntensity = t; } });
@@ -423,7 +423,7 @@ function buildApartment(scene, ctx) {
   for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) B(MW, 0.025, 0.02, 0.005, M(0x444444), 0.255 + c * 0.035, 0.1 + r * 0.04, 0.416);
   const mw = { on: false, t: 0, ready: false };
   const takeBowl = () => { if (!mwDoor.open) { mwDoor.open = true; Sfx.click(); } mw.ready = false; mwBowl.visible = false; ctx.give('bowl', { hot: true }, { rise: true }); ctx.msg('Hot leftovers! Left-click to eat.'); };
-  ctx.interact(kpd, {
+  ctx.interact(kpd, { cook: true,
     label: () => mw.ready ? 'Take the hot leftovers 🍝' : mw.on ? 'Stop microwave (' + fmtSecs(8 - mw.t) + ')' : 'Heat leftovers',
     action: () => {
       if (mw.ready) return takeBowl();
@@ -432,7 +432,7 @@ function buildApartment(scene, ctx) {
     }
   });
   const bowlHit = B(turn, 0.15, 0.07, 0.15, new THREE.MeshBasicMaterial({ visible: false }), 0, 0.01, 0); markDyn(bowlHit);
-  ctx.interact(bowlHit, { label: () => mw.ready ? 'Take the hot leftovers 🍝' : '', action: () => { if (mw.ready) takeBowl(); } });
+  ctx.interact(bowlHit, { cook: true, label: () => mw.ready ? 'Take the hot leftovers 🍝' : '', action: () => { if (mw.ready) takeBowl(); } });
   ctx.tick(MW, dt => {
     mwSteam.update(dt, mw.ready ? 1 : 0); bowlHit.visible = mw.ready;
     if (mw.on) mwTimer.show('Leftovers ' + fmtSecs(8 - mw.t), mw.t / 8, TIMER_COL.cook); else if (mw.ready) mwTimer.show('Leftovers ready', 1, TIMER_COL.ready); else mwTimer.hide();
@@ -453,7 +453,7 @@ function buildApartment(scene, ctx) {
   for (let i = 0; i < 5; i++) S(snacks, 0.04, M([0x5d8f45, 0xc0262d, 0xe8892b][i % 3], 0.6), -0.25 + i * 0.1, 0.75, 0.15, 8, 6);
   C(snacks, 0.05, 0.05, 0.1, M(0xe8e2d0, 0.6), -0.1, 1.33, 0, 12); B(snacks, 0.18, 0.1, 0.14, M(0xffffff, 0.8), 0.2, 1.33, 0); C(snacks, 0.035, 0.035, 0.2, M(0x2b5a2b, 0.3), -0.3, 1.33, 0.05, 10);
   const snackSt = { i: 0 };
-  ctx.interact(snacks, {
+  ctx.interact(snacks, { cook: true,
     label: () => 'Grab ' + SNACKS[SNACK_ORDER[snackSt.i]] + ' 🧀',
     action: () => { Sfx.noise(0.2, 0.1, 1200, 1); ctx.give('snack', { kind: SNACK_ORDER[snackSt.i] }, { rise: true }); snackSt.i = (snackSt.i + 1) % SNACK_ORDER.length; },
     altLabel: () => 'pick ' + SNACKS[SNACK_ORDER[(snackSt.i + 1) % SNACK_ORDER.length]] + ' instead',

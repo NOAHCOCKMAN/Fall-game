@@ -110,8 +110,8 @@ textarea { width: 100%; box-sizing: border-box; min-height: 70px; font-family: u
 .touchui { display: none; }
 body.touch .touchui { display: block; }
 body.touch #hint { display: none; }
-#stick { position: fixed; z-index: 3; left: max(24px, env(safe-area-inset-left, 0px)); bottom: calc(28px + env(safe-area-inset-bottom, 0px)); width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,.08); border: 1px solid var(--line); touch-action: none; }
-#knob { position: absolute; left: 35px; top: 35px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,.55); box-shadow: 0 2px 10px rgba(0,0,0,.3); }
+#stick { position: fixed; z-index: 3; left: max(24px, env(safe-area-inset-left, 0px)); bottom: calc(52px + env(safe-area-inset-bottom, 0px)); width: 148px; height: 148px; border-radius: 50%; background: rgba(255,255,255,.08); border: 1px solid var(--line); touch-action: none; }
+#knob { position: absolute; left: 44px; top: 44px; width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,.55); box-shadow: 0 2px 10px rgba(0,0,0,.3); }
 #tbtns { position: fixed; z-index: 3; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(3, 64px); gap: 8px; }
 #tbuild { position: fixed; z-index: 3; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); display: none; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 32px); }
 body.build #tbuild.bonly { display: flex !important; }
@@ -163,6 +163,13 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
 #perfHud { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(60px + env(safe-area-inset-bottom, 0px)); margin: 0; padding: 8px 10px; font: 12px/1.45 ui-monospace, 'SF Mono', Menlo, Consolas, monospace; color: #c8f7c5; background: rgba(0,0,0,.72); border-radius: 8px; white-space: pre; pointer-events: none; z-index: 4; }
 body.nohud #hud > *:not(#perfHud) { display: none !important; }
 #tCrouch.on { background: var(--accent); color: var(--accent-ink); }
+/* big pop-up cooking action: desktop shows the key, phones tap it */
+#bigAct { position: absolute; left: 50%; bottom: calc(118px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: max-content; display: flex; align-items: center; gap: 12px; max-width: min(88vw, 560px); padding: 14px 24px; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-family: var(--display); font-weight: 800; font-size: 20px; line-height: 1.2; text-align: left; box-shadow: 0 8px 28px rgba(0,0,0,.35); animation: bigpop .18s ease-out; }
+#bigAct b { padding: 3px 9px; border-radius: 8px; background: rgba(42,22,10,.85); color: var(--ink); font-size: 13px; white-space: nowrap; }
+body:not(.touch) #bigAct { pointer-events: none; }
+body.touch.hasbig #prompt { bottom: calc(300px + env(safe-area-inset-bottom, 0px)); }
+body.touch #bigAct { bottom: calc(220px + env(safe-area-inset-bottom, 0px)); font-size: 22px; padding: 18px 28px; min-height: 64px; }
+@keyframes bigpop { from { transform: translateX(-50%) scale(.85); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
 #enter:disabled { opacity: .6; cursor: progress; }
 @media (max-width: 640px) { .stats { min-width: 110px; padding: 6px 8px; } .mood { font-size: 11px; } #panel { top: calc(56px + env(safe-area-inset-top, 0px)); bottom: calc(180px + env(safe-area-inset-bottom, 0px)); } .card-big { padding: 20px; } }
 @media (prefers-reduced-motion: reduce) { #toast, #fade, #cross { transition: none; } }
@@ -192,6 +199,7 @@ body.nohud #hud > *:not(#perfHud) { display: none !important; }
     </div>
   </div>
   <div id="prompt" class="glass" hidden></div>
+  <button id="bigAct" class="hudbtn" hidden></button>
   <pre id="perfHud" hidden></pre>
   <div id="toast" class="glass"></div>
   <div id="hint" class="glass"><kbd>Right-click</kbd> use · <kbd>Left-click</kbd> eat / hit · <kbd>E</kbd> pick up · <kbd>Q</kbd> drop · <kbd>Esc</kbd> menu &amp; phone</div>
@@ -2350,7 +2358,7 @@ function buildApartment(scene, ctx) {
     const kn = G(R, kx, 0.8, 0.668); markDyn(kn); // front-mounted, above the oven door, so pots never block them
     C(kn, 0.02, 0.022, 0.022, black, 0, 0, 0, 14).rotation.x = Math.PI / 2; B(kn, 0.004, 0.022, 0.006, M(0xd8d8d8, 0.4), 0, 0.0, 0.012);
     const kh = B(R, 0.08, 0.1, 0.03, new THREE.MeshBasicMaterial({ visible: false }), kx, 0.755, 0.675); const h = burners[bi];
-    ctx.interact(kh, { priority: true, label: () => (h.on ? 'Turn off the ' : 'Turn on the ') + h.name + ' burner', action: () => h.toggle() });
+    ctx.interact(kh, { priority: true, cook: true, label: () => (h.on ? 'Turn off the ' : 'Turn on the ') + h.name + ' burner', action: () => h.toggle() });
     knobs.push([kn, h]);
   });
   // oven door (hinged at bottom)
@@ -2366,7 +2374,7 @@ function buildApartment(scene, ctx) {
   const ovenSteam = Puffs(tray, { n: 4, size: 0.02, height: 0.2, opacity: 0.18, spread: 0.08, y: 0.03 });
   const odSt = hinge(ctx, od, 'x', 1.45, 'oven', 'door');
   const bake = () => oven.t / 18; // 1 = done, 2+ = burnt
-  const trayDef = {
+  const trayDef = { cook: true,
     label: () => !oven.hasCookies ? 'Put new cookie dough in' : bake() >= 1 ? (bake() >= 2 ? 'Take out the burnt cookies 😬' : 'Take the cookies 🍪') : oven.on ? 'Baking… ' + Math.round(bake() * 100) + '% (close the door)' : 'Cookie dough — turn the oven on',
     action: () => {
       if (!oven.hasCookies) { oven.hasCookies = true; oven.t = 0; ckm.set(0); Sfx.noise(0.2, 0.15, 800, 1); return; }
@@ -2379,7 +2387,7 @@ function buildApartment(scene, ctx) {
   const ovenMouth = B(R, 0.6, 0.6, 0.02, new THREE.MeshBasicMaterial({ visible: false }), 0, 0.13, 0.62); markDyn(ovenMouth); ovenMouth.visible = false;
   ctx.interact(ovenMouth, trayDef);
   const panelHit = B(R, 0.26, 0.12, 0.02, new THREE.MeshBasicMaterial({ visible: false }), 0, 0.98, 0.07);
-  ctx.interact(panelHit, { label: () => oven.on ? (oven.hasCookies && bake() < 1 ? 'Turn oven off (baking ' + Math.round(bake() * 100) + '%)' : 'Turn oven off') : 'Preheat oven to 350°F', action: () => { if (!ctx.power()) return ctx.msg('No power.'); oven.on = !oven.on; Sfx.beep(1, 1400); } });
+  ctx.interact(panelHit, { cook: true, label: () => oven.on ? (oven.hasCookies && bake() < 1 ? 'Turn oven off (baking ' + Math.round(bake() * 100) + '%)' : 'Turn oven off') : 'Preheat oven to 350°F', action: () => { if (!ctx.power()) return ctx.msg('No power.'); oven.on = !oven.on; Sfx.beep(1, 1400); } });
   ctx.tick(R, (dt) => {
     if (!R.userData.posDone) { R.updateWorldMatrix(true, false); burners.forEach(h => { h.pos.copy(h.hit.position); h.pos.y = 0.93; R.localToWorld(h.pos); }); R.userData.posDone = true; } // the range never moves
     burners.forEach(h => { if (!ctx.power()) h.on = false; const t = h.on ? 1.6 : 0; if (h.mat.emissiveIntensity !== t) { h.mat.emissiveIntensity = lerp(h.mat.emissiveIntensity, t, dt * 2); if (Math.abs(h.mat.emissiveIntensity - t) < 0.01) h.mat.emissiveIntensity = t; } });
@@ -2411,7 +2419,7 @@ function buildApartment(scene, ctx) {
   for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) B(MW, 0.025, 0.02, 0.005, M(0x444444), 0.255 + c * 0.035, 0.1 + r * 0.04, 0.416);
   const mw = { on: false, t: 0, ready: false };
   const takeBowl = () => { if (!mwDoor.open) { mwDoor.open = true; Sfx.click(); } mw.ready = false; mwBowl.visible = false; ctx.give('bowl', { hot: true }, { rise: true }); ctx.msg('Hot leftovers! Left-click to eat.'); };
-  ctx.interact(kpd, {
+  ctx.interact(kpd, { cook: true,
     label: () => mw.ready ? 'Take the hot leftovers 🍝' : mw.on ? 'Stop microwave (' + fmtSecs(8 - mw.t) + ')' : 'Heat leftovers',
     action: () => {
       if (mw.ready) return takeBowl();
@@ -2420,7 +2428,7 @@ function buildApartment(scene, ctx) {
     }
   });
   const bowlHit = B(turn, 0.15, 0.07, 0.15, new THREE.MeshBasicMaterial({ visible: false }), 0, 0.01, 0); markDyn(bowlHit);
-  ctx.interact(bowlHit, { label: () => mw.ready ? 'Take the hot leftovers 🍝' : '', action: () => { if (mw.ready) takeBowl(); } });
+  ctx.interact(bowlHit, { cook: true, label: () => mw.ready ? 'Take the hot leftovers 🍝' : '', action: () => { if (mw.ready) takeBowl(); } });
   ctx.tick(MW, dt => {
     mwSteam.update(dt, mw.ready ? 1 : 0); bowlHit.visible = mw.ready;
     if (mw.on) mwTimer.show('Leftovers ' + fmtSecs(8 - mw.t), mw.t / 8, TIMER_COL.cook); else if (mw.ready) mwTimer.show('Leftovers ready', 1, TIMER_COL.ready); else mwTimer.hide();
@@ -2441,7 +2449,7 @@ function buildApartment(scene, ctx) {
   for (let i = 0; i < 5; i++) S(snacks, 0.04, M([0x5d8f45, 0xc0262d, 0xe8892b][i % 3], 0.6), -0.25 + i * 0.1, 0.75, 0.15, 8, 6);
   C(snacks, 0.05, 0.05, 0.1, M(0xe8e2d0, 0.6), -0.1, 1.33, 0, 12); B(snacks, 0.18, 0.1, 0.14, M(0xffffff, 0.8), 0.2, 1.33, 0); C(snacks, 0.035, 0.035, 0.2, M(0x2b5a2b, 0.3), -0.3, 1.33, 0.05, 10);
   const snackSt = { i: 0 };
-  ctx.interact(snacks, {
+  ctx.interact(snacks, { cook: true,
     label: () => 'Grab ' + SNACKS[SNACK_ORDER[snackSt.i]] + ' 🧀',
     action: () => { Sfx.noise(0.2, 0.1, 1200, 1); ctx.give('snack', { kind: SNACK_ORDER[snackSt.i] }, { rise: true }); snackSt.i = (snackSt.i + 1) % SNACK_ORDER.length; },
     altLabel: () => 'pick ' + SNACKS[SNACK_ORDER[(snackSt.i + 1) % SNACK_ORDER.length]] + ' instead',
@@ -3349,7 +3357,19 @@ function releaseTo(pos) {
   camera.remove(g); itemsGroup.add(g); g.scale.setScalar(1); g.position.copy(pos); g.rotation.set(0, it.r || 0, 0);
   Object.assign(it, { x: pos.x, y: pos.y, z: pos.z }); itemBox(g); return g;
 }
-function placeHeld() { if (!held) return; if (!placeTarget) return toast(sinkBlocked ? 'Not in the sink — set food down on the counter.' : 'Aim at a table, counter or the floor to set it down.'); releaseTo(placeTarget); Sfx.noise(0.12, 0.25, 400, 1, 'lowpass'); }
+function placeHeld() {
+  if (!held) return; if (!placeTarget) return toast(sinkBlocked ? 'Not in the sink — set food down on the counter.' : 'Aim at a table, counter or the floor to set it down.');
+  // set it down gently: it glides from your hand to the spot, lowers onto it and settles
+  const g = held, from = g.getWorldPosition(V3()), fromS = g.getWorldScale(V3()).x;
+  releaseTo(placeTarget); const to = g.position.clone(), t0 = performance.now(), dur = 260;
+  g.position.copy(from); g.scale.setScalar(fromS);
+  TWEENS.push((now) => {
+    const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    g.position.lerpVectors(from, to, e); g.position.y = lerp(from.y, to.y, e) + Math.sin(Math.min(1, k * 1.2) * Math.PI) * 0.04 * (1 - k);
+    g.scale.setScalar(lerp(fromS, 1, e));
+    if (k >= 1) { g.position.copy(to); g.scale.setScalar(1); g.userData.wiggle = 0.25; Sfx.noise(0.08, 0.12, 700, 1, 'lowpass'); if (g.userData.item.t === 'plate' || g.userData.item.t === 'bowl' || g.userData.item.t === 'mug') Sfx.clink(); return true; }
+  });
+}
 function dropHeld() { if (!held) return; const p = P.pos.clone(); p.x -= Math.sin(P.yaw) * 0.5; p.z -= Math.cos(P.yaw) * 0.5; p.y = 0; releaseTo(p); Sfx.noise(0.12, 0.3, 300, 1, 'lowpass'); }
 const labelOf = (d, k = 'label') => { const v = d && d[k]; return typeof v === 'function' ? v() : v; };
 // Right click: use / interact (doors, appliances, eat, sit, set down what you hold)
@@ -3516,7 +3536,7 @@ function updateEvents(gameMin) {
   nextPackage -= gameMin;
   if (nextPackage <= 0) { nextPackage = 60 * (5 + Math.random() * 6); if (hour() > 8 && hour() < 20) { spawnAtDoor('package', {}); Sfx.knock(); toast('📦 *knock knock* A package was left at your door.'); addText('Amazon', 'Delivered: your package is at the front door.'); } }
   nextText -= gameMin;
-  if (nextText <= 0) { nextText = 60 * (2 + Math.random() * 4); const m = [['Mom', 'How\'s the new place? Send pics of the tree! 🎄'], ['Leah', 'Did you remember to water the plants? 🪴'], ['Leah', 'Want to order Thai tonight?'], ['Jake', 'Game night this weekend?'], ['Avalon Lake Norman', 'Reminder: the fitness center is open 24/7.'], ['Leah', 'Can you start the laundry? 🧺']][(Math.random() * 6) | 0]; addText(m[0], m[1]); toast('💬 New message from ' + m[0] + ' (Tab opens your phone)'); }
+  if (nextText <= 0) { nextText = 60 * (2 + Math.random() * 4); const m = [['Mom', 'How\'s the new place? Send pics of the tree! 🎄'], ['Lilah', 'Did you remember to water the plants? 🪴'], ['Lilah', 'Want to order Thai tonight?'], ['Joe', 'Game night this weekend?'], ['Avalon Lake Norman', 'Reminder: the fitness center is open 24/7.'], ['Lilah', 'Can you start the laundry? 🧺']][(Math.random() * 6) | 0]; addText(m[0], m[1]); toast('💬 New message from ' + m[0] + (isTouch ? ' (tap Phone)' : ' (Esc → Open phone)')); }
 }
 
 // ---- toast / fade ----
@@ -3555,14 +3575,14 @@ if (isTouch) {
   let lookId = null, lp = null, ltime = 0, lmoved = 0;
   addEventListener('touchmove', e => {
     for (const t of e.changedTouches) {
-      if (t.identifier === sid) { let dx = (t.clientX - sc[0]) / 50, dy = (t.clientY - sc[1]) / 50; const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; } joy.x = dx; joy.y = dy; knob.style.transform = `translate(${dx * 36}px,${dy * 36}px)`; }
+      if (t.identifier === sid) { let dx = (t.clientX - sc[0]) / 62, dy = (t.clientY - sc[1]) / 62; const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; } joy.x = dx; joy.y = dy; knob.style.transform = `translate(${dx * 46}px,${dy * 46}px)`; }
       if (t.identifier === lookId) { const dx = t.clientX - lp[0], dy = t.clientY - lp[1]; lmoved += Math.abs(dx) + Math.abs(dy); look(dx * 1.6, dy * 1.6); lp = [t.clientX, t.clientY]; }
     }
   }, { passive: true });
   addEventListener('touchend', e => { for (const t of e.changedTouches) { if (t.identifier === sid) { sid = null; joy.x = joy.y = 0; knob.style.transform = ''; } if (t.identifier === lookId) { lookId = null; if (lmoved < 10 && performance.now() - ltime < 300) primary(); } } });
   canvas.addEventListener('touchstart', e => { Sfx.init(); const t = e.changedTouches[0]; if (lookId === null) { lookId = t.identifier; lp = [t.clientX, t.clientY]; ltime = performance.now(); lmoved = 0; } }, { passive: true });
   const btn = (id, fn) => { const el = $(id); el.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); Sfx.init(); fn(); }, { passive: false }); };
-  btn('#tUse', primary); btn('#tGrab', () => held ? dropHeld() : pickUp()); btn('#tUseHeld', leftAction); btn('#tJump', () => { if (P.pos.y === 0) P.vy = 3.6; if (P.sit && !P.sit.locked) { P.pos.copy(P.sit.prev); P.sit = null; } });
+  btn('#tUse', primary); btn('#tGrab', () => held ? (placeTarget ? placeHeld() : dropHeld()) : pickUp()); btn('#bigAct', () => primary()); btn('#tUseHeld', leftAction); btn('#tJump', () => { if (P.pos.y === 0) P.vy = 3.6; if (P.sit && !P.sit.locked) { P.pos.copy(P.sit.prev); P.sit = null; } });
   btn('#tCrouch', () => { P.crouchToggle = !P.crouchToggle; $('#tCrouch').classList.toggle('on', P.crouchToggle); }); btn('#tMenu', () => openMenu()); btn('#tPhone', () => togglePhone());
 }
 
@@ -3573,11 +3593,24 @@ function updateHud() {
   $('#taskChip').textContent = '✓ ' + done.size + '/' + TASKS.length;
 }
 let lastPrompt = null;
+// big pop-up action for cooking: a tap target on phones, a large card on desktop
+const KITCHEN_ITEMS = new Set(['pan', 'kettle', 'toaster', 'espresso', 'fruit_bowl', 'pizza', 'takeout', 'stand_mixer']);
+let lastBig = null;
+function bigAction() {
+  if (P.action || (P.anim && P.anim.kind !== 'punch')) return '';
+  if (held && held.userData.item.food && placeTarget) return '⬇ Set it down here';
+  if (!hover || !hover.int) return '';
+  const r = hover.root, t = r && r.userData.item.t, food = r && r.userData.item.food;
+  if (!(hover.int.cook || KITCHEN_ITEMS.has(t) || food)) return '';
+  const lab = labelOf(hover.int); return lab || '';
+}
 function updatePrompt() {
+  const big = bigAction(), bigEl = $('#bigAct');
+  if (big !== lastBig) { lastBig = big; bigEl.hidden = !big; document.body.classList.toggle('hasbig', !!big); if (big) bigEl.innerHTML = (isTouch ? '' : '<b>Right-click</b>') + '<span>' + big + '</span>'; }
   const pr = EL.prompt; let html = '';
   const RK = isTouch ? 'Use' : 'Right-click', LK = isTouch ? 'Eat/Hit' : 'Left-click', QK = isTouch ? 'Grab' : 'Q';
   if (!P.action && !(P.anim && P.anim.kind !== 'punch')) {
-    if (hover && hover.int) { const lab = labelOf(hover.int); if (lab) html = `<b>${RK}</b> ${lab}`; const al = hover.int.alt && labelOf(hover.int, 'altLabel'); if (al) html += ` <b>${LK}</b> ${al}`; }
+    if (hover && hover.int) { const lab = labelOf(hover.int); if (lab && !big) html = `<b>${RK}</b> ${lab}`; const al = hover.int.alt && labelOf(hover.int, 'altLabel'); if (al) html += ` <b>${LK}</b> ${al}`; }
     const af = !held && hover && hover.root && hover.root.userData.item.food; if (af && !(af.empty && af.empty()) && hover.root.userData.item.d.left > 0) html = `<b>${LK}</b> or <b>${RK}</b> ${af.mode === 'drink' ? 'take a sip' : af.verb} (${hover.root.userData.item.d.left} left)`;
     if (!html && !(hover && hover.int)) { const nd = nearDoor(); if (nd) html = `<b>${RK}</b> ${nd.def.label()}`; }
     if (!held && hover && hover.root && CATALOG[hover.root.userData.item.t].small) html += (html ? ' · ' : '') + (isTouch ? '<b>Grab</b> to pick up' : 'Press <b>E</b> to pick up');
@@ -3585,11 +3618,11 @@ function updatePrompt() {
       const d = CATALOG[held.userData.item.t], i = held.userData.item, F = i.food; let use = '';
       if (F && !(F.empty && F.empty()) && i.d.left > 0) use = ` <b>${LK}</b> ${F.mode === 'drink' ? 'sip' : F.verb} (${i.d.left} left)`; else if (i.handUse) use = ` <b>${LK}</b> ${i.handLabel || 'use'}`;
       const nm = F && F.name !== 'drink' && F.name !== 'food' ? F.name.charAt(0).toUpperCase() + F.name.slice(1) : d.name;
-      html += (html ? ' · ' : '') + `<span class="nm">${nm}</span>${use} ${sinkBlocked ? 'Not in the sink — use the counter' : `<b>${RK}</b> set down`} <b>${QK}</b> drop`;
+      html += (html ? ' · ' : '') + `<span class="nm">${nm}</span>${use} ${sinkBlocked ? 'Not in the sink — use the counter' : big ? '' : `<b>${RK}</b> set down`} <b>${QK}</b> drop`;
     }
     if (!html && P.sit) html = P.sit.lie ? 'Resting… move to get up' : 'Move to stand up';
   }
-  if (html !== lastPrompt) { lastPrompt = html; pr.innerHTML = html; pr.hidden = !html; }
+  html = html.trim(); if (html !== lastPrompt) { lastPrompt = html; pr.innerHTML = html; pr.hidden = !html; }
   document.body.classList.toggle('canuse', !!(hover && hover.int));
 }
 
