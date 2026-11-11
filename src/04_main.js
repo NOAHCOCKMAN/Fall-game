@@ -370,8 +370,8 @@ function updatePlayer(dt) {
 // ---- input ----
 let skipMoves = 0, locked = false, dragging = false, dragDist = 0, lastMouse = null; const mouseNDC = new THREE.Vector2(0, 0); let mouseInCanvas = false;
 const EL = { menu: $('#menu'), start: $('#start'), tasks: $('#tasks'), phone: $('#phone'), prompt: $('#prompt'), vignette: $('#vignette'), wet: $('#wet'), action: $('#action'), perf: $('#perfHud') };
-const uiOpen = () => !EL.menu.hidden || !EL.start.hidden || !EL.tasks.hidden || !EL.phone.hidden || !$('#puzzle').hidden || !$('#simon').hidden;
-const uiFreezes = () => !EL.menu.hidden || !EL.start.hidden || !EL.tasks.hidden || !$('#puzzle').hidden || !$('#simon').hidden; // the phone keeps time moving
+const uiOpen = () => !EL.menu.hidden || !EL.start.hidden || !EL.tasks.hidden || !EL.phone.hidden || !$('#puzzle').hidden || !$('#simon').hidden || !$('#map').hidden;
+const uiFreezes = () => !EL.menu.hidden || !EL.start.hidden || !EL.tasks.hidden || !$('#puzzle').hidden || !$('#simon').hidden || !$('#map').hidden; // the phone keeps time moving
 const tryLock = () => { if (isTouch) return; try { const p = canvas.requestPointerLock(); p && p.catch && p.catch(() => { }); } catch (e) { } };
 // mouse: right click = use / interact, left click = hit, bite or the aimed thing's grab action
 canvas.addEventListener('mousedown', (e) => {
@@ -414,7 +414,8 @@ addEventListener('keydown', (e) => {
   if (e.code === 'F1') { toggleHud(); return; }
   if (!$('#simon').hidden) { if (e.code === 'Escape') closeSimon(); return; }
   if (!$('#puzzle').hidden) { const b = Puzzle.blank(), dir = { ArrowUp: 3, KeyW: 3, ArrowDown: -3, KeyS: -3, ArrowLeft: 1, KeyA: 1, ArrowRight: -1, KeyD: -1 }[e.code]; if (e.code === 'Escape') { closePuzzle(); return; } if (dir !== undefined) { e.preventDefault(); const i = b + dir; if (i >= 0 && i < 9 && (Math.abs(dir) === 3 || Math.floor(i / 3) === Math.floor(b / 3))) slidePz(i); } return; }
-  if (e.code === 'Escape') { if (!$('#phone').hidden) { closePhone(); return; } if (!$('#tasks').hidden) { $('#tasks').hidden = true; return; } if (!$('#menu').hidden) { closeMenu(); return; } if (!locked && $('#start').hidden) openMenu(); return; }
+  if (e.code === 'KeyM' && !e.repeat && $('#start').hidden && EL.menu.hidden && $('#phone').hidden) { toggleMap(); return; }
+  if (e.code === 'Escape') { if (!$('#map').hidden) { toggleMap(); return; } if (!$('#phone').hidden) { closePhone(); return; } if (!$('#tasks').hidden) { $('#tasks').hidden = true; return; } if (!$('#menu').hidden) { closeMenu(); return; } if (!locked && $('#start').hidden) openMenu(); return; }
   if (uiOpen() || e.repeat) return;
   if (e.code === 'KeyE') pickUp();
   if (e.code === 'KeyQ') dropHeld();
@@ -749,7 +750,7 @@ function updateCar(dt) {
   else { g.position.x = clamp(nx, -235, 275); g.position.z = clamp(nz, -255, 25); }
   g.position.y = Math.min(A.groundAt(g.position.x, g.position.z, A.GY + 1), A.GY + 0.25);
   st.fuel = Math.max(0, st.fuel - Math.abs(step) * 0.00045);
-  if (st.fuel < 0.15 && !fuelWarned && st.fuel > 0) { fuelWarned = true; toast('⛽ Low fuel! The BP is east on River Hwy, across the highway.'); }
+  if (st.fuel < 0.15 && !fuelWarned && st.fuel > 0) { fuelWarned = true; toast('⛽ Low fuel! The BP is west on Highway 150 — press M for the map.'); }
   if (st.fuel <= 0 && Math.abs(st.sp) > 2.3) toast('⛽ Running on fumes…');
   car.wheels.forEach((w, i) => { w.rotation.x -= st.sp * dt / 0.32; if (i === 0 || i === 2) w.rotation.y = -steer * 0.4; });
   if (car.steer) car.steer.rotation.y = -steer * 0.55;
@@ -804,6 +805,48 @@ function closeSimon() { if ($('#simon').hidden) return; clearInterval(Simon.play
 document.querySelectorAll('.spad').forEach((p, i) => p.addEventListener('pointerdown', (e) => { e.preventDefault(); simonPress(i); }));
 $('#sClose').onclick = closeSimon;
 $('#simon').addEventListener('pointerdown', (e) => { if (e.target === $('#simon')) closeSimon(); });
+
+// ---- the neighborhood map (M, phone → Map, pause → Map) ----
+const MapUI = { base: null };
+function mapBase() {
+  if (MapUI.base) return MapUI.base;
+  const D = A.map, [bx0, bz0, bx1, bz1] = D.bounds;
+  const W = 840, H = Math.round(W * (bz1 - bz0) / (bx1 - bx0));
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  const sx = W / (bx1 - bx0), sy = H / (bz1 - bz0);
+  const X = (x) => (x - bx0) * sx, Y = (z) => (z - bz0) * sy;
+  const rect = (r, fill, rad = 0) => { g.fillStyle = fill; const x = X(Math.min(r[0], r[2])), y = Y(Math.min(r[1], r[3])), w = Math.abs(r[2] - r[0]) * sx, h = Math.abs(r[3] - r[1]) * sy; if (rad) { g.beginPath(); g.roundRect(x, y, w, h, rad); g.fill(); } else g.fillRect(x, y, w, h); };
+  g.fillStyle = '#c9d6ab'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#b4c494'; for (let i = 0; i < 400; i++) { const x = (i * 193) % W, y = (i * 113) % H; g.beginPath(); g.arc(x, y, 4, 0, 7); g.fill(); }
+  for (const r of D.roads) rect(r, '#3a3a3a', 6);
+  for (const r of D.roads) { g.strokeStyle = '#f6f3ea'; g.lineWidth = 2; const x = X(Math.min(r[0], r[2])), y = Y(Math.min(r[1], r[3])); g.strokeRect(x, y, Math.abs(r[2] - r[0]) * sx, Math.abs(r[3] - r[1]) * sy); }
+  const [hx0, hz, hx1] = D.hwyLine; g.strokeStyle = '#d9b44a'; g.lineWidth = 2; g.setLineDash([12, 8]); g.beginPath(); g.moveTo(X(hx0), Y(hz)); g.lineTo(X(hx1), Y(hz)); g.stroke(); g.setLineDash([]);
+  for (const b of D.blds) { rect(b.r, b.c, 4); g.strokeStyle = 'rgba(40,30,16,.45)'; g.lineWidth = 1.5; const x = X(Math.min(b.r[0], b.r[2])), y = Y(Math.min(b.r[1], b.r[3])); g.strokeRect(x, y, Math.abs(b.r[2] - b.r[0]) * sx, Math.abs(b.r[3] - b.r[1]) * sy); }
+  for (const [t, x, z, size, col, ang] of D.labels) { g.save(); g.translate(X(x), Y(z)); g.rotate(ang); g.fillStyle = col; g.font = '700 ' + Math.round(size * 1.35) + 'px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, 0, 0); g.restore(); }
+  g.strokeStyle = 'rgba(58,51,39,.5)'; g.lineWidth = 4; g.strokeRect(2, 2, W - 4, H - 4);
+  g.fillStyle = '#3a3327'; g.font = '700 15px system-ui'; g.textAlign = 'left'; g.fillText('N ↑', 14, 24);
+  MapUI.base = { c, X, Y };
+  return MapUI.base;
+}
+function drawMap() {
+  const { c, X, Y } = mapBase(); const out = $('#mapCanvas'), g = out.getContext('2d');
+  out.width = c.width; out.height = c.height;
+  g.drawImage(c, 0, 0);
+  const cp = A.car.g.position; g.save(); g.translate(X(cp.x), Y(cp.z)); g.rotate(-A.car.g.rotation.y); g.fillStyle = '#c8102e'; g.strokeStyle = '#fff'; g.lineWidth = 1.5; g.fillRect(-5, -8, 10, 16); g.strokeRect(-5, -8, 10, 16); g.restore();
+  const px = X(P.pos.x), py = Y(P.pos.z);
+  g.save(); g.translate(px, py); g.rotate(-(P.drive ? A.car.g.rotation.y : P.yaw));
+  g.fillStyle = '#2e7dd1'; g.strokeStyle = '#fff'; g.lineWidth = 2.5;
+  g.beginPath(); g.moveTo(0, -13); g.lineTo(9, 9); g.lineTo(0, 4); g.lineTo(-9, 9); g.closePath(); g.fill(); g.stroke(); g.restore();
+  g.font = '700 13px system-ui'; g.fillStyle = '#1d4f8c'; g.textAlign = 'center'; g.fillText('you', px, py + 24);
+}
+function toggleMap() {
+  if (!$('#map').hidden) { $('#map').hidden = true; tryLock(); return; }
+  if (!$('#start').hidden) return;
+  drawMap(); $('#map').hidden = false; unlock(); Sfx.click();
+}
+$('#closeMap').onclick = () => toggleMap();
+$('#map').addEventListener('pointerdown', (e) => { if (e.target === $('#map')) toggleMap(); });
+$('#mMap').onclick = () => { $('#menu').hidden = true; drawMap(); $('#map').hidden = false; };
 
 // ---- tasks ----
 const TASKS = [
@@ -867,7 +910,7 @@ function phoneApp(app) {
   const scr = $('#phoneScreen'); $('#phoneTime').textContent = fmtTime(P.minutes);
   if (app === 'home') {
     scr.innerHTML = `<div class="weather"><strong>${ctx.isNight() ? '🌙' : '☀️'} ${ctx.isNight() ? 49 : 61}°F</strong><span>Lake Norman · ${ctx.isNight() ? 'Clear night' : 'Crisp and sunny'}</span><strong class="cash">💵 $${P.cash}</strong></div>
-      <div class="apps"><button data-app="food"><i>🛵</i>Food</button><button data-app="music"><i>🎧</i>Music</button><button data-app="home2"><i>🏠</i>Home</button><button data-app="msgs"><i>💬</i>Messages${unread.size ? '<em class="dot"></em>' : ''}</button><button data-app="todo"><i>☑️</i>To-dos</button></div>
+      <div class="apps"><button data-app="food"><i>🛵</i>Food</button><button data-app="music"><i>🎧</i>Music</button><button data-app="home2"><i>🏠</i>Home</button><button data-app="msgs"><i>💬</i>Messages${unread.size ? '<em class="dot"></em>' : ''}</button><button data-app="map"><i>🗺</i>Map</button><button data-app="todo"><i>☑️</i>To-dos</button></div>
       ${orders.length ? `<div class="pill2">🛵 ${orders.map(o => o.name + ' arriving ' + fmtTime(o.eta)).join('<br>')}</div>` : ''}`;
   } else if (app === 'food') {
     scr.innerHTML = `<h3>Order delivery · 💵 $${P.cash}</h3><p class="sub">A dasher brings it to your door — say hi and pay there.</p>` + FOOD.map((f, i) => `<button class="row" data-order="${i}"><i>${f[0]}</i><span><b>${f[1]} · $${f[5]}</b><small>About ${f[4]} min</small></span></button>`).join('') + back();
@@ -899,7 +942,7 @@ function phoneApp(app) {
   } else if (app === 'todo') {
     scr.innerHTML = `<h3>To-dos · ${done.size}/${TASKS.length}</h3>` + TASKS.filter(t => !done.has(t[0])).slice(0, 9).map(t => `<div class="msg"><p>☐ ${t[1]}</p></div>`).join('') + back();
   }
-  scr.querySelectorAll('[data-app]').forEach(b => b.onclick = () => { Sfx.click(); phoneApp(b.dataset.app); });
+  scr.querySelectorAll('[data-app]').forEach(b => b.onclick = () => { Sfx.click(); if (b.dataset.app === 'map') { closePhone(); drawMap(); $('#map').hidden = false; } else phoneApp(b.dataset.app); });
   scr.querySelectorAll('[data-thread]').forEach(b => b.onclick = () => { Sfx.click(); phoneApp('t:' + b.dataset.thread); });
   scr.querySelectorAll('[data-order]').forEach(b => b.onclick = () => { const f = FOOD[+b.dataset.order]; orders.push({ name: f[1], type: f[2], label: f[3], eta: (P.minutes + f[4]) % 1440, left: f[4], cost: f[5] }); toast('🛵 ' + f[1] + ' ordered ($' + f[5] + ' at the door). About ' + f[4] + ' min.'); addText('DoorDash', 'Order confirmed: ' + f[1] + ' · $' + f[5] + '. Your dasher will be there around ' + fmtTime((P.minutes + f[4]) % 1440) + '.'); completeTask('order'); phoneApp('home'); });
   scr.querySelectorAll('[data-music]').forEach(b => b.onclick = () => { if (phoneMusic) { phoneMusic.stop(); phoneMusic = null; } else { phoneMusic = Sfx.music(null, 0); completeTask('music'); } phoneApp('music'); });
@@ -1009,7 +1052,7 @@ if (isTouch) {
   addEventListener('touchend', e => { for (const t of e.changedTouches) { if (t.identifier === sid) { sid = null; joy.x = joy.y = 0; knob.style.transform = ''; } if (t.identifier === lookId) { lookId = null; if (lmoved < 10 && performance.now() - ltime < 300) primary(); } } });
   canvas.addEventListener('touchstart', e => { Sfx.init(); const t = e.changedTouches[0]; if (lookId === null) { lookId = t.identifier; lp = [t.clientX, t.clientY]; ltime = performance.now(); lmoved = 0; } }, { passive: true });
   const btn = (id, fn) => { const el = $(id); el.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); Sfx.init(); fn(); }, { passive: false }); };
-  btn('#tUse', primary); btn('#tGrab', () => held ? (placeTarget ? placeHeld() : dropHeld()) : pickUp()); btn('#bigAct', () => primary()); btn('#bigAlt', () => leftAction()); btn('#tUseHeld', leftAction); btn('#tJump', () => { if (P.pos.y === 0) P.vy = 3.6; if (P.sit && !P.sit.locked) { P.pos.copy(P.sit.prev); P.sit = null; } });
+  btn('#tUse', () => P.drive ? exitCar() : primary()); btn('#tGrab', () => P.drive ? carRadio() : held ? (placeTarget ? placeHeld() : dropHeld()) : pickUp()); btn('#bigAct', () => primary()); btn('#bigAlt', () => leftAction()); btn('#tUseHeld', () => P.drive ? carHorn() : leftAction()); btn('#tMap', () => toggleMap()); btn('#tJump', () => { if (P.pos.y === 0) P.vy = 3.6; if (P.sit && !P.sit.locked) { P.pos.copy(P.sit.prev); P.sit = null; } });
   btn('#tCrouch', () => { P.crouchToggle = !P.crouchToggle; $('#tCrouch').classList.toggle('on', P.crouchToggle); }); btn('#tMenu', () => openMenu()); btn('#tPhone', () => togglePhone());
 }
 

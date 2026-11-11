@@ -688,48 +688,14 @@ function buildOutdoor(A, scene) {
   blk(-16, -0.02, -0.06, -0.07, WALL_H + 0.03, 16);  // neighbor to the west
   blk(9.87, -0.02, -0.06, 26, WALL_H + 0.03, 5.5); blk(9.87, -0.02, 10.5, 26, WALL_H + 0.03, 16); blk(14.1, -0.02, 5.5, 26, WALL_H + 0.03, 10.5); // east neighbor (2B carved out)
   blk(-0.07, -0.02, 10.07, 7.6, WALL_H + 0.03, 16); blk(7.6, -0.02, 10.57, 9.87, WALL_H + 0.03, 16);
-  const roof = new THREE.Mesh(new THREE.ConeGeometry(30, 4, 4, 1), M(0x4a4f55, 0.8)); roof.scale.set(1, 1, 0.38); roof.rotation.y = Math.PI / 4; roof.position.set(5, WALL_H + 3.4 + 2, 8); BO.add(roof);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(24, 3.2, 4, 1), M(0x767c84, 0.85)); roof.scale.set(1, 1, 0.3); roof.rotation.y = Math.PI / 4; roof.position.set(5, WALL_H + 3.4 + 2, 8); BO.add(roof);
   // recessed balconies on the other floors, like ours
   const balc = (x0, x1, y) => { B(BO, x1 - x0, 0.06, 1.4, M(0x9a7148, 0.8), (x0 + x1) / 2, y, -0.75); B(BO, x1 - x0, 2.5, 0.02, M(0x50565c, 0.6), (x0 + x1) / 2, y, -1.45); for (let x = x0 + 0.1; x < x1; x += 0.12) B(BO, 0.035, 0.92, 0.035, M(0xf7f7f5, 0.5), x, y + 0.06, -0.03); B(BO, x1 - x0, 0.06, 0.08, M(0xf7f7f5, 0.5), (x0 + x1) / 2, y + 0.98, -0.03); };
   for (const y of [GY + 0.1, GY + 2.85, GY + 5.6]) balc(4.15, 7.55, y);
   for (const x of [-8, 14]) for (const y of [GY + 0.1, GY + 2.85, GY + 5.6, 0.0]) balc(x, x + 3.4, y);
-  // landscape: built in its own frame, then turned to face the north side of the building
+  // (the drivable neighborhood — ground, roads, stores — is built in 03e_world.js)
   const O = G(BO, 8.8, 0, 9.26, Math.PI);
-  // ground
-  const grass = M(0xffffff, 1, 0, { map: getTex('grass') }); plane(O, 600, 600, grass, 0, GY, 0, -Math.PI / 2);
-  const asph = M(0xffffff, 0.95, 0, { map: getTex('asphalt') }); asph.map.wrapS = asph.map.wrapT = THREE.RepeatWrapping; asph.map.repeat.set(3, 1);
-  plane(O, 70, 26, asph, 5, GY + 0.02, 26, -Math.PI / 2);
-  plane(O, 70, 3, M(0xb9b6ae, 0.9), 5, GY + 0.03, 11.5, -Math.PI / 2); // sidewalk
-  // landscaped islands with young trees
-  for (const x of [-12, 5, 22]) { const isl = C(O, 2.5, 2.5, 0.15, M(0x7d9a48), x, GY, 26, 24); isl.scale.z = 0.5; tree(O, x, GY + 0.15, 26, 2.5, 0); }
-  // cars
-  const carCols = [0x2e3a46, 0xf2f2f2, 0x1f1f22, 0x7a8a99, 0x9c3b3b, 0x4a7fb5, 0xc9ccd0, 0x111111];
-  for (let i = 0; i < 26; i++) {
-    const row = i < 13 ? 0 : 1; const slot = i % 13; if (Math.random() < 0.3) continue;
-    const x = -24 + slot * 4.1 + rand(-0.2, 0.2), z = row ? 33 : 17.5; const c = new THREE.Group(); c.position.set(x, GY, z); c.rotation.y = rand(-0.05, 0.05) + (row ? Math.PI : 0); O.add(c);
-    const cm = M(carCols[(Math.random() * carCols.length) | 0], 0.3, 0.6); B(c, 1.8, 0.7, 4.3, cm, 0, 0.3, 0); B(c, 1.6, 0.55, 2.2, M(0x1c232b, 0.1, 0.5), 0, 1.0, -0.2); B(c, 1.62, 0.05, 2.0, cm, 0, 1.55, -0.2);
-    for (const wx of [-0.85, 0.85]) for (const wz of [-1.4, 1.4]) { const w = C(c, 0.33, 0.33, 0.22, M(0x111111), wx, 0.33, wz, 12); w.rotation.z = Math.PI / 2; w.position.y = 0.33; }
-  }
-  // pond
-  const pond = new THREE.Mesh(new THREE.CircleGeometry(12, 40), M(0x4d6f7f, 0.1, 0.5)); pond.rotation.x = -Math.PI / 2; pond.scale.set(1.6, 1, 1); pond.position.set(-24, GY + 0.05, 52); O.add(pond);
-  // forest ring (autumn)
-  const leafCols = [0xd9622b, 0xe8a23a, 0xb83a26, 0xe3c14b, 0x8f5a2a, 0x6f8a3e, 0xc94f1f, 0xf0b54a];
-  const N = 900; const sg = new THREE.IcosahedronGeometry(1, 1); const im = new THREE.InstancedMesh(sg, M(0xffffff, 0.9), N); const tg = new THREE.CylinderGeometry(0.15, 0.25, 1, 6); const tm = new THREE.InstancedMesh(tg, M(0x4a3628, 0.9), N);
-  const d = new THREE.Object3D(), c = new THREE.Color(); let k = 0;
-  while (k < N) {
-    const x = rand(-90, 100), z = rand(40, 110); if (Math.hypot(x + 24, (z - 52) * 0.6) < 22) continue;
-    const s = rand(1.6, 3.0), h = rand(5, 10);
-    d.position.set(x, GY + h, z); d.scale.set(s, s * 1.3, s); d.rotation.set(Math.random(), Math.random(), 0); d.updateMatrix(); im.setMatrixAt(k, d.matrix); im.setColorAt(k, c.set(leafCols[(Math.random() * leafCols.length) | 0]).offsetHSL(0, 0, rand(-0.05, 0.05)));
-    d.position.set(x, GY + h / 2, z); d.scale.set(1, h, 1); d.rotation.set(0, 0, 0); d.updateMatrix(); tm.setMatrixAt(k, d.matrix); k++;
-  }
-  O.add(im); O.add(tm);
-  // other apartment buildings
-  for (const [x, z, w, ry] of [[-30, 70, 40, 0.1], [45, 60, 36, -0.4], [80, 30, 30, -1.2], [-60, 25, 30, 1.3]]) {
-    const b = G(O, x, GY, z, ry); B(b, w, 12, 14, fac(w, 12), 0, 0, 0); const r = new THREE.Mesh(new THREE.ConeGeometry(w * 0.72, 3, 4), M(0x55595e, 0.8)); r.rotation.y = Math.PI / 4; r.scale.z = 14 / w; r.position.y = 13.5; b.add(r);
-  }
-  // street lamps
-  A.streetLamps = [];
-  for (const x of [-18, 0, 18]) { C(O, 0.08, 0.1, 6, M(0x2a2a2a), x, GY, 25, 8); const l = S(O, 0.25, E(0xffe0a0, 0), x, GY + 6, 25, 10, 8); A.streetLamps.push(l.material); }
+  A.streetLamps = A.streetLamps || [];
   // sky dome
   const skyTex = canvasTex(16, 256, (g, w, h) => { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#3b7fd9'); gr.addColorStop(0.45, '#8fc0f0'); gr.addColorStop(0.5, '#cfe3f5'); gr.addColorStop(1, '#cfe3f5'); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
   const sky = new THREE.Mesh(new THREE.SphereGeometry(300, 32, 16), new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false })); O.add(sky); A.sky = sky;

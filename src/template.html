@@ -186,6 +186,9 @@ body.touch.hasbig #prompt { display: none !important; }
 #cashChip { font-family: var(--display); font-weight: 800; color: #b6e3a8; }
 #driveHud { position: absolute; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); padding: 9px 16px; font-family: var(--display); font-weight: 700; font-size: 16px; z-index: 3; }
 body.touch #driveHud { bottom: auto; top: calc(64px + env(safe-area-inset-top, 0px)); }
+/* map */
+.mapcard { width: min(900px, 96vw); }
+#mapCanvas { width: 100%; height: auto; border-radius: 12px; display: block; }
 /* simon */
 #sBoard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: min(320px, 72vw, 46vh); aspect-ratio: 1; margin: 0 auto; }
 .spad { border: 0; border-radius: 18px; opacity: .45; transition: opacity .08s, transform .08s; box-shadow: inset 0 -6px 14px rgba(0,0,0,.35); touch-action: none; }
@@ -261,6 +264,7 @@ body.touch #driveHud { bottom: auto; top: calc(64px + env(safe-area-inset-top, 0
       <li><kbd>Left-click</kbd>hit · bite / sip · flip &amp; grab actions</li>
       <li><kbd>Q</kbd>drop what you hold</li>
       <li><kbd>Esc</kbd>pause menu (phone, to-dos)</li>
+      <li><kbd>M</kbd>neighborhood map</li>
       <li><kbd>F1</kbd>hide HUD</li>
       <li><kbd>F3</kbd>performance stats</li>
       <li><kbd>In the car</kbd>W/S gas · A/D steer · Space brake · E out</li>
@@ -280,6 +284,7 @@ body.touch #driveHud { bottom: auto; top: calc(64px + env(safe-area-inset-top, 0
         <button class="ghostbtn" data-open="settings">Settings</button>
         <button class="ghostbtn" data-open="help">Controls</button>
         <button class="ghostbtn" data-open="guide">Area guide</button>
+        <button id="mMap" class="ghostbtn">Map</button>
       </div>
     </div>
     <div class="msec" data-sec="settings" hidden>
@@ -308,15 +313,15 @@ body.touch #driveHud { bottom: auto; top: calc(64px + env(safe-area-inset-top, 0
           <li>Your red Corolla is parked by the stair door — right-click it to drive.</li>
           <li>W/S gas &amp; reverse, A/D steer, Space brake, left-click horn, right-click radio, E to get out.</li>
         </ol></details>
-        <details><summary>🛒 Harris Teeter (next door)</summary><ol>
-          <li>Follow Caspian Pl, then Town Center Dr to the plaza — or walk the sidewalk.</li>
+        <details><summary>🛒 Harris Teeter (up Perth Rd)</summary><ol>
+          <li>Caspian Pl down to Highway 150, straight across onto Perth Rd, and it's up on the right — press M for the map.</li>
           <li>Groceries $12 (put them away at your fridge), flowers for Lilah $6, energy drink $3.</li>
           <li>Say hi to Dana at the register.</li>
         </ol></details>
-        <details><summary>⛽ BP &amp; the garage (down River Hwy)</summary><ol>
-          <li>Take Caspian Pl to River Hwy, turn right and cross over — the BP is down the road.</li>
-          <li>Park at a pump and right-click it to fill the tank ($18). Snacks inside.</li>
-          <li>Pull around back: Ray at River Hwy Auto &amp; Tire does a $20 check-up.</li>
+        <details><summary>⛽ BP &amp; the garage (west end of Highway 150)</summary><ol>
+          <li>Caspian Pl down to Highway 150, turn right and follow it west to the end.</li>
+          <li>Park at a pump and right-click it to fill the tank ($18). Snacks inside the shop.</li>
+          <li>Pull around back: Ray at Mooresville Auto &amp; Tire does a $20 check-up.</li>
         </ol></details>
         <details><summary>💵 Money</summary><ol>
           <li>You start with $85 (top-right). Deliveries, gas and groceries cost cash.</li>
@@ -338,6 +343,7 @@ body.touch #driveHud { bottom: auto; top: calc(64px + env(safe-area-inset-top, 0
       <li><kbd>Left-click</kbd>hit · bite / sip · flip &amp; grab actions</li>
       <li><kbd>Q</kbd>drop what you hold</li>
       <li><kbd>Esc</kbd>pause menu (phone, to-dos)</li>
+      <li><kbd>M</kbd>neighborhood map</li>
       <li><kbd>F1</kbd>hide HUD</li>
       <li><kbd>F3</kbd>performance stats</li>
       <li><kbd>In the car</kbd>W/S gas · A/D steer · Space brake · E out</li>
@@ -355,6 +361,13 @@ body.touch #driveHud { bottom: auto; top: calc(64px + env(safe-area-inset-top, 0
     <div id="pzBoard"></div>
     <p id="pzMsg" class="pzmsg"></p>
     <div class="btns"><button id="pzShuffle" class="ghostbtn">Shuffle</button><span class="pzhint">Close any time; your progress stays in the box.</span></div>
+  </div>
+</div>
+
+<div id="map" class="overlay" hidden>
+  <div class="card-big glass mapcard">
+    <div class="pzhead"><h2>Neighborhood map 🗺</h2><span class="pzhint">M closes it too</span><button id="closeMap" class="x" aria-label="Close map">×</button></div>
+    <canvas id="mapCanvas"></canvas>
   </div>
 </div>
 
@@ -384,7 +397,7 @@ body.touch #driveHud { bottom: auto; top: calc(64px + env(safe-area-inset-top, 0
 
 <div class="touchui">
   <div id="stick"><div id="knob"></div></div>
-  <div id="ttop"><button id="tMenu">Menu</button><button id="tPhone">Phone</button><button id="tCrouch">Sneak</button></div>
+  <div id="ttop"><button id="tMenu">Menu</button><button id="tPhone">Phone</button><button id="tMap">Map</button><button id="tCrouch">Sneak</button></div>
   <div id="tbtns">
     <button id="tGrab">Grab / Drop</button><button id="tUseHeld">Eat / Hit</button><button id="tJump">Jump</button>
     <button id="tUse" style="grid-column: span 3">Use</button>
