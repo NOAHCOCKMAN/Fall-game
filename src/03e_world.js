@@ -233,19 +233,95 @@ function buildWorld(scene, ctx, A) {
     const cxH = -14, czH = -150; const S_ = G(W, cxH, 0, czH, Math.PI);
     const colHT = (x0, y0, z0, x1, y1, z1) => COL(cxH - x1, y0, czH - z1, cxH - x0, y1, czH - z0);
     EXT_FLOORS.push({ x0: 54, z0: -116, x1: 104, z1: -92, y: 0.08 });
-    const wallM = M(0xd9cfc0, 0.9), band = M(0x1f4432, 0.7);
+    const brickTex = canvasTex(256, 256, (g) => {
+      g.fillStyle = '#c9b6a2'; g.fillRect(0, 0, 256, 256);
+      const cols = ['#9a5a43', '#8a4f3a', '#a46a50', '#935644', '#8f5340'];
+      for (let r = 0; r < 16; r++) for (let c = -1; c < 9; c++) {
+        const off = r % 2 ? 16 : 0; g.fillStyle = cols[(r * 7 + c * 3 + (r % 2)) % 5];
+        g.fillRect(c * 32 + off + 1, r * 16 + 1, 30, 14);
+      }
+    });
+    const brick = (w, h) => { const t = brickTex.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(w / 3.4, h / 3.4); return M(0xffffff, 0.92, 0, { map: t }); };
+    const wallM = brick(24, 7), band = M(0x1f4432, 0.7), cream = M(0xe8e0cc, 0.85), hgreen = M(0x1f4432, 0.6);
     const bx = (x0, y0, z0, x1, y1, z1, m = wallM) => B(S_, x1 - x0, y1 - y0, z1 - z0, m, (x0 + x1) / 2, GY + y0, (z0 + z1) / 2);
     // shell (entrance on the south face, toward its lot)
-    bx(HT.x0, 0, HT.z0 - 0.4, HT.x1 + 4, 7, HT.z0); colHT(HT.x0, GY, HT.z0 - 0.4, HT.x1 + 4, GY + 7, HT.z0);
-    bx(HT.x0 - 0.4, 0, HT.z0, HT.x0, 7, HT.z1); colHT(HT.x0 - 0.4, GY, HT.z0, HT.x0, GY + 7, HT.z1);
-    bx(HT.x1 + 4, 0, HT.z0, HT.x1 + 4.4, 7, HT.z1); colHT(HT.x1 + 4, GY, HT.z0, HT.x1 + 4.4, GY + 7, HT.z1);
-    // south face: wall pieces + glass front + sliding doors at centre x -97..-93
-    bx(HT.x0, 0, HT.z1 - 0.4, -106, 7, HT.z1); colHT(HT.x0, GY, HT.z1 - 0.4, -106, GY + 7, HT.z1);
-    bx(-84, 0, HT.z1 - 0.4, HT.x1 + 4, 7, HT.z1); colHT(-84, GY, HT.z1 - 0.4, HT.x1 + 4, GY + 7, HT.z1);
-    bx(-106, 3.2, HT.z1 - 0.4, -84, 7, HT.z1);
+    bx(HT.x0, 0, HT.z0 - 0.4, HT.x1 + 4, 7, HT.z0, brick(50, 7)); colHT(HT.x0, GY, HT.z0 - 0.4, HT.x1 + 4, GY + 7, HT.z0);
+    bx(HT.x0 - 0.4, 0, HT.z0, HT.x0, 7, HT.z1, brick(24, 7)); colHT(HT.x0 - 0.4, GY, HT.z0, HT.x0, GY + 7, HT.z1);
+    bx(HT.x1 + 4, 0, HT.z0, HT.x1 + 4.4, 7, HT.z1, brick(24, 7)); colHT(HT.x1 + 4, GY, HT.z0, HT.x1 + 4.4, GY + 7, HT.z1);
+    // ---- storefront: brick gable, cream pilasters, green trim (like the real store) ----
     const glassM = new THREE.MeshStandardMaterial({ color: 0x9fc4d8, roughness: 0.08, metalness: 0.4, transparent: true, opacity: 0.45 });
-    for (const [a, b2] of [[-106, -97.2], [-92.8, -84]]) { bx(a, 0, HT.z1 - 0.22, b2, 3.2, HT.z1 - 0.1, glassM); colHT(a, GY, HT.z1 - 0.3, b2, GY + 3.2, HT.z1 - 0.05); }
-    bx(HT.x0, 7, HT.z0 - 0.4, HT.x1 + 4.4, 7.4, HT.z1); // roof
+    // wings (brick) with a lower cream cornice
+    bx(HT.x0, 0, HT.z1 - 0.4, -105, 6.4, HT.z1, brick(13, 6.4)); colHT(HT.x0, GY, HT.z1 - 0.4, -105, GY + 7, HT.z1);
+    bx(-85, 0, HT.z1 - 0.4, HT.x1 + 4, 6.4, HT.z1, brick(17, 6.4)); colHT(-85, GY, HT.z1 - 0.4, HT.x1 + 4, GY + 7, HT.z1);
+    bx(HT.x0, 6.4, HT.z1 - 0.45, -105, 6.95, HT.z1 + 0.06, cream); bx(-85, 6.4, HT.z1 - 0.45, HT.x1 + 4, 6.95, HT.z1 + 0.06, cream);
+    // gable section around the doors: brick piers + lintel, taller
+    bx(-105, 0, HT.z1 - 0.4, -97.2, 7.6, HT.z1, brick(8, 7.6)); colHT(-105, GY, HT.z1 - 0.4, -97.2, GY + 7.6, HT.z1);
+    bx(-92.8, 0, HT.z1 - 0.4, -85, 7.6, HT.z1, brick(8, 7.6)); colHT(-92.8, GY, HT.z1 - 0.4, -85, GY + 7.6, HT.z1);
+    bx(-97.2, 3.05, HT.z1 - 0.4, -92.8, 7.6, HT.z1, brick(4.4, 4.5));
+    // triangular pediment (brick) with green raked trim and a cream cornice
+    {
+      const tw = 20, th = 3.3, shp = new THREE.Shape(); shp.moveTo(-tw / 2, 0); shp.lineTo(tw / 2, 0); shp.lineTo(0, th); shp.closePath();
+      const tg = new THREE.ExtrudeGeometry(shp, { depth: 0.38, bevelEnabled: false });
+      const tm = new THREE.Mesh(tg, brick(tw, th)); tm.position.set(-95, GY + 7.6, HT.z1 - 0.4); S_.add(tm);
+      bx(-105.4, 7.45, HT.z1 - 0.46, -84.6, 7.8, HT.z1 + 0.08, cream); // cornice at the gable base
+      const slope = Math.atan2(th, tw / 2), L = Math.hypot(tw / 2, th);
+      for (const sd of [-1, 1]) {
+        const tr = B(S_, L + 0.6, 0.3, 0.55, hgreen, -95 + sd * tw / 4, GY + 7.6 + th / 2 + 0.07, HT.z1 - 0.2); tr.rotation.z = -sd * slope;
+        const cr = B(S_, L + 0.3, 0.16, 0.6, cream, -95 + sd * tw / 4, GY + 7.44 + th / 2, HT.z1 - 0.2); cr.rotation.z = -sd * slope;
+      }
+    }
+    // cream pilasters: gable flanks and far corners
+    for (const px of [-105.6, -84.4, HT.x0 + 0.4, HT.x1 + 3.6]) { bx(px - 0.55, 0, HT.z1 - 0.5, px + 0.55, px > -106 && px < -84 ? 8.0 : 7.1, HT.z1 + 0.12, cream); bx(px - 0.7, px > -106 && px < -84 ? 8.0 : 7.1, HT.z1 - 0.55, px + 0.7, (px > -106 && px < -84 ? 8.0 : 7.1) + 0.28, HT.z1 + 0.16, cream); }
+    // the sign: logo + HarrisTeeter + green oval, one canvas, glows a little at night
+    const htT = canvasTex(1024, 560, (g) => {
+      g.clearRect(0, 0, 1024, 560);
+      g.save(); g.translate(512, 110); g.rotate(-0.25); g.strokeStyle = '#e8892b'; g.lineWidth = 14; g.beginPath(); g.ellipse(0, 0, 150, 58, 0, 0, TAU); g.stroke(); g.restore();
+      g.fillStyle = '#c0262d'; g.beginPath(); g.arc(472, 86, 46, 0, TAU); g.fill(); g.fillStyle = '#2f7a3a'; g.beginPath(); g.ellipse(486, 38, 20, 9, 0.6, 0, TAU); g.fill();
+      g.fillStyle = '#2a6fdb'; g.beginPath(); g.ellipse(576, 112, 52, 26, -0.18, 0, TAU); g.fill(); g.beginPath(); g.moveTo(620, 104); g.lineTo(652, 86); g.lineTo(648, 132); g.closePath(); g.fill();
+      g.fillStyle = '#f6f3ea'; g.beginPath(); g.arc(566, 104, 6, 0, TAU); g.fill();
+      g.font = '700 118px Georgia, serif'; g.textAlign = 'center'; g.lineWidth = 10; g.strokeStyle = 'rgba(40,30,20,.45)';
+      g.strokeText('HarrisTeeter', 512, 310); g.fillStyle = '#f6f3ea'; g.fillText('HarrisTeeter', 512, 310);
+      g.fillStyle = '#1f4432'; g.beginPath(); g.roundRect(216, 360, 592, 86, 43); g.fill(); g.strokeStyle = '#e8e0cc'; g.lineWidth = 5; g.beginPath(); g.roundRect(222, 366, 580, 74, 37); g.stroke();
+      g.fillStyle = '#f2ecd9'; g.font = 'italic 700 46px Georgia, serif'; g.fillText('Neighborhood Food & Pharmacy', 512, 417);
+    });
+    const htSign = new THREE.MeshStandardMaterial({ map: htT, transparent: true, depthWrite: false, emissive: 0xffffff, emissiveMap: htT, emissiveIntensity: 0.22, roughness: 0.6 });
+    plane(S_, 13.2, 7.2, htSign, -95, GY + 7.1, HT.z1 - 0.52, 0, Math.PI); A.glowMats.push(htSign);
+    // arched window on the gable, above the doors
+    const archT = canvasTex(512, 380, (g) => {
+      g.clearRect(0, 0, 512, 380);
+      const arch = (inset) => { g.beginPath(); g.moveTo(40 + inset, 380); g.lineTo(40 + inset, 190); g.arc(256, 190, 216 - inset, Math.PI, 0); g.lineTo(472 - inset, 380); g.closePath(); };
+      g.fillStyle = '#e8e0cc'; arch(0); g.fill();
+      g.fillStyle = '#1f4432'; arch(16); g.fill();
+      g.fillStyle = '#31414c'; arch(34); g.fill();
+      g.strokeStyle = '#1f4432'; g.lineWidth = 10;
+      for (let x = 110; x < 440; x += 66) { g.beginPath(); g.moveTo(x, 40); g.lineTo(x, 380); g.stroke(); }
+      for (let y = 120; y < 380; y += 86) { g.beginPath(); g.moveTo(44, y); g.lineTo(468, y); g.stroke(); }
+      g.fillStyle = 'rgba(255,255,255,.14)'; g.beginPath(); g.moveTo(80, 380); g.lineTo(200, 60); g.lineTo(290, 60); g.lineTo(160, 380); g.closePath(); g.fill();
+    });
+    plane(S_, 3.1, 1.6, M(0xffffff, 0.6, 0, { map: archT, transparent: true }), -95, GY + 4.0, HT.z1 - 0.46, 0, Math.PI); // transom arch over the doors
+    // wing windows with dark-green frames
+    const winT = canvasTex(512, 256, (g) => {
+      g.fillStyle = '#1f4432'; g.fillRect(0, 0, 512, 256);
+      const gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, '#5a7584'); gr.addColorStop(1, '#2c3a44');
+      for (let c = 0; c < 4; c++) for (let r = 0; r < 2; r++) { g.fillStyle = gr; g.fillRect(14 + c * 124, 14 + r * 120, 108, 106); }
+      g.fillStyle = 'rgba(255,255,255,.1)'; g.beginPath(); g.moveTo(60, 256); g.lineTo(170, 0); g.lineTo(240, 0); g.lineTo(130, 256); g.closePath(); g.fill();
+    });
+    for (const wx of [-114.5, -108.2, -81.5, -75.2, -70.5]) { const t = winT.clone(); t.needsUpdate = true; plane(S_, 5.2, 2.6, M(0xffffff, 0.55, 0, { map: t }), wx, GY + 2.2, HT.z1 - 0.44, 0, Math.PI); }
+    // Pharmacy letters on the right wing
+    const phT = canvasTex(512, 128, (g) => { g.clearRect(0, 0, 512, 128); g.font = '700 86px Georgia, serif'; g.textAlign = 'center'; g.strokeStyle = 'rgba(40,30,20,.4)'; g.lineWidth = 7; g.strokeText('Pharmacy', 256, 92); g.fillStyle = '#f6f3ea'; g.fillText('Pharmacy', 256, 92); });
+    const phM = new THREE.MeshStandardMaterial({ map: phT, transparent: true, depthWrite: false, emissive: 0xffffff, emissiveMap: phT, emissiveIntensity: 0.2, roughness: 0.6 });
+    plane(S_, 6.4, 1.6, phM, -111, GY + 5.3, HT.z1 - 0.48, 0, Math.PI); A.glowMats.push(phM); // right wing as you face the store
+    // black lantern sconces between the windows
+    for (const sxp of [-111.3, -105.9, -84.2, -78.3, -72.8]) {
+      const sc = G(S_, sxp, GY + 4.2, HT.z1 - 0.5, Math.PI); B(sc, 0.08, 0.08, 0.5, M(0x15181a, 0.6), 0, 0.3, 0.25);
+      const sh = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.26, 8), M(0x15181a, 0.6)); sh.position.set(0, 0.26, 0.48); sc.add(sh);
+      const bulb = S(sc, 0.07, E(0xffd9a0, 0), 0, 0.14, 0.48, 8, 6); A.streetLamps.push(bulb.material);
+    }
+    // bushes + the yellow curb line along the storefront
+    const bushG = M(0x3f6b35, 0.95), bushR = M(0x8a3a2a, 0.9);
+    for (let bxp = -117; bxp <= -69; bxp += 2.4) { if (bxp > -98.6 && bxp < -91.4) continue; const r = 0.4 + ((bxp * 7) % 3) * 0.06; const bsh = S(S_, r, (bxp * 13 | 0) % 4 ? bushG : bushR, bxp + ((bxp * 11) % 2) * 0.3, GY + 0.3, HT.z1 - 0.85, 8, 6); bsh.scale.y = 0.72; noRay(bsh); }
+    plane(S_, 50, 0.18, M(0xd9c33a, 0.6), -93, GY + 0.085, HT.z1 - 3.35, -Math.PI / 2);
+    bx(HT.x0, 7, HT.z0 - 0.4, HT.x1 + 4.4, 7.4, HT.z1 - 0.2); // roof
     // sliding doors
     const dL = B(S_, 2.2, 3.0, 0.08, glassM, -96.1, GY + 0.08, HT.z1 - 0.16), dR = B(S_, 2.2, 3.0, 0.08, glassM, -93.9, GY + 0.08, HT.z1 - 0.16);
     markDyn(dL, dR); const doorB = new THREE.Box3(V3(78.7, GY, -92.05), V3(83.3, GY + 3, -91.6));
@@ -256,9 +332,6 @@ function buildWorld(scene, ctx, A) {
       if (Math.abs(o - (dL.userData.lo || 0)) > 0.002) { dL.userData.lo = o; dL.position.x = -96.1 - o * 2.1; dR.position.x = -93.9 + o * 2.1; if (o > 0.6) doorB.makeEmpty(); else doorB.set(V3(78.7, GY, -92.05), V3(83.3, GY + 3, -91.6)); }
     });
     // sign band + letters
-    const htT = canvasTex(512, 96, (g) => { g.fillStyle = '#1f4432'; g.fillRect(0, 0, 512, 96); g.fillStyle = '#f6efe0'; g.font = 'bold 56px Georgia'; g.textAlign = 'center'; g.fillText('Harris Teeter', 256, 64); });
-    const htSign = new THREE.MeshStandardMaterial({ map: htT, emissive: 0xffffff, emissiveMap: htT, emissiveIntensity: 0.35, roughness: 0.6 });
-    plane(S_, 18, 3.4, htSign, -95, GY + 4.9, HT.z1 - 0.5, 0, Math.PI); A.glowMats.push(htSign); // sits just proud of the (flipped) front wall
     // interior: bright ceiling, tile floor, aisles, produce, dairy glow, registers
     const tile = M(0xffffff, 0.55, 0, { map: floorTex('tile') }); plane(S_, HT.x1 + 4 - HT.x0 - 0.8, HT.z0 - HT.z1 - 0.8, tile, (HT.x0 + HT.x1 + 4) / 2, GY + 0.08, (HT.z0 + HT.z1) / 2, -Math.PI / 2);
     plane(S_, HT.x1 + 4 - HT.x0 - 0.8, HT.z0 - HT.z1 - 0.8, M(0xf4f2ec, 0.95), (HT.x0 + HT.x1 + 4) / 2, GY + 6.9, (HT.z0 + HT.z1) / 2, Math.PI / 2);
