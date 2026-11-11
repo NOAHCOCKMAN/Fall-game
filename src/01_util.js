@@ -272,6 +272,13 @@ const Sfx = {
   crunch() { for (let i = 0; i < 3; i++) this.noise(0.06, 0.12, 2500 + Math.random() * 1500, 1.5, 'bandpass', 0, i * 0.09); },
   sip() { this.noise(0.25, 0.08, 900, 3, 'bandpass', 300); },
   chime() { [659, 784, 988].forEach((f, i) => this.tone(f, 0.5, 'sine', 0.12, 0, i * 0.12)); },
+  bite(kind) { this.noise(0.05, 0.22, kind === 'soft' ? 800 : 3200, 1.2, 'bandpass'); },
+  chew(kind = 'crunch') { const soft = kind === 'soft'; for (let i = 0; i < 4; i++) this.noise(soft ? 0.09 : 0.05, (soft ? 0.14 : 0.11) * (1 - i * 0.18), soft ? 380 + Math.random() * 160 : 1900 + Math.random() * 1800, soft ? 2 : 1.4, soft ? 'lowpass' : 'bandpass', 0, 0.14 + i * 0.21); },
+  gulp() { this.tone(260, 0.12, 'sine', 0.14, -120, 0.25); },
+  thud() { this.noise(0.12, 0.45, 160, 1, 'lowpass'); this.tone(90, 0.12, 'sine', 0.2, -40); },
+  whoosh() { this.noise(0.18, 0.07, 700, 0.8, 'bandpass', 1100); },
+  crackle() { this.noise(0.02, 0.06 + Math.random() * 0.08, 4000 + Math.random() * 3000, 3, 'bandpass'); },
+  clink() { this.tone(2600, 0.25, 'sine', 0.06); this.tone(3900, 0.18, 'sine', 0.03); },
   splash() { this.noise(0.3, 0.25, 1800, 0.8, 'bandpass', -900); },
   loop(kind, pos = null, vol = 0.2) {
     if (!this.ctx) return { stop() { }, pos, setVol() { } };
@@ -283,7 +290,7 @@ const Sfx = {
     else if (kind === 'shower') { mkNoise('bandpass', 2200, 0.4); mkNoise('lowpass', 500, 0.5); }
     else if (kind === 'hum') { mkOsc('sawtooth', 60, 0.15); mkOsc('sine', 120, 0.4); mkNoise('lowpass', 300, 0.5); }
     else if (kind === 'fan') mkNoise('lowpass', 350, 0.8);
-    else if (kind === 'sizzle') { mkNoise('highpass', 3500, 0.5); }
+    else if (kind === 'sizzle') { mkNoise('highpass', 3500, 0.5); mkNoise('bandpass', 6500, 1.5); }
     else if (kind === 'washer') { mkNoise('lowpass', 250, 1); mkOsc('sine', 48, 0.6); }
     else if (kind === 'boil') mkNoise('bandpass', 600, 2);
     else if (kind === 'fire') { mkNoise('lowpass', 800, 0.5); }

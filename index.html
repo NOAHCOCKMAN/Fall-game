@@ -161,6 +161,8 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
 .homebar { align-self: center; width: 120px; height: 6px; border-radius: 3px; background: #ddd; border: 0; margin-top: 10px; }
 #phoneBadge { position: absolute; top: 18px; right: 70px; width: 10px; height: 10px; border-radius: 50%; background: var(--bad); }
 #perfHud { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(60px + env(safe-area-inset-bottom, 0px)); margin: 0; padding: 8px 10px; font: 12px/1.45 ui-monospace, 'SF Mono', Menlo, Consolas, monospace; color: #c8f7c5; background: rgba(0,0,0,.72); border-radius: 8px; white-space: pre; pointer-events: none; z-index: 4; }
+body.nohud #hud > *:not(#perfHud) { display: none !important; }
+#tCrouch.on { background: var(--accent); color: var(--accent-ink); }
 #enter:disabled { opacity: .6; cursor: progress; }
 @media (max-width: 640px) { .stats { min-width: 110px; padding: 6px 8px; } .mood { font-size: 11px; } #panel { top: calc(56px + env(safe-area-inset-top, 0px)); bottom: calc(180px + env(safe-area-inset-bottom, 0px)); } .card-big { padding: 20px; } }
 @media (prefers-reduced-motion: reduce) { #toast, #fade, #cross { transition: none; } }
@@ -192,7 +194,7 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
   <div id="prompt" class="glass" hidden></div>
   <pre id="perfHud" hidden></pre>
   <div id="toast" class="glass"></div>
-  <div id="hint" class="glass"><kbd>E</kbd> use · <kbd>G</kbd> pick up · <kbd>F</kbd> eat/drink · <kbd>Tab</kbd> phone · <kbd>T</kbd> to-dos · <kbd>Esc</kbd> menu</div>
+  <div id="hint" class="glass"><kbd>Right-click</kbd> use · <kbd>Left-click</kbd> eat / hit · <kbd>E</kbd> pick up · <kbd>Q</kbd> drop · <kbd>Esc</kbd> menu &amp; phone</div>
   <div id="action" hidden><div id="actionRing"></div><span id="actionLabel"></span></div>
 </div>
 <div id="vignette"></div><div id="wet"></div>
@@ -202,18 +204,20 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
   <div class="card-big glass">
     <h1>Fall <em>Apartment</em></h1>
     <p class="lede">Your apartment, room by room. Live a day in it: keep yourself fed, rested and clean, cook and brew coffee, do the laundry, order delivery to your door, and open packages. Time passes, the sun sets over the fall trees, and there are 31 things to do.</p>
-    <ul class="keys touchonly"><li><kbd>Stick</kbd>walk</li><li><kbd>Drag</kbd>look around</li><li><kbd>Use</kbd>or tap things</li><li><kbd>Grab</kbd>carry small items</li><li><kbd>Phone</kbd>order food &amp; more</li><li><kbd>Eat/Drink</kbd>what you hold</li></ul>
+    <ul class="keys touchonly"><li><kbd>Stick</kbd>walk (push to the edge to sprint)</li><li><kbd>Drag</kbd>look around</li><li><kbd>Use</kbd>or tap things</li><li><kbd>Grab / Drop</kbd>carry small items</li><li><kbd>Eat / Hit</kbd>bite, sip or punch</li><li><kbd>Sneak</kbd>walk quietly</li><li><kbd>Phone</kbd>order food &amp; more</li></ul>
     <ul class="keys deskonly">
-      <li><kbd>WASD</kbd>walk · <kbd>Shift</kbd>run</li>
-      <li><kbd>Mouse</kbd>look around</li>
-      <li><kbd>E</kbd>/click use things</li>
-      <li><kbd>G</kbd>pick up · <kbd>Q</kbd>drop</li>
-      <li><kbd>F</kbd>eat or drink</li>
-      <li><kbd>Tab</kbd>your phone</li>
-      <li><kbd>T</kbd>to-do list</li>
-      <li><kbd>L</kbd>room lights</li>
-      <li><kbd>Space</kbd>jump · <kbd>C</kbd>crouch</li>
-      <li><kbd>Esc</kbd>pause</li>
+      <li><kbd>W A S D</kbd>move</li>
+      <li><kbd>Space</kbd>jump</li>
+      <li><kbd>Left Ctrl</kbd>or <kbd>W W</kbd>sprint</li>
+      <li><kbd>Left Shift</kbd>sneak</li>
+      <li><kbd>Mouse</kbd>look</li>
+      <li><kbd>E</kbd>pick up what you aim at</li>
+      <li><kbd>Right-click</kbd>use · open · eat · sit · set down</li>
+      <li><kbd>Left-click</kbd>hit · bite / sip · flip &amp; grab actions</li>
+      <li><kbd>Q</kbd>drop what you hold</li>
+      <li><kbd>Esc</kbd>pause menu (phone, to-dos)</li>
+      <li><kbd>F1</kbd>hide HUD</li>
+      <li><kbd>F3</kbd>performance stats</li>
     </ul>
     <div class="btns"><button id="enter" class="primary">Walk in</button></div>
   </div>
@@ -242,11 +246,21 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
     </div>
     <div class="msec" data-sec="help" hidden>
       <h2>Controls</h2>
-      <ul class="keys">
-        <li><kbd>WASD</kbd>walk</li><li><kbd>Shift</kbd>run</li><li><kbd>Space</kbd>jump</li><li><kbd>C</kbd>crouch</li>
-        <li><kbd>E</kbd>use / open / sit</li><li><kbd>G</kbd>pick up small things</li><li><kbd>F</kbd>eat or drink</li><li><kbd>Q</kbd>drop · <kbd>R</kbd>turn</li>
-        <li><kbd>Tab</kbd>phone</li><li><kbd>T</kbd>to-do list</li><li><kbd>L</kbd>room lights</li><li><kbd>M</kbd>mute</li>
+      <ul class="keys deskonly">
+      <li><kbd>W A S D</kbd>move</li>
+      <li><kbd>Space</kbd>jump</li>
+      <li><kbd>Left Ctrl</kbd>or <kbd>W W</kbd>sprint</li>
+      <li><kbd>Left Shift</kbd>sneak</li>
+      <li><kbd>Mouse</kbd>look</li>
+      <li><kbd>E</kbd>pick up what you aim at</li>
+      <li><kbd>Right-click</kbd>use · open · eat · sit · set down</li>
+      <li><kbd>Left-click</kbd>hit · bite / sip · flip &amp; grab actions</li>
+      <li><kbd>Q</kbd>drop what you hold</li>
+      <li><kbd>Esc</kbd>pause menu (phone, to-dos)</li>
+      <li><kbd>F1</kbd>hide HUD</li>
+      <li><kbd>F3</kbd>performance stats</li>
       </ul>
+      <ul class="keys touchonly"><li><kbd>Stick</kbd>walk, push to the edge to sprint</li><li><kbd>Drag</kbd>look</li><li><kbd>Tap</kbd>or <kbd>Use</kbd>use / interact</li><li><kbd>Grab / Drop</kbd>pick up or drop</li><li><kbd>Eat / Hit</kbd>bite, sip or punch</li><li><kbd>Jump</kbd> · <kbd>Sneak</kbd></li></ul>
       <p class="lede" style="font-size:14px">If the mouse won't lock in your browser, click-and-drag to look and click on things to use them.</p>
       <div class="btns"><button class="ghostbtn" data-open="main">Back</button></div>
     </div>
@@ -271,9 +285,9 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
 
 <div class="touchui">
   <div id="stick"><div id="knob"></div></div>
-  <div id="ttop"><button id="tMenu">Menu</button><button id="tPhone">Phone</button><button id="tCrouch">Crouch</button></div>
+  <div id="ttop"><button id="tMenu">Menu</button><button id="tPhone">Phone</button><button id="tCrouch">Sneak</button></div>
   <div id="tbtns">
-    <button id="tGrab">Grab</button><button id="tUseHeld">Eat / drink</button><button id="tJump">Jump</button>
+    <button id="tGrab">Grab / Drop</button><button id="tUseHeld">Eat / Hit</button><button id="tJump">Jump</button>
     <button id="tUse" style="grid-column: span 3">Use</button>
   </div>
 </div>
@@ -557,6 +571,13 @@ const Sfx = {
   crunch() { for (let i = 0; i < 3; i++) this.noise(0.06, 0.12, 2500 + Math.random() * 1500, 1.5, 'bandpass', 0, i * 0.09); },
   sip() { this.noise(0.25, 0.08, 900, 3, 'bandpass', 300); },
   chime() { [659, 784, 988].forEach((f, i) => this.tone(f, 0.5, 'sine', 0.12, 0, i * 0.12)); },
+  bite(kind) { this.noise(0.05, 0.22, kind === 'soft' ? 800 : 3200, 1.2, 'bandpass'); },
+  chew(kind = 'crunch') { const soft = kind === 'soft'; for (let i = 0; i < 4; i++) this.noise(soft ? 0.09 : 0.05, (soft ? 0.14 : 0.11) * (1 - i * 0.18), soft ? 380 + Math.random() * 160 : 1900 + Math.random() * 1800, soft ? 2 : 1.4, soft ? 'lowpass' : 'bandpass', 0, 0.14 + i * 0.21); },
+  gulp() { this.tone(260, 0.12, 'sine', 0.14, -120, 0.25); },
+  thud() { this.noise(0.12, 0.45, 160, 1, 'lowpass'); this.tone(90, 0.12, 'sine', 0.2, -40); },
+  whoosh() { this.noise(0.18, 0.07, 700, 0.8, 'bandpass', 1100); },
+  crackle() { this.noise(0.02, 0.06 + Math.random() * 0.08, 4000 + Math.random() * 3000, 3, 'bandpass'); },
+  clink() { this.tone(2600, 0.25, 'sine', 0.06); this.tone(3900, 0.18, 'sine', 0.03); },
   splash() { this.noise(0.3, 0.25, 1800, 0.8, 'bandpass', -900); },
   loop(kind, pos = null, vol = 0.2) {
     if (!this.ctx) return { stop() { }, pos, setVol() { } };
@@ -568,7 +589,7 @@ const Sfx = {
     else if (kind === 'shower') { mkNoise('bandpass', 2200, 0.4); mkNoise('lowpass', 500, 0.5); }
     else if (kind === 'hum') { mkOsc('sawtooth', 60, 0.15); mkOsc('sine', 120, 0.4); mkNoise('lowpass', 300, 0.5); }
     else if (kind === 'fan') mkNoise('lowpass', 350, 0.8);
-    else if (kind === 'sizzle') { mkNoise('highpass', 3500, 0.5); }
+    else if (kind === 'sizzle') { mkNoise('highpass', 3500, 0.5); mkNoise('bandpass', 6500, 1.5); }
     else if (kind === 'washer') { mkNoise('lowpass', 250, 1); mkOsc('sine', 48, 0.6); }
     else if (kind === 'boil') mkNoise('bandpass', 600, 2);
     else if (kind === 'fire') { mkNoise('lowpass', 800, 0.5); }
@@ -1051,7 +1072,7 @@ def('espresso', 'Espresso machine', 'Kitchen', { mount: 'surface', solid: false,
     action: () => {
       if (!ctx.power()) return ctx.msg('No power — check the breaker panel in the hall.');
       if (st.state === 'idle') { cup.visible = true; st.state = 'brewing'; st.t = 0; st.snd = Sfx.loop('hum', g.getWorldPosition(V3()), 0.12); Sfx.beep(1, 1200); }
-      else if (st.state === 'done') { cup.visible = false; st.state = 'idle'; st.fill = 0; ctx.give('mug', { fill: 'coffee' }); ctx.msg('Fresh espresso! Press F to drink it, or click to set it down.'); ctx.task('coffee'); }
+      else if (st.state === 'done') { cup.visible = false; st.state = 'idle'; st.fill = 0; ctx.give('mug', { fill: 'coffee' }, { rise: true }); ctx.msg('Fresh espresso! Left-click to sip, right-click a counter to set it down.'); ctx.task('coffee'); }
     }
   });
   ctx.onRemove(g, () => st.snd && st.snd.stop());
@@ -1096,86 +1117,6 @@ def('fireplace', 'Electric fireplace', 'Electronics', { color: '#f1ece2', colora
 });
 
 // ================= KITCHEN =================
-const FOODS = { egg: { name: 'egg', raw: 0xfffbe8, cook: 0xf7e7a8, yolk: true }, pancake: { name: 'pancake', raw: 0xf1e2b8, cook: 0xc98a3e }, bacon: { name: 'bacon', raw: 0xe58a8a, cook: 0x9c4a2a }, grilled: { name: 'grilled cheese', raw: 0xf2e6c4, cook: 0xd49a45 } };
-const FOOD_ORDER = ['egg', 'pancake', 'bacon', 'grilled'];
-def('pan', 'Frying pan', 'Kitchen', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
-  const g = new THREE.Group(), blk = M(0x202022, 0.4, 0.5);
-  C(g, 0.13, 0.11, 0.045, blk, 0, 0, 0, 24); B(g, 0.03, 0.02, 0.2, blk, 0, 0.03, 0.22);
-  const food = G(g, 0, 0.025, 0); markDyn(food); const fm = M(0xffffff, 0.6); const fbody = C(food, 0.08, 0.08, 0.012, fm, 0, 0, 0, 20); const yolk = S(food, 0.025, M(0xf2a516, 0.3), 0, 0.015, 0, 10, 8); yolk.scale.y = 0.5;
-  const smoke = []; for (let i = 0; i < 5; i++) { const s = S(g, 0.03, new THREE.MeshBasicMaterial({ color: 0x777777, transparent: true, opacity: 0.3, depthWrite: false }), 0, 0.1, 0, 6, 4); smoke.push(s); } markDyn(smoke);
-  const st = { food: null, cook: 0, sz: null }; const wp = V3();
-  const doneness = () => st.cook < 1 ? 'raw' : st.cook < 2 ? 'cooked' : 'burnt';
-  ctx.interact(g, {
-    label: () => !st.food ? 'Add ' + FOODS[FOOD_ORDER[(st.next || 0) % 4]].name + ' (E) — tap again for other food' : doneness() === 'raw' ? (ctx.heatAt(g.getWorldPosition(V3())) ? 'Cooking ' + FOODS[st.food].name + '… ' + Math.round(st.cook * 100) + '%' : 'Put pan on a lit burner to cook') : doneness() === 'cooked' ? 'Plate the ' + FOODS[st.food].name + ' 🍽' : 'Scrape out burnt food 😬',
-    action: () => {
-      if (!st.food) { st.food = FOOD_ORDER[(st.next || 0) % 4]; st.next = (st.next || 0) + 1; st.cook = 0; Sfx.splash(); return; }
-      if (doneness() === 'cooked') { ctx.give('plate', { food: st.food }); ctx.msg('Plated! Press F to eat, or set it down.'); ctx.task('cook'); st.food = null; }
-      else if (doneness() === 'burnt') { st.food = null; ctx.msg('Into the trash it goes.'); }
-      else if (!ctx.heatAt(g.getWorldPosition(V3()))) { st.food = null; ctx.msg('Removed the raw food.'); }
-    }
-  });
-  ctx.onRemove(g, () => st.sz && st.sz.stop());
-  ctx.tick(g, (dt, t) => {
-    food.visible = !!st.food;
-    const heat = st.food && ctx.heatAt(g.getWorldPosition(wp));
-    if (heat) { st.cook += dt / 9; if (!st.sz) st.sz = Sfx.loop('sizzle', () => g.getWorldPosition(wp), 0.12); } else if (st.sz) { st.sz.stop(); st.sz = null; }
-    if (st.food) { const f = FOODS[st.food]; fm.color.set(f.raw).lerp(_c1.set(f.cook), clamp(st.cook, 0, 1)); if (st.cook > 1.5) fm.color.lerp(_c1.set(0x1d1410), clamp(st.cook - 1.5, 0, 1)); yolk.visible = !!f.yolk; fbody.scale.set(st.food === 'bacon' ? 0.4 : 1, 1, 1); }
-    smoke.forEach((s, i) => { s.visible = st.food && st.cook > 1.6; const k = (t * 0.4 + i / 5) % 1; s.position.set(Math.sin(i * 2 + t) * 0.05, 0.05 + k * 0.6, Math.cos(i) * 0.05); s.scale.setScalar(1 + k * 3); s.material.opacity = 0.35 * (1 - k); });
-  });
-  return g;
-});
-def('plate', 'Plate of food', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
-  const g = new THREE.Group(); C(g, 0.12, 0.1, 0.015, M(0xf7f5f0, 0.3), 0, 0, 0, 24);
-  const f = (it.d && it.d.food) || 'egg', F = FOODS[f];
-  if (f === 'cookies') { for (let i = 0; i < 5; i++) C(g, 0.03, 0.03, 0.01, M(0xb57a3c), Math.cos(i) * 0.05, 0.016, Math.sin(i) * 0.05, 12); }
-  else if (f === 'toast') { B(g, 0.1, 0.012, 0.1, M(0xc98a3e), 0, 0.016, 0); }
-  else { C(g, 0.07, 0.07, 0.012, M(F ? F.cook : 0xccaa66), 0, 0.016, 0, 20); if (F && F.yolk) S(g, 0.022, M(0xf2a516, 0.3), 0, 0.03, 0, 10, 8).scale.y = 0.5; }
-  it.use = () => { ctx.eat(); ctx.msg('Yum! That hit the spot. 🍽'); ctx.task('eat'); return 'consume'; };
-  return g;
-});
-def('mug', 'Mug', 'Kitchen', { mount: 'surface', solid: false, small: true, color: '#f4f1ea', colorable: true }, (ctx, it) => {
-  const g = new THREE.Group(); C(g, 0.045, 0.04, 0.1, M(it.c || '#f4f1ea', 0.3), 0, 0, 0, 16); T(g, 0.025, 0.007, M(it.c || '#f4f1ea', 0.3), 0.05, 0.05, 0, TAU);
-  const liq = C(g, 0.04, 0.04, 0.005, M(0x4a2a14, 0.2), 0, 0.085, 0, 16); markDyn(liq);
-  ctx.tick(g, () => { liq.visible = !!(it.d && it.d.fill); liq.material.color.set(it.d && it.d.fill === 'tea' ? 0xa0622a : 0x4a2a14); });
-  it.use = () => { if (it.d && it.d.fill) { ctx.drink(it.d.fill); it.d.fill = null; return 'keep'; } ctx.msg('The mug is empty. Brew some coffee or tea.'); return 'keep'; };
-  return g;
-});
-def('kettle', 'Tea kettle', 'Kitchen', { mount: 'surface', solid: false, small: true, color: '#c7c9cc', colorable: true }, (ctx, it) => {
-  const g = new THREE.Group(), m = M(it.c || '#c7c9cc', 0.25, 0.8);
-  const body = S(g, 0.1, m, 0, 0.09, 0, 18, 12); body.scale.y = 0.9; C(g, 0.1, 0.1, 0.03, m, 0, 0, 0, 18);
-  const sp = C(g, 0.012, 0.02, 0.12, m, 0.1, 0.08, 0, 8); sp.rotation.z = -0.9;
-  const handle = T(g, 0.07, 0.01, M(0x1a1a1a), 0, 0.18, 0, Math.PI);
-  const steam = []; for (let i = 0; i < 4; i++) { const s = S(g, 0.02, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, depthWrite: false }), 0.16, 0.16, 0, 6, 4); steam.push(s); }
-  const st = { temp: 0, whistle: 0 }; const wp = V3();
-  ctx.interact(g, { label: () => st.temp >= 1 ? 'Pour a cup of tea 🍵' : ctx.heatAt(g.getWorldPosition(V3())) ? 'Heating… ' + Math.round(st.temp * 100) + '%' : 'Put on a lit burner to boil', action: () => { if (st.temp >= 1) { ctx.give('mug', { fill: 'tea' }); ctx.msg('Hot tea! Press F to sip.'); ctx.task('tea'); st.temp = 0.6; } } });
-  ctx.onRemove(g, () => st.b && st.b.stop());
-  ctx.tick(g, (dt, t) => {
-    const heat = ctx.heatAt(g.getWorldPosition(wp));
-    st.temp = clamp(st.temp + (heat ? dt / 12 : -dt / 60), 0, 1.2);
-    if (st.temp >= 1 && heat) { if (!st.b) st.b = Sfx.loop('boil', () => g.getWorldPosition(wp), 0.1); if ((st.whistle -= dt) < 0) { Sfx.tone(2400, 0.8, 'sine', 0.05, 80); st.whistle = 1.2; } } else if (st.b) { st.b.stop(); st.b = null; }
-    steam.forEach((s, i) => { s.visible = st.temp > 0.8; const k = (t * 0.6 + i / 4) % 1; s.position.set(0.17 + k * 0.1, 0.17 + k * 0.25, 0); s.scale.setScalar(1 + k * 2); s.material.opacity = 0.3 * (1 - k); });
-  });
-  return g;
-});
-def('toaster', 'Toaster', 'Kitchen', { mount: 'surface', solid: false, small: true, color: '#f1ece2', colorable: true }, (ctx, it) => {
-  const g = new THREE.Group(), m = M(it.c || '#f1ece2', 0.3, 0.2);
-  B(g, 0.28, 0.19, 0.17, m, 0, 0, 0); B(g, 0.2, 0.005, 0.03, M(0x111111), 0, 0.19, -0.035); B(g, 0.2, 0.005, 0.03, M(0x111111), 0, 0.19, 0.035);
-  const lever = B(g, 0.03, 0.015, 0.04, M(0x333333), 0.15, 0.13, 0); markDyn(lever);
-  const toasts = [B(g, 0.12, 0.1, 0.012, M(0xe8cf9a), 0, 0.12, -0.035), B(g, 0.12, 0.1, 0.012, M(0xe8cf9a), 0, 0.12, 0.035)]; markDyn(toasts);
-  const st = { s: 'ready', t: 0 };
-  ctx.interact(g, {
-    label: () => st.s === 'ready' ? 'Make toast 🍞' : st.s === 'toasting' ? 'Toasting…' : 'Take toast',
-    action: () => {
-      if (st.s === 'ready') { if (!ctx.power()) return ctx.msg('No power.'); st.s = 'toasting'; st.t = 0; Sfx.click(); }
-      else if (st.s === 'done') { st.s = 'ready'; toasts.forEach(t => t.material.color.set(0xe8cf9a)); ctx.give('plate', { food: 'toast' }); ctx.task('cook'); }
-    }
-  });
-  ctx.tick(g, dt => {
-    if (st.s === 'toasting') { st.t += dt; toasts.forEach(t => t.material.color.lerp(_c1.set(0xb57a3c), dt * 0.3)); if (st.t > 6) { st.s = 'done'; Sfx.pop(); } }
-    lever.position.y = st.s === 'toasting' ? 0.04 : 0.13; toasts.forEach(t => t.position.y = st.s === 'toasting' ? 0.07 : st.s === 'done' ? 0.15 : 0.12);
-  });
-  return g;
-});
 def('stand_mixer', 'Stand mixer', 'Kitchen', { mount: 'surface', solid: false, small: true, color: '#e8a5b5', colorable: true }, (ctx, it) => {
   const g = new THREE.Group(), m = M(it.c || '#e8a5b5', 0.3, 0.1);
   B(g, 0.2, 0.04, 0.32, m, 0, 0, 0); B(g, 0.1, 0.3, 0.1, m, 0, 0.04, -0.11);
@@ -1185,15 +1126,6 @@ def('stand_mixer', 'Stand mixer', 'Kitchen', { mount: 'surface', solid: false, s
   ctx.interact(g, { label: () => st.on ? 'Stop mixer' : 'Mix some batter', action: () => { st.on = !st.on; if (st.on) st.s = Sfx.loop('hum', g.getWorldPosition(V3()), 0.15); else st.s && st.s.stop(); } });
   ctx.onRemove(g, () => st.s && st.s.stop());
   ctx.tick(g, dt => { if (st.on) { whisk.rotation.y += dt * 20; head.position.x = Math.sin(performance.now() / 20) * 0.002; } });
-  return g;
-});
-def('fruit_bowl', 'Fruit bowl', 'Kitchen', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
-  const g = new THREE.Group(); const bowl = new THREE.Mesh(new THREE.SphereGeometry(0.15, 20, 10, 0, TAU, Math.PI / 2, Math.PI / 2), M(0x8a5a3a, 0.5)); bowl.material.side = THREE.DoubleSide; bowl.position.y = 0.11; g.add(bowl);
-  const fruit = []; const cols = [0xc0262d, 0xe8892b, 0xc0262d, 0x8fb339, 0xe8892b, 0xc0262d];
-  for (let i = 0; i < 6; i++) fruit.push(S(g, 0.04, M(cols[i], 0.5), Math.cos(i) * 0.07, 0.07 + (i > 3 ? 0.04 : 0), Math.sin(i) * 0.07, 10, 8));
-  const ban = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.018, 6, 12, Math.PI * 0.7), M(0xf2d24b, 0.6)); ban.position.set(0, 0.13, 0); ban.rotation.x = -1.2; g.add(ban); fruit.push(ban); markDyn(fruit);
-  ctx.interact(g, { label: () => fruit.some(f => f.visible) ? 'Eat a piece of fruit 🍎' : 'Bowl is empty (refills tomorrow)', action: () => { const f = fruit.find(f => f.visible); if (f) { f.visible = false; Sfx.noise(0.15, 0.3, 2500, 2); ctx.eat(0.3); ctx.msg('Crunch. Fresh!'); ctx.task('eat'); } } });
-  g.userData.refill = () => fruit.forEach(f => f.visible = true);
   return g;
 });
 def('bread', 'Bread bag', 'Kitchen', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
@@ -1387,24 +1319,6 @@ def('hair_dryer', 'Hair dryer', 'Fun', { mount: 'surface', solid: false, small: 
 });
 
 // ================= LIFE: food delivery, packages =================
-def('pizza', 'Pizza box', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
-  const g = new THREE.Group(), card = M(0xd8b98a, 0.9); B(g, 0.38, 0.03, 0.38, card, 0, 0, 0);
-  const lid = G(g, 0, 0.045, -0.19); B(lid, 0.38, 0.012, 0.38, card, 0, 0, 0.19); B(lid, 0.18, 0.002, 0.08, M(0xb3141f), 0, 0.012, 0.19);
-  const slices = []; for (let i = 0; i < 8; i++) { const sl = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.012, 6, 1, false, i / 8 * TAU, TAU / 8), M(0xe0a23e, 0.7)); sl.position.y = 0.036; g.add(sl); slices.push(sl); for (let k = 0; k < 2; k++) { const a = (i + 0.5) / 8 * TAU, r = 0.06 + k * 0.05; S(sl, 0.012, M(0x9c2a1e, 0.6), Math.sin(a) * r, 0.008, Math.cos(a) * r, 6, 4).scale.y = 0.4; } }
-  const d = it.d || (it.d = {}); if (d.left == null) d.left = 8; markDyn(slices);
-  const st = hinge(ctx, lid, 'x', -1.7, 'pizza box', 'click');
-  ctx.tick(g, () => slices.forEach((sl, i) => sl.visible = i < d.left));
-  it.use = () => { d.left--; ctx.eat(0.18); ctx.task('eat'); if (d.left <= 0) { ctx.msg('That was the last slice. 🍕'); return 'consume'; } ctx.msg('🍕 So good. ' + d.left + ' slice' + (d.left === 1 ? '' : 's') + ' left.'); return 'keep'; };
-  it.useLabel = 'eat a slice'; return g;
-});
-def('takeout', 'Takeout bag', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
-  const g = new THREE.Group(); B(g, 0.26, 0.3, 0.16, M(0xc9a27a, 0.95), 0, 0, 0); B(g, 0.26, 0.04, 0.16, M(0xa98a62, 0.95), 0, 0.3, 0);
-  const lbl = (it.d && it.d.label) || 'Thai food';
-  const tex = canvasTex(128, 64, (c) => { c.fillStyle = '#f6efe2'; c.fillRect(0, 0, 128, 64); c.fillStyle = '#b3141f'; c.font = 'bold 18px sans-serif'; c.textAlign = 'center'; c.fillText(lbl.toUpperCase(), 64, 38); });
-  plane(g, 0.2, 0.1, M(0xffffff, 0.8, 0, { map: tex }), 0, 0.18, 0.081);
-  it.use = () => { ctx.eat(0.75); ctx.need('fun', 0.05); ctx.task('eat'); ctx.msg('Delicious ' + lbl.toLowerCase() + '. Totally worth it. 🥡'); return 'consume'; }; it.useLabel = 'eat';
-  return g;
-});
 def('package', 'Package', 'Fun', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
   const g = new THREE.Group(), card = M(0xc49a6c, 0.95); B(g, 0.45, 0.3, 0.35, card, 0, 0, 0);
   const tape = B(g, 0.06, 0.002, 0.36, M(0xd9c79a, 0.4), 0, 0.3, 0); markDyn(tape);
@@ -1413,6 +1327,615 @@ def('package', 'Package', 'Fun', { mount: 'surface', solid: false, small: true, 
   const gifts = ['a cozy throw blanket', 'new candles for the living room', 'a cookbook', 'string lights', 'fuzzy socks', 'a fall wreath', 'a coffee sampler'];
   ctx.interact(g, { label: () => d.opened ? 'Break down the box ♻️' : 'Open package 📦', action: () => { if (!d.opened) { d.opened = true; d.what = gifts[(Math.random() * gifts.length) | 0]; Sfx.noise(0.5, 0.25, 2500, 0.8, 'bandpass', -1500); ctx.msg('📦 It\'s ' + d.what + '!'); ctx.need('fun', 0.15); ctx.task('package'); } else { Sfx.noise(0.3, 0.2, 500, 1); ctx.removeItem(g); } } });
   ctx.tick(g, dt => { tape.visible = !d.opened; flaps.forEach(([f, s]) => f.rotation.z = lerp(f.rotation.z, d.opened ? s * 2.2 : 0, dt * 6)); });
+  return g;
+});
+
+// ================= FOOD =================
+// Rounded, layered food models with raw → cooked → burnt stages, steam / smoke / grease,
+// animated plating, and bite-by-bite eating (the food is cut away from the side nearest your mouth).
+
+const _fc = new THREE.Color(), _fc2 = new THREE.Color(), _fv = new THREE.Vector3(), _fv2 = new THREE.Vector3();
+const FGEO = new Map();
+function fgeo(key, make) { let g = FGEO.get(key); if (!g) { g = make(); FGEO.set(key, g); } return g; }
+function FM(color, r = 0.6, extra = {}) { return new THREE.MeshStandardMaterial({ color, roughness: r, metalness: 0, ...extra }); }
+function fmesh(p, geo, mat, x = 0, y = 0, z = 0) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); p.add(m); return m; }
+const noRay = (...objs) => objs.flat().forEach(o => o.traverse(c => { c.userData.noRay = true; c.raycast = () => { }; }));
+// colour for a cooking stage: c < 1 raw→cooked, 1–1.5 cooked, 1.5–2.1 cooked→burnt
+function stageCol(out, raw, cooked, burnt, c) {
+  if (c < 1) return out.set(raw).lerp(_fc2.set(cooked), Math.max(0, c));
+  if (c < 1.5) return out.set(cooked);
+  return out.set(cooked).lerp(_fc2.set(burnt), clamp((c - 1.5) / 0.6, 0, 1));
+}
+const easeBounce = (k) => { const n = 7.5625, d = 2.75; if (k < 1 / d) return n * k * k; if (k < 2 / d) return n * (k -= 1.5 / d) * k + 0.75; if (k < 2.5 / d) return n * (k -= 2.25 / d) * k + 0.9375; return n * (k -= 2.625 / d) * k + 0.984375; };
+
+// ---- shared geometry ----
+// rounded puck (pancake, cookie, bun, patty…): lathe with a rounded rim, bottom at y = 0
+function puckGeo(r, h, seg = 24) {
+  return fgeo(`puck|${r}|${h}|${seg}`, () => {
+    const rr = Math.min(h / 2, r * 0.4), pts = [new THREE.Vector2(0, 0)];
+    for (let i = 0; i <= 4; i++) { const a = -Math.PI / 2 + (i / 4) * Math.PI / 2; pts.push(new THREE.Vector2(r - rr + Math.cos(a) * rr, rr + Math.sin(a) * rr)); }
+    for (let i = h - 2 * rr > 1e-5 ? 0 : 1; i <= 4; i++) { const a = (i / 4) * Math.PI / 2; pts.push(new THREE.Vector2(r - rr + Math.cos(a) * rr, h - rr + Math.sin(a) * rr)); }
+    pts.push(new THREE.Vector2(0, h));
+    return new THREE.LatheGeometry(pts, seg);
+  });
+}
+// irregular outline (fried egg white, lettuce, syrup puddle)
+function wobbleGeo(key, base, amp, seed) {
+  return fgeo('wob|' + key, () => {
+    const g = base.clone(), p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i), a = Math.atan2(z, x), f = 1 + amp * (Math.sin(a * 3 + seed) * 0.6 + Math.sin(a * 5 + seed * 2.3) * 0.4); p.setX(i, x * f); p.setZ(i, z * f); }
+    return g;
+  });
+}
+function domeGeo(r, h, ws = 20, hs = 8) { return fgeo(`dome|${r}|${h}`, () => { const g = new THREE.SphereGeometry(r, ws, hs, 0, TAU, 0, Math.PI / 2); g.scale(1, h / r, 1); return g; }); }
+function ballGeo(r, ws = 12, hs = 9) { return fgeo(`ball|${r}|${ws}`, () => new THREE.SphereGeometry(r, ws, hs)); }
+// bread slice: domed top, crust on the sides (material 1), crumb on the faces (material 0); stands in XY, thickness along z
+function breadGeo(w, h, t) {
+  return fgeo(`bread|${w}|${h}|${t}`, () => {
+    const s = new THREE.Shape(), hw = w / 2;
+    s.moveTo(-hw, 0); s.lineTo(hw, 0); s.lineTo(hw, h * 0.62);
+    s.bezierCurveTo(hw * 1.18, h * 0.98, hw * 0.5, h * 1.08, 0, h * 0.96); s.bezierCurveTo(-hw * 0.5, h * 1.08, -hw * 1.18, h * 0.98, -hw, h * 0.62); s.lineTo(-hw, 0);
+    const g = new THREE.ExtrudeGeometry(s, { depth: t * 0.5, bevelEnabled: true, bevelThickness: t * 0.25, bevelSize: Math.min(t * 0.35, w * 0.06), bevelSegments: 2, curveSegments: 10 });
+    g.translate(0, -h * 0.5, -t * 0.25); return g;
+  });
+}
+// rounded slab (butter, cheese slice, cutting board), lying flat, bottom at y = 0
+function slabGeo(w, d, h, r) {
+  return fgeo(`slab|${w}|${d}|${h}|${r}`, () => {
+    const s = new THREE.Shape(), x = -w / 2, y = -d / 2;
+    s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r); s.lineTo(x + w, y + d - r); s.quadraticCurveTo(x + w, y + d, x + w - r, y + d);
+    s.lineTo(x + r, y + d); s.quadraticCurveTo(x, y + d, x, y + d - r); s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+    const b = Math.min(h * 0.3, r * 0.8);
+    const g = new THREE.ExtrudeGeometry(s, { depth: Math.max(0.0005, h - 2 * b), bevelEnabled: true, bevelThickness: b, bevelSize: b, bevelSegments: 2, curveSegments: 4 });
+    g.rotateX(-Math.PI / 2); g.translate(0, b, 0); return g;
+  });
+}
+// wavy bacon strip with fat streaks baked into vertex colours
+function baconGeo() {
+  return fgeo('bacon', () => {
+    const g = new THREE.BoxGeometry(0.17, 0.004, 0.034, 28, 1, 6), p = g.attributes.position, col = new Float32Array(p.count * 3);
+    const fat = new THREE.Color(0xf7e3d6), meat = new THREE.Color(0xd2525a), c = new THREE.Color();
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), z = p.getZ(i);
+      p.setY(i, p.getY(i) + Math.sin(x * 55) * 0.005 + Math.sin(z * 90 + x * 20) * 0.0008);
+      const f = Math.abs(z) > 0.0125 ? 1 : Math.abs(z - 0.002) < 0.004 ? 0.8 : 0; c.copy(meat).lerp(fat, f); col.set([c.r, c.g, c.b], i * 3);
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.computeVertexNormals(); return g;
+  });
+}
+function wedgeGeo(r, h, arc) { return fgeo(`wedge|${r}|${h}|${arc}`, () => { const g = new THREE.CylinderGeometry(r, r, h, 8, 1, false, -arc / 2, arc); g.translate(0, h / 2, 0); return g; }); }
+function crustArcGeo(r, tube, arc) { return fgeo(`crust|${r}|${tube}|${arc}`, () => { const g = new THREE.TorusGeometry(r, tube, 6, 10, arc); g.rotateX(-Math.PI / 2); g.rotateY(-(Math.PI / 2 + arc / 2)); return g; }); }
+function appleGeo(R) {
+  return fgeo('apple' + R, () => {
+    const pts = [], N = 16;
+    for (let i = 0; i <= N; i++) { const t = i / N * Math.PI, d = Math.pow(1 - Math.sin(t), 3); let y = R * (1 - Math.cos(t)) * 0.92; y += t < Math.PI / 2 ? d * R * 0.12 : -d * R * 0.2; pts.push(new THREE.Vector2(Math.max(0, R * Math.sin(t) * (1 + 0.1 * Math.sin(t))), y)); }
+    return new THREE.LatheGeometry(pts, 20);
+  });
+}
+function pearGeo() {
+  return fgeo('pear', () => {
+    const r = [0, 0.03, 0.037, 0.037, 0.033, 0.025, 0.019, 0.016, 0.012, 0], h = [0.004, 0.002, 0.012, 0.025, 0.038, 0.05, 0.06, 0.07, 0.079, 0.083];
+    return new THREE.LatheGeometry(r.map((x, i) => new THREE.Vector2(x, h[i])), 18);
+  });
+}
+function bananaGeo() {
+  return fgeo('banana', () => {
+    const curve = new THREE.CatmullRomCurve3([V3(0, 0.03, -0.085), V3(0, 0.008, -0.045), V3(0, 0.0, 0), V3(0, 0.008, 0.045), V3(0, 0.03, 0.085)]);
+    const T = 18, R = 7, g = new THREE.TubeGeometry(curve, T, 0.018, R, false), p = g.attributes.position;
+    for (let i = 0; i <= T; i++) { const u = i / T, ctr = curve.getPointAt(u), k = 0.35 + 0.65 * Math.pow(Math.sin(Math.PI * u), 0.6); for (let j = 0; j <= R; j++) { const idx = i * (R + 1) + j; _fv.fromBufferAttribute(p, idx).sub(ctr).multiplyScalar(k).add(ctr); p.setXYZ(idx, _fv.x, _fv.y + 0.018, _fv.z); } }
+    g.computeVertexNormals(); return g;
+  });
+}
+function bowlGeo(r, h) {
+  return fgeo(`bowl|${r}|${h}`, () => {
+    const t = 0.004, pts = [[0, 0], [r * 0.45, 0], [r * 0.5, 0.006], [r * 0.85, h * 0.45], [r, h], [r - t, h + 0.002], [r - t - 0.002, h], [r * 0.82, h * 0.48], [r * 0.45, 0.006 + t], [0, 0.006 + t]];
+    return new THREE.LatheGeometry(pts.map(([x, y]) => new THREE.Vector2(x, y)), 28);
+  });
+}
+
+// ---- steam / smoke puffs ----
+const PUFF_GEO = new THREE.SphereGeometry(1, 8, 6);
+function Puffs(parent, o) {
+  o = Object.assign({ n: 5, color: 0xffffff, size: 0.018, speed: 0.5, height: 0.22, opacity: 0.25, spread: 0.03, x: 0, y: 0, z: 0, grow: 2.2 }, o);
+  const ps = [];
+  for (let i = 0; i < o.n; i++) {
+    const m = new THREE.Mesh(PUFF_GEO, new THREE.MeshBasicMaterial({ color: o.color, transparent: true, opacity: 0, depthWrite: false }));
+    m.visible = false; m.scale.setScalar(0.001); parent.add(m); ps.push({ m, k: i / o.n, a: Math.random() * TAU });
+  }
+  noRay(ps.map(p => p.m)); markDyn(ps.map(p => p.m));
+  return {
+    amt: 0, o,
+    update(dt, amount) {
+      this.amt += (amount - this.amt) * Math.min(1, dt * 3); const a = this.amt;
+      for (const p of ps) {
+        if (a < 0.02) { if (p.m.visible) p.m.visible = false; continue; }
+        p.k += dt * o.speed; if (p.k > 1) { p.k -= 1; p.a = Math.random() * TAU; }
+        const k = p.k, r = o.spread * (0.4 + k);
+        p.m.visible = true; p.m.position.set(o.x + Math.cos(p.a + k * 3) * r, o.y + k * o.height, o.z + Math.sin(p.a + k * 3) * r);
+        p.m.scale.setScalar(o.size * (1 + k * o.grow)); p.m.material.opacity = o.opacity * a * (1 - k) * Math.min(1, k * 6);
+      }
+    }
+  };
+}
+// hot-grease spatter: tiny droplets hopping out of the pan, with crackle sounds
+function Spatter(parent, n = 5) {
+  const mat = FM(0xf3d27a, 0.2, { emissive: 0x3a2a00, emissiveIntensity: 0.4 }), ds = [];
+  for (let i = 0; i < n; i++) { const m = fmesh(parent, ballGeo(0.0028, 5, 4), mat); m.visible = false; ds.push({ m, t: 1, vx: 0, vz: 0, vy: 0 }); }
+  noRay(ds.map(d => d.m)); markDyn(ds.map(d => d.m));
+  return {
+    update(dt, rate, near) {
+      for (const d of ds) {
+        if (d.t >= 1) { if (rate > 0 && Math.random() < rate * dt) { d.t = 0; const a = Math.random() * TAU, s = rand(0.15, 0.35); d.vx = Math.cos(a) * s; d.vz = Math.sin(a) * s; d.vy = rand(0.5, 0.9); d.m.position.set(Math.cos(a) * 0.03, 0.02, Math.sin(a) * 0.03); d.m.visible = true; if (near && Math.random() < 0.6) Sfx.crackle(); } else { d.m.visible = false; continue; } }
+        d.t += dt * 2.2; d.vy -= 3.5 * dt; d.m.position.x += d.vx * dt; d.m.position.y += d.vy * dt; d.m.position.z += d.vz * dt; if (d.t >= 1 || d.m.position.y < 0.01) { d.t = 1; d.m.visible = false; }
+      }
+    }
+  };
+}
+
+// ---- crumbs: a small pooled particle burst that falls to the floor ----
+const Crumbs = {
+  pool: [], live: 0,
+  init(scene) {
+    const geo = new THREE.BoxGeometry(0.006, 0.004, 0.006);
+    for (let i = 0; i < 40; i++) { const m = new THREE.Mesh(geo, FM(0xc8a070, 0.9)); m.visible = false; m.frustumCulled = false; noRay(m); scene.add(m); this.pool.push({ m, v: V3(), life: 0, floor: 0 }); }
+  },
+  spawn(pos, color, n = 8, floorY = 0) {
+    for (let i = 0; i < n; i++) {
+      const c = this.pool.find(c => c.life <= 0); if (!c) return;
+      c.life = rand(0.9, 1.6); c.floor = floorY + 0.003; c.m.visible = true; c.m.material.color.set(color).offsetHSL(0, 0, rand(-0.08, 0.06));
+      c.m.position.set(pos.x + rand(-0.03, 0.03), pos.y + rand(-0.01, 0.02), pos.z + rand(-0.03, 0.03)); c.v.set(rand(-0.35, 0.35), rand(0.1, 0.7), rand(-0.35, 0.35));
+      c.m.rotation.set(rand(0, 3), rand(0, 3), 0); c.m.scale.setScalar(rand(0.7, 1.5)); this.live++;
+    }
+  },
+  update(dt) {
+    if (!this.live) return; this.live = 0;
+    for (const c of this.pool) {
+      if (c.life <= 0) continue; c.life -= dt; this.live++;
+      if (c.m.position.y > c.floor) { c.v.y -= 9.8 * dt; c.m.position.addScaledVector(c.v, dt); c.m.rotation.x += dt * 8; if (c.m.position.y <= c.floor) { c.m.position.y = c.floor; c.v.set(0, 0, 0); } }
+      if (c.life < 0.4) c.m.scale.setScalar(Math.max(0.01, c.life / 0.4));
+      if (c.life <= 0) c.m.visible = false;
+    }
+  }
+};
+
+// ================= food models =================
+// Each returns { g, set(c) } — set() shows a cooking stage (0 raw, 1 cooked, 2+ burnt).
+const FOOD_MODELS = {
+  egg(p, o = {}) {
+    const g = G(p), white = FM(0xf1ece0, 0.25, { transparent: true, opacity: 0.7 }), lace = FM(0xd99a4e, 0.85), yolkM = FM(0xf6a21a, 0.15);
+    const lc = fmesh(g, wobbleGeo('egglace', puckGeo(0.08, 0.004, 32), 0.16, 2.1), lace, 0, 0, 0);
+    fmesh(g, wobbleGeo('eggwhite', puckGeo(0.074, 0.01, 32), 0.12, 1.3), white, 0, 0.001, 0);
+    const y = fmesh(g, domeGeo(0.026, 0.017), yolkM, 0.012, 0.009, -0.008);
+    if (o.garnish) { const pep = FM(0x2a2622, 0.9); for (let i = 0; i < 7; i++) fmesh(g, ballGeo(0.0018, 4, 3), pep, rand(-0.04, 0.05), 0.012, rand(-0.045, 0.04)); const herb = FM(0x4f8a2e, 0.8); for (let i = 0; i < 4; i++) fmesh(g, ballGeo(0.003, 4, 3), herb, rand(-0.03, 0.04), 0.013, rand(-0.04, 0.03)).scale.y = 0.3; }
+    return {
+      g, set(c) {
+        stageCol(white.color, 0xf1ece0, 0xfbf8f1, 0x5c3f22, c); white.opacity = lerp(0.62, 1, clamp(c * 1.6, 0, 1)); white.roughness = lerp(0.2, 0.7, clamp(c, 0, 1));
+        lc.visible = c > 0.35; lc.scale.setScalar(lerp(0.85, 1.05, clamp(c, 0, 1.5))); stageCol(lace.color, 0xe8b46a, 0xc98436, 0x1d120a, c);
+        stageCol(yolkM.color, 0xf6a21a, 0xf4ad3e, 0x6b4416, c); yolkM.roughness = lerp(0.12, 0.5, clamp(c, 0, 1)); y.scale.y = lerp(1, 0.8, clamp(c, 0, 1));
+      }
+    };
+  },
+  pancake(p, o = {}) {
+    const g = G(p), n = o.stack || 1, body = FM(0xf4e6c0, 0.6), top = FM(0xf3e3b5, 0.5), bub = FM(0xd5b06e, 0.7), bubs = [];
+    for (let i = 0; i < n; i++) {
+      const y = i * 0.0135, s = 1 - i * 0.03;
+      fmesh(g, puckGeo(0.07 * s, 0.014, 28), body, rand(-0.003, 0.003), y, rand(-0.003, 0.003));
+      fmesh(g, fgeo('pctop', () => new THREE.CircleGeometry(0.064, 28).rotateX(-Math.PI / 2)), top, 0, y + 0.0142, 0);
+    }
+    const ty = (n - 1) * 0.0135 + 0.0145;
+    for (let i = 0; i < 9; i++) { const a = i * 2.4, r = 0.012 + (i % 4) * 0.012; bubs.push(fmesh(g, fgeo('pcbub', () => new THREE.CircleGeometry(0.0045, 8).rotateX(-Math.PI / 2)), bub, Math.cos(a) * r, ty + 0.0004, Math.sin(a) * r)); }
+    if (o.garnish) {
+      const syrup = FM(0x7a3d0e, 0.08, { transparent: true, opacity: 0.88 });
+      fmesh(g, wobbleGeo('syrup', puckGeo(0.058, 0.0025, 28), 0.2, 4.2), syrup, 0.004, ty, 0);
+      for (let i = 0; i < 4; i++) { const a = i * 1.7 + 0.4, d = fmesh(g, ballGeo(0.005, 6, 5), syrup, Math.cos(a) * 0.066, ty - 0.012, Math.sin(a) * 0.066); d.scale.set(0.8, 2.6, 0.8); }
+      fmesh(g, slabGeo(0.026, 0.026, 0.011, 0.004), FM(0xf8e391, 0.35), 0, ty + 0.002, 0).rotation.y = 0.5;
+    }
+    return {
+      g, set(c) {
+        stageCol(body.color, 0xf4e6c0, 0xe7bf74, 0x3a2412, c); stageCol(top.color, 0xf3e3b5, 0xbf7a33, 0x1e130a, c); top.roughness = c < 1 ? 0.25 : 0.6;
+        bubs.forEach((b, i) => { b.visible = c > 0.25 + (i % 3) * 0.08; b.scale.setScalar(clamp((c - 0.2) * 2, 0.3, 1)); });
+      }
+    };
+  },
+  bacon(p, o = {}) {
+    const g = G(p), m = FM(0xffffff, 0.5, { vertexColors: true }), strips = [], n = o.n || 2;
+    for (let i = 0; i < n; i++) { const s = fmesh(g, baconGeo(), m, 0, 0.006 + i * 0.001, (i - (n - 1) / 2) * 0.04); s.rotation.y = (i - (n - 1) / 2) * 0.12; strips.push(s); }
+    return { g, set(c) { stageCol(m.color, 0xffffff, 0xb46a42, 0x2a160a, c); m.roughness = lerp(0.55, 0.32, clamp(c, 0, 1)); strips.forEach(s => s.scale.set(lerp(1, 0.82, clamp(c, 0, 1)), lerp(1, 2.0, clamp(c, 0, 1.5)), 1)); } };
+  },
+  grilled(p, o = {}) {
+    const g = G(p), crumb = FM(0xf4e9cf, 0.85), crust = FM(0xc9944e, 0.8), cheese = FM(0xf8dd7e, 0.45), mats = [crumb, crust];
+    const b1 = fmesh(g, breadGeo(0.1, 0.1, 0.012), mats, 0, 0.006, 0); b1.rotation.x = -Math.PI / 2;
+    fmesh(g, slabGeo(0.098, 0.098, 0.006, 0.006), cheese, 0.002, 0.012, -0.001).rotation.y = 0.05;
+    const b2 = fmesh(g, breadGeo(0.1, 0.1, 0.012), mats, 0, 0.024, 0); b2.rotation.x = -Math.PI / 2;
+    const drips = []; [[0.05, 0.01], [-0.051, -0.02], [0.02, -0.052], [-0.015, 0.051]].forEach(([x, z]) => { const d = fmesh(g, ballGeo(0.006, 7, 5), cheese, x, 0.008, z); d.scale.set(1, 1.7, 1); drips.push(d); });
+    return { g, set(c) { stageCol(crumb.color, 0xf4e9cf, 0xd8954a, 0x26160b, c); stageCol(crust.color, 0xc9944e, 0x99561f, 0x1a0f08, c); stageCol(cheese.color, 0xf8dd7e, 0xf5b52e, 0x6b4a10, c); cheese.roughness = c > 0.5 ? 0.3 : 0.5; drips.forEach(d => d.scale.setScalar(clamp((c - 0.4) * 1.6, 0.001, 1))); drips.forEach(d => d.scale.y *= 1.7); } };
+  },
+  toast(p, o = {}) {
+    const g = G(p), crumb = FM(0xf3e6c8, 0.85), crust = FM(0xc68a48, 0.8), n = o.n || 2;
+    for (let i = 0; i < n; i++) { const s = fmesh(g, breadGeo(0.1, 0.105, 0.012), [crumb, crust], (i - (n - 1) / 2) * 0.05, 0.007 + i * 0.012, (i - (n - 1) / 2) * 0.02); s.rotation.set(-Math.PI / 2 + (i ? 0.12 : 0), 0, i * 0.5 - 0.2); }
+    if (o.garnish) { const butter = fmesh(g, slabGeo(0.024, 0.02, 0.008, 0.003), FM(0xf8e391, 0.2), 0.03, 0.026, 0.01); butter.rotation.y = 0.7; butter.scale.y = 0.6; }
+    return { g, set(c) { stageCol(crumb.color, 0xf3e6c8, 0xcf8d43, 0x2a170b, c); stageCol(crust.color, 0xc68a48, 0x8f4f1e, 0x1a0e06, c); } };
+  },
+  cookies(p, o = {}) {
+    const g = G(p), m = FM(0xe9d2a6, 0.85), chipM = FM(0x3a1f12, 0.45), cks = [], n = o.n || 6;
+    for (let i = 0; i < n; i++) {
+      const pos = o.layout ? o.layout(i) : [Math.cos(i * 1.26) * (i ? 0.05 : 0), 0, Math.sin(i * 1.26) * (i ? 0.05 : 0)];
+      const ck = fmesh(g, puckGeo(0.032, 0.011, 20), m, pos[0], pos[1], pos[2]);
+      for (let k = 0; k < 5; k++) { const a = k * 1.9 + i, r = k ? 0.017 : 0; fmesh(ck, ballGeo(0.0048, 6, 5), chipM, Math.cos(a) * r, 0.0105, Math.sin(a) * r).scale.y = 0.6; }
+      cks.push(ck);
+    }
+    return { g, cks, set(c) { stageCol(m.color, 0xe9d2a6, 0xc98b45, 0x3a2312, c); const k = clamp(c, 0, 1); cks.forEach(ck => ck.scale.set(lerp(0.7, 1, k), lerp(1.9, 1, k), lerp(0.7, 1, k))); } };
+  },
+};
+
+// ================= edible items: bite-by-bite eating =================
+// it.food = { bites, hunger, sound, crumb, flesh, mode ('cut' | 'level' | 'drink'), level(frac), done() }
+// 'cut' slices the food away from the side facing your mouth; inner faces show the food's inside colour.
+function makeEdible(ctx, it, root, part, o) {
+  const d = it.d || (it.d = {});
+  const F = it.food = Object.assign({ bites: 4, hunger: 0.5, sound: 'crunch', crumb: 0xc8a070, flesh: 0xf0e0c0, mode: 'cut', handYaw: 0, verb: 'take a bite', name: 'food' }, o);
+  if (d.left == null) d.left = F.bites;
+  F.part = part;
+  F.apply = (camPos) => {
+    const eaten = 1 - d.left / F.bites;
+    if (F.mode !== 'cut') { F.level && F.level(1 - eaten); return; }
+    if (!F.plane) setupClip(F, part, camPos);
+    F.local.set(_fv2.copy(F.dir).negate(), F.max - eaten * (F.max - F.min));
+  };
+  ctx.interact(root, {
+    label: () => F.empty && F.empty() ? (F.emptyLabel || '') : d.left > 0 ? (F.mode === 'drink' ? 'Drink — take a sip' : 'Eat — ' + F.verb) + ' (' + d.left + ' left)' : '',
+    action: () => ctx.bite(root)
+  });
+  if (d.left < F.bites) F.level && F.level(d.left / F.bites);
+  return F;
+}
+function setupClip(F, part, camPos) {
+  part.updateWorldMatrix(true, true);
+  const inv = new THREE.Matrix4().copy(part.matrixWorld).invert(), rel = new THREE.Matrix4(), box = new THREE.Box3(), bb = new THREE.Box3(), meshes = [];
+  part.traverse(o => { if (o.isMesh && !o.userData.inner && !o.userData.noClip && o.visible) meshes.push(o); });
+  for (const o of meshes) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); rel.multiplyMatrices(inv, o.matrixWorld); bb.copy(o.geometry.boundingBox).applyMatrix4(rel); box.union(bb); }
+  const ctr = box.getCenter(V3()), camL = part.worldToLocal(camPos.clone());
+  F.dir = camL.sub(ctr); F.dir.y *= 0.35; if (F.dir.lengthSq() < 1e-8) F.dir.set(0, 0, 1); F.dir.normalize();
+  let mn = Infinity, mx = -Infinity;
+  for (let i = 0; i < 8; i++) { _fv.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z); const v = _fv.dot(F.dir); mn = Math.min(mn, v); mx = Math.max(mx, v); }
+  F.min = mn; F.max = mx; F.local = new THREE.Plane(); F.plane = new THREE.Plane();
+  const upd = () => F.plane.copy(F.local).applyMatrix4(part.matrixWorld);
+  const flesh = new THREE.MeshStandardMaterial({ color: F.flesh, roughness: 0.85, side: THREE.BackSide, clippingPlanes: [F.plane] });
+  for (const o of meshes) {
+    (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { m.clippingPlanes = [F.plane]; m.needsUpdate = true; });
+    o.onBeforeRender = upd;
+    const inner = new THREE.Mesh(o.geometry, flesh); inner.userData.inner = true; inner.onBeforeRender = upd; noRay(inner); o.add(inner);
+  }
+}
+
+// ================= cooking gear =================
+const FOODS = {
+  egg: { name: 'fried egg', hunger: 0.35, bites: 3, crumb: 0xf4e9c8, flesh: 0xf6d27a, sound: 'soft' },
+  pancake: { name: 'pancakes', hunger: 0.5, bites: 5, crumb: 0xd9a65a, flesh: 0xf3e2b8, sound: 'soft' },
+  bacon: { name: 'bacon', hunger: 0.35, bites: 3, crumb: 0x8a4a2a, flesh: 0xc0704a, sound: 'crunch' },
+  grilled: { name: 'grilled cheese', hunger: 0.5, bites: 4, crumb: 0xd8954a, flesh: 0xf5c040, sound: 'crunch' },
+  toast: { name: 'buttered toast', hunger: 0.3, bites: 4, crumb: 0xcf8d43, flesh: 0xf1e2c0, sound: 'crunch' },
+  cookies: { name: 'cookies', hunger: 0.35, bites: 5, crumb: 0xc98b45, flesh: 0xe2b77a, sound: 'crunch' },
+};
+const PAN_ORDER = ['egg', 'pancake', 'bacon', 'grilled'];
+def('pan', 'Frying pan', 'Kitchen', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
+  const g = new THREE.Group(), blk = M(0x202022, 0.4, 0.5);
+  C(g, 0.13, 0.11, 0.045, blk, 0, 0, 0, 28); C(g, 0.118, 0.118, 0.002, M(0x2c2c30, 0.25, 0.6), 0, 0.012, 0, 28);
+  const hdl = B(g, 0.03, 0.02, 0.2, M(0x1a1a1a, 0.6), 0, 0.03, 0.22); hdl.rotation.x = -0.12;
+  const food = G(g, 0, 0.013, 0); markDyn(food);
+  const models = {}; for (const k of PAN_ORDER) { models[k] = FOOD_MODELS[k](food); models[k].g.visible = false; }
+  noRay(food);
+  const steam = Puffs(g, { n: 6, size: 0.02, height: 0.3, opacity: 0.22, spread: 0.05, y: 0.04 });
+  const smoke = Puffs(g, { n: 6, color: 0x36322f, size: 0.025, height: 0.45, opacity: 0.5, spread: 0.05, y: 0.05, speed: 0.4 });
+  const spat = Spatter(g);
+  const st = { food: null, cook: 0, sz: null, choice: 0, flip: -1, plate: -1 }, wp = V3(), pp = V3();
+  const nm = () => FOODS[st.food].name;
+  const stage = () => st.cook < 1 ? 'raw' : st.cook < 1.6 ? 'cooked' : st.cook < 2 ? 'browning' : 'burnt';
+  const heatHere = () => ctx.heatAt(g.getWorldPosition(wp));
+  ctx.interact(g, {
+    label: () => {
+      if (st.plate >= 0) return 'Plating…';
+      const burner = ctx.burnerAt(g.getWorldPosition(wp));
+      if (!st.food) return 'Add ' + FOODS[PAN_ORDER[st.choice]].name + ' to the pan';
+      const s = stage(), heat = heatHere();
+      if (s === 'raw') return heat ? 'Cooking ' + nm() + '… ' + Math.round(st.cook * 100) + '% (raw)' : burner ? 'Turn on the burner under the pan' : 'Put the pan on the stove';
+      if (s === 'cooked') return 'Plate the ' + nm() + ' 🍽 (cooked)';
+      if (s === 'browning') return 'Plate it now — the ' + nm() + ' is browning!';
+      return 'Scrape out the burnt ' + nm() + ' 😬';
+    },
+    action: () => {
+      if (st.plate >= 0 || st.flip >= 0) return;
+      if (!st.food) { st.food = PAN_ORDER[st.choice]; st.cook = 0; Sfx.splash(); return; }
+      const s = stage();
+      if (s === 'raw') {
+        if (heatHere()) return ctx.msg('Still raw — give it a few more seconds.');
+        const b = ctx.burnerAt(g.getWorldPosition(wp)); if (b) return ctx.toggleBurner(b, true);
+        st.food = null; ctx.msg('Took the raw food out. Set the pan on a burner to cook.'); return;
+      }
+      if (s === 'burnt') { st.food = null; Sfx.noise(0.4, 0.2, 900, 1, 'bandpass', -400); ctx.msg('Into the trash it goes.'); return; }
+      st.plate = 0; Sfx.noise(0.25, 0.12, 1400, 1, 'bandpass', 600); // scoop it out
+    },
+    altLabel: () => st.plate >= 0 ? '' : !st.food ? 'switch to ' + FOODS[PAN_ORDER[(st.choice + 1) % PAN_ORDER.length]].name : stage() !== 'burnt' && heatHere() ? 'flip it' : '',
+    alt: () => {
+      if (st.plate >= 0) return;
+      if (!st.food) { st.choice = (st.choice + 1) % PAN_ORDER.length; Sfx.click(); return; }
+      if (st.flip < 0 && heatHere()) { st.flip = 0; Sfx.whoosh(); }
+    }
+  });
+  ctx.onRemove(g, () => st.sz && st.sz.stop());
+  ctx.tick(g, (dt, t) => {
+    for (const k of PAN_ORDER) { const v = st.food === k; if (models[k].g.visible !== v) models[k].g.visible = v; }
+    const heat = st.food && st.plate < 0 && heatHere();
+    if (heat) { st.cook += dt / 9; if (!st.sz) st.sz = Sfx.loop('sizzle', () => g.getWorldPosition(pp), 0.14); st.sz.setVol(st.cook > 1.6 ? 0.2 : 0.14); }
+    else if (st.sz) { st.sz.stop(); st.sz = null; }
+    if (st.food) models[st.food].set(st.cook);
+    const near = g.getWorldPosition(pp).distanceTo(ctx.playerPos()) < 4;
+    steam.update(dt, heat ? clamp(st.cook * 1.2, 0.3, 1) * (st.cook > 1.8 ? 0.4 : 1) : 0);
+    smoke.update(dt, st.food && st.cook > 1.6 ? clamp((st.cook - 1.6) * 2, 0, 1) : 0);
+    spat.update(dt, heat ? (st.food === 'bacon' ? 6 : 3) : 0, near);
+    if (st.flip >= 0) {
+      st.flip += dt / 0.55; const k = Math.min(1, st.flip);
+      food.position.y = 0.013 + Math.sin(k * Math.PI) * 0.13; food.rotation.x = k * TAU * (st.food === 'bacon' ? 0.5 : 1); food.rotation.z = Math.sin(k * Math.PI) * 0.2;
+      if (k >= 1) { st.flip = -1; food.position.y = 0.013; food.rotation.set(0, 0, 0); Sfx.noise(0.12, 0.3, 500, 1, 'lowpass'); }
+    }
+    if (st.plate >= 0) { // the food lifts out of the pan toward you, then lands on a plate in your hand
+      st.plate += dt / 0.35; const k = Math.min(1, st.plate);
+      food.position.y = 0.013 + k * 0.22; food.scale.setScalar(1 - k * 0.4);
+      if (k >= 1) { const f = st.food; st.food = null; st.plate = -1; food.position.y = 0.013; food.scale.setScalar(1); ctx.give('plate', { food: f, fresh: true, hot: true }, { rise: true }); ctx.task('cook'); }
+    }
+  });
+  return g;
+});
+
+def('plate', 'Plate of food', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
+  const g = new THREE.Group(), d = it.d || (it.d = {});
+  fmesh(g, fgeo('plate', () => new THREE.LatheGeometry([[0, 0], [0.07, 0], [0.075, 0.004], [0.12, 0.012], [0.128, 0.016], [0.122, 0.017], [0.075, 0.009], [0, 0.009]].map(([x, y]) => new THREE.Vector2(x, y)), 36)), M(0xf7f5f0, 0.25));
+  const kind = FOODS[d.food] ? d.food : 'egg', F = FOODS[kind];
+  const food = G(g, 0, 0.009, 0); markDyn(food);
+  let model;
+  if (kind === 'egg') { model = FOOD_MODELS.egg(food, { garnish: true }); const t = FOOD_MODELS.toast(food, { n: 1 }); t.g.position.set(0.055, 0, 0.03); t.g.scale.setScalar(0.75); t.set(1.2); }
+  else if (kind === 'pancake') model = FOOD_MODELS.pancake(food, { stack: 3, garnish: true });
+  else if (kind === 'bacon') model = FOOD_MODELS.bacon(food, { n: 3 });
+  else if (kind === 'grilled') { model = FOOD_MODELS.grilled(food); model.g.rotation.y = 0.6; }
+  else if (kind === 'toast') model = FOOD_MODELS.toast(food, { n: 2, garnish: true });
+  else if (kind === 'cookies') model = FOOD_MODELS.cookies(food, { n: 5, layout: (i) => i < 4 ? [Math.cos(i * 1.57 + 0.4) * 0.05, 0, Math.sin(i * 1.57 + 0.4) * 0.05] : [0, 0.011, 0] });
+  model.set(d.burnt ? 2.05 : 1.15);
+  const steam = Puffs(g, { n: 5, size: 0.016, height: 0.24, opacity: 0.2, spread: 0.035, y: 0.04, speed: 0.45 });
+  const anim = d.fresh ? { t: 0 } : null; delete d.fresh;
+  const born = performance.now() - (d.hot ? 0 : 1e9);
+  makeEdible(ctx, it, g, food, { bites: F.bites, hunger: d.burnt ? F.hunger * 0.5 : F.hunger, sound: F.sound, crumb: F.crumb, flesh: F.flesh, name: F.name, msg: d.burnt ? 'Crunchy… a little too crunchy.' : 'Yum! That hit the spot. 🍽' });
+  ctx.tick(g, (dt) => {
+    const age = (performance.now() - born) / 1000;
+    steam.update(dt, age < 90 && it.d.left > 0 ? clamp(1 - age / 90, 0, 1) : 0);
+    if (anim) {
+      if (anim.t < 1) { anim.t = Math.min(1, anim.t + dt / 0.55); const k = anim.t; food.position.y = 0.009 + 0.16 * (1 - easeBounce(k)); food.rotation.y = (1 - k) * 1.2; food.scale.setScalar(lerp(0.6, 1, Math.min(1, k * 2))); if (k >= 1) Sfx.clink(); }
+    }
+  });
+  return g;
+});
+
+def('mug', 'Mug', 'Kitchen', { mount: 'surface', solid: false, small: true, color: '#f4f1ea', colorable: true }, (ctx, it) => {
+  const g = new THREE.Group(), cm = M(it.c || '#f4f1ea', 0.3), d = it.d || (it.d = {});
+  fmesh(g, fgeo('mugbody', () => new THREE.LatheGeometry([[0, 0], [0.04, 0], [0.044, 0.004], [0.046, 0.1], [0.042, 0.1], [0.04, 0.008], [0, 0.008]].map(([x, y]) => new THREE.Vector2(x, y)), 24)), cm);
+  T(g, 0.026, 0.007, cm, 0.05, 0.05, 0, TAU);
+  const liq = C(g, 0.04, 0.04, 0.004, M(0x4a2a14, 0.12), 0, 0.006, 0, 20); markDyn(liq);
+  const crema = C(g, 0.034, 0.034, 0.001, M(0xc8915a, 0.4), 0, 0.01, 0, 18); markDyn(crema);
+  const steam = Puffs(g, { n: 4, size: 0.012, height: 0.18, opacity: 0.2, spread: 0.02, y: 0.1 });
+  if (d.fill && d.left == null) d.left = 3;
+  const F = makeEdible(ctx, it, g, liq, { mode: 'drink', bites: 3, hunger: 0, verb: 'sip', name: 'drink', handYaw: -0.6,
+    level: (f) => { liq.scale.y = 1; liq.position.y = 0.006 + 0.084 * f; },
+    empty: () => !d.fill, emptyLabel: '',
+    done: () => { d.fill = null; return 'keep'; } });
+  F.onSip = (first) => { if (first) ctx.drink(d.fill); };
+  ctx.tick(g, (dt) => {
+    const has = !!d.fill && d.left > 0; liq.visible = has; crema.visible = has && d.fill === 'coffee';
+    if (has) { liq.material.color.set(d.fill === 'tea' ? 0x9a5a22 : 0x3e220f); liq.position.y = 0.006 + 0.084 * (d.left / 3); crema.position.y = liq.position.y + 0.004; }
+    steam.update(dt, has ? 0.8 : 0);
+  });
+  return g;
+});
+
+def('kettle', 'Tea kettle', 'Kitchen', { mount: 'surface', solid: false, small: true, color: '#c7c9cc', colorable: true }, (ctx, it) => {
+  const g = new THREE.Group(), m = M(it.c || '#c7c9cc', 0.25, 0.8);
+  const body = S(g, 0.1, m, 0, 0.09, 0, 18, 12); body.scale.y = 0.9; C(g, 0.1, 0.1, 0.03, m, 0, 0, 0, 18);
+  const sp = C(g, 0.012, 0.02, 0.12, m, 0.1, 0.08, 0, 8); sp.rotation.z = -0.9;
+  T(g, 0.07, 0.01, M(0x1a1a1a), 0, 0.18, 0, Math.PI);
+  const steam = Puffs(g, { n: 6, size: 0.018, height: 0.3, opacity: 0.3, spread: 0.02, x: 0.17, y: 0.17 });
+  const st = { temp: 0, whistle: 0 }; const wp = V3(), pp = V3();
+  ctx.interact(g, {
+    label: () => st.temp >= 1 ? 'Pour a cup of tea 🍵' : ctx.heatAt(g.getWorldPosition(wp)) ? 'Heating water… ' + Math.round(st.temp * 100) + '%' : ctx.burnerAt(g.getWorldPosition(wp)) ? 'Turn on the burner under the kettle' : 'Put the kettle on the stove',
+    action: () => {
+      if (st.temp >= 1) { Sfx.noise(0.8, 0.12, 900, 1.5, 'bandpass', -300); ctx.give('mug', { fill: 'tea' }, { rise: true }); ctx.msg('Hot tea! Left-click to sip.'); ctx.task('tea'); st.temp = 0.6; return; }
+      const b = !ctx.heatAt(g.getWorldPosition(wp)) && ctx.burnerAt(g.getWorldPosition(wp)); if (b) ctx.toggleBurner(b, true);
+    }
+  });
+  ctx.onRemove(g, () => st.b && st.b.stop());
+  ctx.tick(g, (dt) => {
+    const heat = ctx.heatAt(g.getWorldPosition(wp));
+    st.temp = clamp(st.temp + (heat ? dt / 12 : -dt / 60), 0, 1.2);
+    if (st.temp >= 1 && heat) { if (!st.b) st.b = Sfx.loop('boil', () => g.getWorldPosition(pp), 0.1); if ((st.whistle -= dt) < 0) { Sfx.tone(2400, 0.8, 'sine', 0.05, 80); st.whistle = 1.2; } } else if (st.b) { st.b.stop(); st.b = null; }
+    steam.update(dt, clamp((st.temp - 0.7) * 3, 0, 1));
+  });
+  return g;
+});
+
+def('toaster', 'Toaster', 'Kitchen', { mount: 'surface', solid: false, small: true, color: '#f1ece2', colorable: true }, (ctx, it) => {
+  const g = new THREE.Group(), m = M(it.c || '#f1ece2', 0.3, 0.2);
+  fmesh(g, slabGeo(0.28, 0.17, 0.19, 0.03), m);
+  B(g, 0.2, 0.005, 0.03, M(0x111111), 0, 0.19, -0.035); B(g, 0.2, 0.005, 0.03, M(0x111111), 0, 0.19, 0.035);
+  const lever = B(g, 0.03, 0.015, 0.04, M(0x333333), 0.15, 0.13, 0); markDyn(lever);
+  const crumb = FM(0xf3e6c8, 0.85), crust = FM(0xc68a48, 0.8);
+  const toasts = [-0.035, 0.035].map(z => { const s = fmesh(g, breadGeo(0.11, 0.1, 0.012), [crumb, crust], 0, 0.12, z); return s; }); markDyn(toasts);
+  const smoke = Puffs(g, { n: 4, color: 0xdddddd, size: 0.014, height: 0.2, opacity: 0.18, spread: 0.04, y: 0.2 });
+  const st = { s: 'ready', t: 0, pop: 1 };
+  ctx.interact(g, {
+    label: () => st.s === 'ready' ? 'Make toast 🍞' : st.s === 'toasting' ? 'Toasting… ' + Math.round(st.t / 6 * 100) + '%' : 'Take the toast',
+    action: () => {
+      if (st.s === 'ready') { if (!ctx.power()) return ctx.msg('No power.'); st.s = 'toasting'; st.t = 0; Sfx.click(); Sfx.noise(0.15, 0.2, 600, 1, 'lowpass'); }
+      else if (st.s === 'done') { st.s = 'ready'; st.t = 0; ctx.give('plate', { food: 'toast', fresh: true, hot: true }, { rise: true }); ctx.task('cook'); }
+    }
+  });
+  ctx.tick(g, dt => {
+    if (st.s === 'toasting') { st.t += dt; if (st.t > 6) { st.s = 'done'; st.pop = 0; Sfx.pop(); } }
+    const c = st.s === 'ready' ? 0 : clamp(st.t / 6, 0, 1.15);
+    stageCol(crumb.color, 0xf3e6c8, 0xcf8d43, 0x2a170b, c); stageCol(crust.color, 0xc68a48, 0x8f4f1e, 0x1a0e06, c);
+    if (st.pop < 1) st.pop = Math.min(1, st.pop + dt / 0.45);
+    const y = st.s === 'toasting' ? 0.07 : st.s === 'done' ? 0.15 + 0.07 * Math.sin(st.pop * Math.PI) * (1 - st.pop * 0.6) : 0.12; // pops up, then settles
+    lever.position.y = st.s === 'toasting' ? 0.04 : 0.13; toasts.forEach(t => { t.position.y = y + 0.05; });
+    smoke.update(dt, st.s === 'toasting' && st.t > 3 ? 0.6 : 0);
+  });
+  return g;
+});
+
+def('fruit_bowl', 'Fruit bowl', 'Kitchen', { mount: 'surface', solid: false, small: true }, (ctx, it) => {
+  const g = new THREE.Group(); fmesh(g, bowlGeo(0.15, 0.09), M(0x8a5a3a, 0.5));
+  const kinds = ['apple', 'orange', 'apple', 'pear', 'orange', 'apple'], fruit = [];
+  kinds.forEach((k, i) => { const f = FRUIT[k](g); f.position.set(Math.cos(i) * 0.07, 0.03 + (i > 3 ? 0.04 : 0), Math.sin(i) * 0.07); f.rotation.set(rand(-0.4, 0.4), rand(0, 6), rand(-0.4, 0.4)); f.userData.kind = k; fruit.push(f); });
+  const ban = FRUIT.banana(g); ban.position.set(0, 0.07, 0); ban.rotation.set(0.2, 1.2, 0.15); ban.userData.kind = 'banana'; fruit.push(ban); markDyn(fruit);
+  const next = () => fruit.slice().reverse().find(f => f.visible);
+  ctx.interact(g, {
+    label: () => { const f = next(); return f ? 'Take ' + (f.userData.kind === 'orange' ? 'an orange' : f.userData.kind === 'apple' ? 'an apple' : 'a ' + f.userData.kind) : 'Bowl is empty (refills tomorrow)'; },
+    action: () => { const f = next(); if (!f) return; f.visible = false; Sfx.noise(0.15, 0.2, 1500, 1); ctx.give('fruit', { kind: f.userData.kind }, { rise: true }); }
+  });
+  g.userData.refill = () => fruit.forEach(f => f.visible = true);
+  return g;
+});
+const FRUIT = {
+  apple(p) { const g = G(p); fmesh(g, appleGeo(0.038), M(0xb8202a, 0.45)); C(g, 0.0025, 0.0025, 0.022, M(0x5a3a1a, 0.8), 0, 0.055, 0, 5).rotation.z = 0.25; const leaf = fmesh(g, ballGeo(0.011, 6, 4), M(0x4f8a2e, 0.7), 0.009, 0.072, 0); leaf.scale.set(1.3, 0.25, 0.6); return g; },
+  orange(p) { const g = G(p); const o = fmesh(g, ballGeo(0.037, 18, 14), M(0xf08a1c, 0.85), 0, 0.035, 0); o.scale.y = 0.93; fmesh(g, ballGeo(0.005, 6, 4), M(0x7a7a2a, 0.8), 0, 0.068, 0).scale.y = 0.4; return g; },
+  pear(p) { const g = G(p); fmesh(g, pearGeo(), M(0xb8c24a, 0.6)); C(g, 0.002, 0.003, 0.02, M(0x5a3a1a, 0.8), 0, 0.08, 0, 5).rotation.z = 0.3; return g; },
+  banana(p) { const g = G(p), m = M(0xf1cf3e, 0.55), tip = M(0x4a3a1a, 0.8); fmesh(g, bananaGeo(), m); fmesh(g, ballGeo(0.006, 6, 4), tip, 0, 0.048, -0.085); C(g, 0.006, 0.007, 0.02, M(0x8a7a3a, 0.7), 0, 0.044, 0.085, 6).rotation.x = Math.PI / 2 + 0.6; return g; },
+};
+const FRUIT_INFO = { apple: ['apple', 0xf3e6b5, 0.25, 4], orange: ['orange', 0xf5a53a, 0.22, 4], pear: ['pear', 0xf1ecc4, 0.22, 4], banana: ['banana', 0xf6efc8, 0.25, 3] };
+def('fruit', 'Fruit', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
+  const g = new THREE.Group(), d = it.d || (it.d = {}), k = FRUIT[d.kind] ? d.kind : 'apple', inf = FRUIT_INFO[k];
+  const part = FRUIT[k](g);
+  makeEdible(ctx, it, g, part, { bites: inf[3], hunger: inf[2], sound: k === 'banana' ? 'soft' : 'crunch', crumb: inf[1], flesh: inf[1], name: inf[0], msg: k === 'apple' ? 'Crisp and sweet. 🍎' : k === 'banana' ? 'Potassium! 🍌' : 'Fresh! 🍊', handYaw: k === 'banana' ? 0.3 : 0 });
+  return g;
+});
+
+// ---- fridge snacks, leftovers, pizza slices and delivery meals ----
+const SNACKS = { cheese: 'cheese & grapes', yogurt: 'yogurt with honey', milk: 'a glass of milk', slice: 'a cold pizza slice' };
+const SNACK_ORDER = ['cheese', 'yogurt', 'milk', 'slice'];
+function pizzaSlice(p, o = {}) {
+  const g = G(p, 0, 0, -0.075), arc = TAU / 8;
+  fmesh(g, wedgeGeo(0.15, 0.008, arc), FM(0xe6bd78, 0.85));
+  fmesh(g, wedgeGeo(0.138, 0.004, arc * 0.92), FM(o.cold ? 0xf0cf6a : 0xf3c24e, 0.35), 0, 0.008, 0);
+  fmesh(g, crustArcGeo(0.146, 0.01, arc), FM(0xcf9550, 0.8), 0, 0.009, 0);
+  const pep = FM(0xa3281c, 0.5); [[0.005, 0.05], [-0.012, 0.09], [0.014, 0.1], [0, 0.125]].forEach(([x, z]) => fmesh(g, puckGeo(0.014, 0.003, 14), pep, x, 0.011, z));
+  const herb = FM(0x3f7a2a, 0.8); for (let i = 0; i < 5; i++) fmesh(g, ballGeo(0.0025, 4, 3), herb, rand(-0.02, 0.02), 0.013, rand(0.03, 0.13)).scale.y = 0.3;
+  return g;
+}
+def('slice', 'Pizza slice', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
+  const g = new THREE.Group(), d = it.d || (it.d = {});
+  const part = G(g); pizzaSlice(part, { cold: d.cold }); part.rotation.y = Math.PI; // tip toward you
+  makeEdible(ctx, it, g, part, { bites: 4, hunger: 0.2, sound: 'soft', crumb: 0xe0a85a, flesh: 0xf3d27a, name: 'pizza', msg: d.cold ? 'Cold pizza: underrated. 🍕' : '🍕 So good.' });
+  return g;
+});
+def('snack', 'Snack', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
+  const g = new THREE.Group(), d = it.d || (it.d = {}), k = SNACKS[d.kind] ? d.kind : 'cheese';
+  if (k === 'cheese') {
+    fmesh(g, slabGeo(0.17, 0.11, 0.012, 0.012), M(0xb0834f, 0.6));
+    const part = G(g, 0, 0.012, 0);
+    const w = fmesh(part, wedgeGeo(0.055, 0.03, TAU / 7), FM(0xf2c75a, 0.6), -0.035, 0, -0.02); w.rotation.y = 0.8;
+    const cr = FM(0xd8a656, 0.85); for (let i = 0; i < 3; i++) fmesh(part, puckGeo(0.02, 0.004, 14), cr, 0.035 + i * 0.006, i * 0.004, 0.025);
+    const gr = [FM(0x6b2a5a, 0.3), FM(0x7b3a6a, 0.3)]; for (let i = 0; i < 10; i++) fmesh(part, ballGeo(0.0095, 8, 6), gr[i % 2], 0.03 + (i % 3) * 0.016 + rand(-0.003, 0.003), 0.008 + Math.floor(i / 6) * 0.012, -0.03 + Math.floor(i / 3) % 2 * 0.016);
+    makeEdible(ctx, it, g, part, { bites: 4, hunger: 0.3, sound: 'soft', crumb: 0xe9c56a, flesh: 0xf3d58a, name: 'cheese plate', msg: 'Cheese and grapes. Classy. 🧀' });
+  } else if (k === 'yogurt') {
+    const cup = FM(0xffffff, 0.4); fmesh(g, fgeo('ycup', () => new THREE.CylinderGeometry(0.032, 0.026, 0.065, 20, 1, true).translate(0, 0.0325, 0)), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, side: THREE.DoubleSide }));
+    C(g, 0.0325, 0.0295, 0.03, M(0x3a6fd0, 0.5), 0, 0.012, 0, 20); C(g, 0.026, 0.026, 0.002, cup, 0, 0, 0, 20);
+    const top = G(g, 0, 0.055, 0); markDyn(top); C(top, 0.03, 0.03, 0.003, FM(0xf6f1e6, 0.5), 0, 0, 0, 20); const hn = T(top, 0.012, 0.0025, FM(0xe0a020, 0.1), 0, 0.004, 0); hn.rotation.x = Math.PI / 2;
+    const sp = G(g, 0.01, 0.05, 0); sp.rotation.z = -0.5; B(sp, 0.006, 0.09, 0.003, M(0xd6d6d8, 0.25, 0.9), 0, 0, 0);
+    makeEdible(ctx, it, g, top, { mode: 'level', bites: 4, hunger: 0.25, sound: 'soft', crumb: 0xf6f1e6, name: 'yogurt', verb: 'take a spoonful', msg: 'Yogurt with honey. 🍯', level: (f) => { top.position.y = 0.008 + 0.047 * f; } });
+  } else if (k === 'milk') {
+    fmesh(g, fgeo('glass', () => new THREE.CylinderGeometry(0.032, 0.028, 0.12, 20, 1, true).translate(0, 0.06, 0)), new THREE.MeshStandardMaterial({ color: 0xdfe8ee, roughness: 0.05, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false }));
+    const milk = C(g, 0.029, 0.026, 0.1, FM(0xf7f7f2, 0.35), 0, 0.004, 0, 20); markDyn(milk); milk.geometry.translate(0, 0.05, 0); milk.position.y = 0.004;
+    makeEdible(ctx, it, g, milk, { mode: 'drink', bites: 3, hunger: 0.12, name: 'milk', verb: 'sip', msg: 'A cold glass of milk. 🥛', level: (f) => { milk.scale.y = Math.max(0.01, f); } });
+    it.food.onSip = (first) => { if (first) ctx.need('energy', 0.05); };
+  } else {
+    const part = G(g); pizzaSlice(part, { cold: true }); part.rotation.y = Math.PI;
+    makeEdible(ctx, it, g, part, { bites: 4, hunger: 0.2, sound: 'soft', crumb: 0xe0a85a, flesh: 0xf3d27a, name: 'cold pizza', msg: 'Cold pizza: underrated. 🍕' });
+  }
+  return g;
+});
+function pastaBowl(p) {
+  const g = G(p); fmesh(g, bowlGeo(0.07, 0.045), M(0xf4f1ea, 0.25));
+  const top = G(g, 0, 0.02, 0); markDyn(top);
+  fmesh(top, wobbleGeo('pasta', domeGeo(0.052, 0.03, 20, 8), 0.08, 1.1), FM(0xe8b04a, 0.55));
+  const tube = FM(0xf0c060, 0.5); for (let i = 0; i < 9; i++) { const a = i * 2.3, r = 0.012 + (i % 3) * 0.014, m = fmesh(top, fgeo('penne', () => new THREE.CylinderGeometry(0.004, 0.004, 0.02, 8, 1, true)), tube, Math.cos(a) * r, 0.022 + (2 - i % 3) * 0.004, Math.sin(a) * r); m.rotation.set(rand(0, 3), rand(0, 3), 1.2); }
+  fmesh(top, wobbleGeo('sauce', domeGeo(0.036, 0.02, 16, 6), 0.15, 2.2), FM(0xb3301f, 0.3), 0, 0.02, 0);
+  const basil = FM(0x3f8a2e, 0.6); for (let i = 0; i < 2; i++) { const l = fmesh(top, ballGeo(0.009, 6, 4), basil, -0.01 + i * 0.018, 0.04, 0.005 * i); l.scale.set(1.3, 0.2, 0.7); l.rotation.y = i; }
+  const parm = FM(0xfaf6e8, 0.9); for (let i = 0; i < 8; i++) fmesh(top, ballGeo(0.0022, 4, 3), parm, rand(-0.025, 0.025), 0.038, rand(-0.025, 0.025));
+  return { g, top };
+}
+def('bowl', 'Bowl of leftovers', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
+  const g = new THREE.Group(), d = it.d || (it.d = {}), b = pastaBowl(g);
+  const steam = Puffs(g, { n: 5, size: 0.016, height: 0.24, opacity: 0.22, spread: 0.03, y: 0.06 }); const born = performance.now() - (d.hot ? 0 : 1e9);
+  makeEdible(ctx, it, g, b.top, { mode: 'level', bites: 5, hunger: 0.6, sound: 'soft', crumb: 0xc84a2a, name: 'leftover pasta', verb: 'take a forkful', msg: 'Leftover pasta, even better the next day. 🍝', level: (f) => { b.top.scale.y = Math.max(0.05, f); b.top.position.y = 0.02 - (1 - f) * 0.012; } });
+  ctx.tick(g, dt => steam.update(dt, it.d.left > 0 && (performance.now() - born) < 90000 ? 1 - (performance.now() - born) / 90000 : 0));
+  return g;
+});
+const MEALS = { thai: 'pad thai', burger: 'burger', burrito: 'burrito' };
+const mealKind = (label) => /burger/i.test(label || '') ? 'burger' : /burrito/i.test(label || '') ? 'burrito' : 'thai';
+def('meal', 'Takeout meal', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
+  const g = new THREE.Group(), d = it.d || (it.d = {}), k = MEALS[d.kind] ? d.kind : 'thai';
+  if (k === 'burger') {
+    const part = G(g);
+    fmesh(part, puckGeo(0.055, 0.02, 24), FM(0xd9974a, 0.7));
+    fmesh(part, wobbleGeo('patty', puckGeo(0.058, 0.017, 24), 0.04, 0.7), FM(0x4e2d1b, 0.9), 0, 0.02, 0);
+    const ch = fmesh(part, slabGeo(0.1, 0.1, 0.003, 0.004), FM(0xf5b52e, 0.35), 0, 0.036, 0); ch.rotation.y = Math.PI / 4;
+    fmesh(part, wobbleGeo('lettuce', puckGeo(0.064, 0.005, 24), 0.15, 3.3), FM(0x76c043, 0.6), 0, 0.039, 0);
+    fmesh(part, puckGeo(0.046, 0.008, 20), FM(0xd23a2a, 0.4), 0, 0.044, 0);
+    fmesh(part, domeGeo(0.057, 0.04), FM(0xd88d3f, 0.55), 0, 0.052, 0);
+    const ses = FM(0xf3e6c8, 0.6); for (let i = 0; i < 12; i++) { const a = i * 2.4, r = 0.01 + (i % 4) * 0.011, y = 0.052 + 0.04 * Math.sqrt(Math.max(0, 1 - (r / 0.057) ** 2)); const s = fmesh(part, ballGeo(0.0025, 4, 3), ses, Math.cos(a) * r, y, Math.sin(a) * r); s.scale.set(1, 0.5, 1.6); s.rotation.y = a; }
+    makeEdible(ctx, it, g, part, { bites: 5, hunger: 0.7, sound: 'soft', crumb: 0xd9974a, flesh: 0x9a5a34, name: 'burger', msg: 'That burger was perfect. 🍔' });
+  } else if (k === 'burrito') {
+    const part = G(g, 0, 0.036, 0);
+    fmesh(part, fgeo('burrito', () => new THREE.CapsuleGeometry(0.034, 0.12, 6, 14).rotateX(Math.PI / 2)), FM(0xe9d29c, 0.8));
+    const foil = fmesh(part, fgeo('foil', () => new THREE.CylinderGeometry(0.037, 0.037, 0.08, 18, 1, true).rotateX(Math.PI / 2)), new THREE.MeshStandardMaterial({ color: 0xd6d6d8, roughness: 0.3, metalness: 0.9, side: THREE.DoubleSide }), 0, 0, -0.045); foil.userData.noClip = true;
+    makeEdible(ctx, it, g, part, { bites: 5, hunger: 0.7, sound: 'soft', crumb: 0xc8743a, flesh: 0xa55a2a, name: 'burrito', msg: 'Burrito: demolished. 🌯' });
+  } else {
+    const pail = FM(0xf4f1ea, 0.6); fmesh(g, fgeo('pail', () => new THREE.CylinderGeometry(0.065, 0.048, 0.085, 4, 1, true).rotateY(Math.PI / 4).translate(0, 0.0425, 0)), new THREE.MeshStandardMaterial({ color: 0xf4f1ea, roughness: 0.6, side: THREE.DoubleSide }));
+    C(g, 0.034, 0.034, 0.002, pail, 0, 0, 0, 4).rotation.y = Math.PI / 4;
+    const top = G(g, 0, 0.06, 0); markDyn(top);
+    fmesh(top, wobbleGeo('noodle', domeGeo(0.05, 0.03, 18, 7), 0.1, 0.4), FM(0xe1b56a, 0.5));
+    const nd = FM(0xe9c27a, 0.45); for (let i = 0; i < 7; i++) { const t = fmesh(top, fgeo('noodleT', () => new THREE.TorusGeometry(0.02, 0.0035, 4, 12, Math.PI * 1.3)), nd, rand(-0.02, 0.02), 0.02 + rand(0, 0.01), rand(-0.02, 0.02)); t.rotation.set(Math.PI / 2 + rand(-0.4, 0.4), 0, rand(0, 6)); }
+    const on = FM(0x6db04a, 0.6); for (let i = 0; i < 8; i++) { const c = fmesh(top, fgeo('onion', () => new THREE.CylinderGeometry(0.003, 0.003, 0.006, 6)), on, rand(-0.03, 0.03), 0.034, rand(-0.03, 0.03)); c.rotation.x = Math.PI / 2; }
+    const lime = fmesh(top, wedgeGeo(0.022, 0.012, Math.PI * 0.6), FM(0x8cc04a, 0.4), 0.03, 0.02, 0.02); lime.rotation.set(0, 0.5, Math.PI / 2);
+    makeEdible(ctx, it, g, top, { mode: 'level', bites: 5, hunger: 0.75, sound: 'soft', crumb: 0xe1b56a, name: 'pad thai', verb: 'take a bite of noodles', msg: 'Delicious pad thai. Totally worth it. 🥡', level: (f) => { top.scale.y = Math.max(0.05, f); top.position.y = 0.06 - (1 - f) * 0.03; } });
+  }
+  it.food.onFirst = () => ctx.need('fun', 0.05);
+  return g;
+});
+
+def('pizza', 'Pizza box', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
+  const g = new THREE.Group(), card = M(0xd8b98a, 0.9); B(g, 0.38, 0.03, 0.38, card, 0, 0, 0);
+  const lid = G(g, 0, 0.045, -0.19); B(lid, 0.38, 0.012, 0.38, card, 0, 0, 0.19); B(lid, 0.18, 0.002, 0.08, M(0xb3141f), 0, 0.012, 0.19);
+  const pie = G(g, 0, 0.03, 0); markDyn(pie); const slices = [];
+  for (let i = 0; i < 8; i++) { const s = G(pie); pizzaSlice(s); s.children[0].position.z = 0; s.rotation.y = (i + 0.5) / 8 * TAU; slices.push(s); }
+  const d = it.d || (it.d = {}); if (d.left == null) d.left = 8;
+  const st = hinge(ctx, lid, 'x', -1.7, 'pizza box', 'click');
+  ctx.interact(pie, {
+    label: () => d.left > 0 ? 'Take a slice 🍕 (' + d.left + ' left)' : '',
+    action: () => {
+      if (d.left <= 0) return;
+      if (!st.open) { st.open = true; Sfx.click(); return; }
+      d.left--; Sfx.noise(0.2, 0.12, 900, 1); ctx.give('slice', { cold: false }, { rise: true });
+      if (d.left === 0) ctx.msg('That was the last slice. The box can go now (press E to pick it up).');
+    }
+  });
+  ctx.tick(g, () => slices.forEach((sl, i) => { const v = i < d.left; if (sl.visible !== v) sl.visible = v; }));
+  it.handLabel = 'set it down to take a slice'; it.handUse = () => ctx.msg('Set the box down (right-click a counter), then right-click it for a slice.');
+  return g;
+});
+def('takeout', 'Takeout bag', 'Kitchen', { mount: 'surface', solid: false, small: true, hidden: true }, (ctx, it) => {
+  const g = new THREE.Group(); B(g, 0.26, 0.3, 0.16, M(0xc9a27a, 0.95), 0, 0, 0); B(g, 0.26, 0.04, 0.16, M(0xa98a62, 0.95), 0, 0.3, 0);
+  const lbl = (it.d && it.d.label) || 'Thai food';
+  const tex = canvasTex(128, 64, (c) => { c.fillStyle = '#f6efe2'; c.fillRect(0, 0, 128, 64); c.fillStyle = '#b3141f'; c.font = 'bold 18px sans-serif'; c.textAlign = 'center'; c.fillText(lbl.toUpperCase(), 64, 38); });
+  plane(g, 0.2, 0.1, M(0xffffff, 0.8, 0, { map: tex }), 0, 0.18, 0.081);
+  const unpack = () => { Sfx.noise(0.5, 0.2, 2200, 0.8, 'bandpass', -1200); const kind = mealKind(lbl); ctx.removeItem(g); ctx.give('meal', { kind }, { rise: true }); ctx.msg('Unpacked your ' + MEALS[kind] + '. Left-click to eat.'); };
+  ctx.interact(g, { label: 'Unpack your ' + lbl.toLowerCase() + ' 🥡', action: unpack });
+  it.handLabel = 'unpack it'; it.handUse = unpack;
   return g;
 });
 
@@ -1433,7 +1956,6 @@ function roomAt(x, z) {
   return 'ext';
 }
 
-const cookieDone = new THREE.Color(0xb57a3c);
 let _clockMin = -1, _clockStr = '';
 function clockText() { const d = new Date(); if (d.getMinutes() !== _clockMin) { _clockMin = d.getMinutes(); _clockStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/ ?[AP]M/, ''); } return _clockStr; }
 function buildApartment(scene, ctx) {
@@ -1759,53 +2281,100 @@ function buildApartment(scene, ctx) {
   B(K, 3.54, 0.06, 0.36, trim, 6.17, 2.35, 0.24); // crown
   // ---- range ----
   const R = G(K, 5.93, 0, 0.06);
-  B(R, 0.76, 0.9, 0.66, ss, 0, 0, 0.33); B(R, 0.76, 0.02, 0.66, M(0x0c0c0e, 0.15, 0.3), 0, 0.9, 0.33); B(R, 0.76, 0.2, 0.06, ss, 0, 0.92, 0.03);
+  // hollow oven box (sides, floor, roof, back) so the rack and cookies are reachable with the door open
+  B(R, 0.07, 0.9, 0.66, ss, -0.345, 0, 0.33); B(R, 0.07, 0.9, 0.66, ss, 0.345, 0, 0.33); B(R, 0.62, 0.12, 0.66, ss, 0, 0, 0.33); B(R, 0.62, 0.16, 0.66, ss, 0, 0.74, 0.33); B(R, 0.62, 0.62, 0.04, ss, 0, 0.12, 0.02);
+  const enamel = M(0x1b1b1d, 0.35, 0.1); B(R, 0.01, 0.62, 0.6, enamel, -0.305, 0.12, 0.36); B(R, 0.01, 0.62, 0.6, enamel, 0.305, 0.12, 0.36); B(R, 0.6, 0.01, 0.6, enamel, 0, 0.73, 0.36); B(R, 0.6, 0.01, 0.6, enamel, 0, 0.121, 0.36);
+  B(R, 0.76, 0.02, 0.66, M(0x0c0c0e, 0.15, 0.3), 0, 0.9, 0.33); B(R, 0.76, 0.2, 0.06, ss, 0, 0.92, 0.03);
   const disp = canvasTex(128, 32, (g) => { g.fillStyle = '#000'; g.fillRect(0, 0, 128, 32); }); const dm = new THREE.MeshBasicMaterial({ map: disp });
   plane(R, 0.14, 0.035, dm, 0, 1.04, 0.061);
-  for (let i = 0; i < 4; i++) C(R, 0.018, 0.018, 0.02, black, -0.3 + i * 0.12 + (i > 1 ? 0.24 : 0), 1.02, 0.065, 12).rotation.x = Math.PI / 2;
-  const burners = [];
+  const burners = [], BURNER_NAMES = ['front-left', 'front-right', 'back-left', 'back-right'];
   [[-0.18, 0.5, 0.11], [0.18, 0.5, 0.09], [-0.18, 0.2, 0.09], [0.18, 0.2, 0.11]].forEach(([bx, bz, r], i) => {
     const bm = M(0x1a1a1c, 0.3, 0, { emissive: 0xff3a10, emissiveIntensity: 0 });
     const ring = T(R, r * 0.75, 0.012, bm, bx, 0.923, bz); ring.rotation.x = Math.PI / 2; const ring2 = T(R, r * 0.4, 0.01, bm, bx, 0.923, bz); ring2.rotation.x = Math.PI / 2;
     const hit = C(R, r, r, 0.01, new THREE.MeshBasicMaterial({ visible: false }), bx, 0.92, bz, 16);
-    const h = { on: false, pos: V3(), mat: bm, i };
-    ctx.interact(hit, { label: () => (h.on ? 'Turn off ' : 'Turn on ') + ['front-left', 'front-right', 'back-left', 'back-right'][[2, 3, 0, 1][i]] + ' burner', action: () => { if (!ctx.power()) return ctx.msg('No power.'); h.on = !h.on; Sfx.click(); if (h.on) Sfx.noise(0.3, 0.1, 2000, 1); } });
+    const h = { on: false, pos: V3(), mat: bm, i, name: BURNER_NAMES[i] };
+    h.toggle = (on = !h.on) => { if (on && !ctx.power()) { ctx.msg('No power.'); return; } h.on = on; Sfx.click(); if (h.on) Sfx.noise(0.3, 0.1, 2000, 1); };
+    const def = { label: () => (h.on ? 'Turn off the ' : 'Turn on the ') + h.name + ' burner', action: () => h.toggle() };
+    ctx.interact(hit, def);
     burners.push(h); A.heat.push(h); h.hit = hit;
+  });
+  // control knobs on the backguard: each one works its burner even when a pan or kettle covers it
+  const knobs = [];
+  [[-0.3, 2], [-0.18, 0], [0.18, 1], [0.3, 3]].forEach(([kx, bi]) => {
+    const kn = G(R, kx, 1.02, 0.07); markDyn(kn);
+    C(kn, 0.02, 0.022, 0.022, black, 0, 0, 0, 14).rotation.x = Math.PI / 2; B(kn, 0.004, 0.022, 0.006, M(0xd8d8d8, 0.4), 0, 0.0, 0.012);
+    const kh = B(R, 0.075, 0.075, 0.03, new THREE.MeshBasicMaterial({ visible: false }), kx, 0.985, 0.08); const h = burners[bi];
+    ctx.interact(kh, { label: () => (h.on ? 'Turn off the ' : 'Turn on the ') + h.name + ' burner', action: () => h.toggle() });
+    knobs.push([kn, h]);
   });
   // oven door (hinged at bottom)
   const od = G(R, 0, 0.12, 0.66); B(od, 0.72, 0.62, 0.04, ss, 0, 0, 0.0); B(od, 0.5, 0.3, 0.005, M(0x101010, 0.1, 0.3, { transparent: true, opacity: 0.85 }), 0, 0.2, 0.021);
   const oh = C(od, 0.012, 0.012, 0.6, ssDark, 0, 0.55, 0.06, 8); oh.rotation.z = Math.PI / 2;
   B(R, 0.72, 0.08, 0.03, ssDark, 0, 0.02, 0.66);
-  const ovenIn = M(0x1b1b1b, 0.5, 0, { emissive: 0xff7a2a, emissiveIntensity: 0 }); B(R, 0.62, 0.55, 0.02, ovenIn, 0, 0.15, 0.06);
-  B(R, 0.6, 0.01, 0.55, nickel, 0, 0.35, 0.36); const tray = G(R, 0, 0.36, 0.36); B(tray, 0.4, 0.012, 0.3, M(0x555555, 0.4, 0.6), 0, 0, 0);
-  const cookies = []; for (let i = 0; i < 6; i++) cookies.push(C(tray, 0.035, 0.035, 0.012, M(0xe6cfa0), -0.12 + (i % 3) * 0.12, 0.012, -0.06 + Math.floor(i / 3) * 0.12, 12));
-  const oven = { on: false, t: 0, done: false, hasCookies: true };
+  const ovenIn = M(0x1b1b1b, 0.5, 0, { emissive: 0xff7a2a, emissiveIntensity: 0 }); B(R, 0.58, 0.55, 0.02, ovenIn, 0, 0.15, 0.06);
+  B(R, 0.6, 0.01, 0.55, nickel, 0, 0.35, 0.36); const tray = G(R, 0, 0.36, 0.36); markDyn(tray); B(tray, 0.4, 0.012, 0.3, M(0x555555, 0.4, 0.6), 0, 0, 0);
+  const ckm = FOOD_MODELS.cookies(tray, { n: 6, layout: (i) => [-0.12 + (i % 3) * 0.12, 0.012, -0.06 + Math.floor(i / 3) * 0.12] }); markDyn(ckm.g);
+  const oven = { on: false, t: 0, hasCookies: true };
+  const ovenSmoke = Puffs(R, { n: 6, color: 0x3a3634, size: 0.03, height: 0.5, opacity: 0.4, spread: 0.08, y: 0.95, z: 0.1, speed: 0.35 });
+  const ovenSteam = Puffs(tray, { n: 4, size: 0.02, height: 0.2, opacity: 0.18, spread: 0.08, y: 0.03 });
   const odSt = hinge(ctx, od, 'x', 1.45, 'oven', 'door');
-  ctx.interact(tray, { label: () => oven.done ? 'Take cookies 🍪' : oven.hasCookies ? 'Cookie dough (bake at 350°)' : 'Put new cookie dough in', action: () => { if (oven.done) { oven.done = false; oven.hasCookies = false; ctx.give('plate', { food: 'cookies' }); ctx.task('bake'); ctx.msg('Warm cookies! Press F to eat.'); } else if (!oven.hasCookies) { oven.hasCookies = true; oven.t = 0; cookies.forEach(c => c.material.color.set(0xe6cfa0)); } } });
-  const panelHit = B(R, 0.3, 0.12, 0.02, new THREE.MeshBasicMaterial({ visible: false }), 0, 0.98, 0.07);
-  ctx.interact(panelHit, { label: () => oven.on ? 'Turn oven off' : 'Preheat oven to 350°F', action: () => { if (!ctx.power()) return ctx.msg('No power.'); oven.on = !oven.on; Sfx.beep(1, 1400); } });
+  const bake = () => oven.t / 18; // 1 = done, 2+ = burnt
+  const trayDef = {
+    label: () => !oven.hasCookies ? 'Put new cookie dough in' : bake() >= 1 ? (bake() >= 2 ? 'Take out the burnt cookies 😬' : 'Take the cookies 🍪') : oven.on ? 'Baking… ' + Math.round(bake() * 100) + '% (close the door)' : 'Cookie dough — turn the oven on',
+    action: () => {
+      if (!oven.hasCookies) { oven.hasCookies = true; oven.t = 0; ckm.set(0); Sfx.noise(0.2, 0.15, 800, 1); return; }
+      if (bake() < 1) return ctx.msg(oven.on ? 'Not done yet. Close the door so they bake.' : 'Turn the oven on at the control panel above the burners.');
+      const burnt = bake() >= 2; oven.hasCookies = false; oven.t = 0; ctx.give('plate', { food: 'cookies', fresh: true, hot: true, burnt }, { rise: true }); ctx.task('bake'); ctx.msg(burnt ? 'Oops. A bit charred.' : 'Warm cookies! Left-click to eat.');
+    }
+  };
+  ctx.interact(tray, trayDef);
+  // with the door open the whole oven opening reaches the tray (which also slides out toward you)
+  const ovenMouth = B(R, 0.6, 0.6, 0.02, new THREE.MeshBasicMaterial({ visible: false }), 0, 0.13, 0.62); markDyn(ovenMouth); ovenMouth.visible = false;
+  ctx.interact(ovenMouth, trayDef);
+  const panelHit = B(R, 0.26, 0.12, 0.02, new THREE.MeshBasicMaterial({ visible: false }), 0, 0.98, 0.07);
+  ctx.interact(panelHit, { label: () => oven.on ? (oven.hasCookies && bake() < 1 ? 'Turn oven off (baking ' + Math.round(bake() * 100) + '%)' : 'Turn oven off') : 'Preheat oven to 350°F', action: () => { if (!ctx.power()) return ctx.msg('No power.'); oven.on = !oven.on; Sfx.beep(1, 1400); } });
   ctx.tick(R, (dt) => {
     if (!R.userData.posDone) { R.updateWorldMatrix(true, false); burners.forEach(h => { h.pos.copy(h.hit.position); h.pos.y = 0.93; R.localToWorld(h.pos); }); R.userData.posDone = true; } // the range never moves
     burners.forEach(h => { if (!ctx.power()) h.on = false; const t = h.on ? 1.6 : 0; if (h.mat.emissiveIntensity !== t) { h.mat.emissiveIntensity = lerp(h.mat.emissiveIntensity, t, dt * 2); if (Math.abs(h.mat.emissiveIntensity - t) < 0.01) h.mat.emissiveIntensity = t; } });
+    knobs.forEach(([kn, h]) => { const r = h.on ? -1.2 : 0; if (kn.rotation.z !== r) kn.rotation.z = lerp(kn.rotation.z, r, Math.min(1, dt * 10)); if (Math.abs(kn.rotation.z - r) < 0.01) kn.rotation.z = r; });
     if (!ctx.power()) oven.on = false;
     ovenIn.emissiveIntensity = oven.on ? 0.35 : odSt.open ? 0.1 : 0;
-    if (oven.on && oven.hasCookies && !oven.done && !odSt.open) { oven.t += dt; cookies.forEach(c => c.material.color.lerp(cookieDone, dt * 0.08)); if (oven.t > 18) { oven.done = true; Sfx.beep(4, 1500); ctx.msg('⏰ The cookies are ready!'); } }
-    const txt = !ctx.power() ? '' : oven.on ? '350°' : clockText(); if (txt !== disp.userData.last) { disp.userData.last = txt; const g = disp.userData.ctx; g.fillStyle = '#000'; g.fillRect(0, 0, 128, 32); g.fillStyle = '#4fb3ff'; g.font = 'bold 22px monospace'; g.fillText(txt, 18, 25); disp.needsUpdate = true; } // only re-upload when the text changes
+    const was = bake();
+    if (oven.on && oven.hasCookies && !odSt.open) { oven.t += dt; if (was < 1 && bake() >= 1) { Sfx.beep(4, 1500); ctx.msg('⏰ The cookies are ready! Open the oven door to take them out.'); } if (was < 2 && bake() >= 2) ctx.msg('🔥 Something smells burnt in the oven!'); }
+    ckm.g.visible = oven.hasCookies; if (oven.hasCookies) ckm.set(bake());
+    ovenMouth.visible = odSt.v > 0.6; tray.position.z = 0.36 + 0.22 * odSt.v; // rack slides out as the door opens
+    ovenSmoke.update(dt, oven.hasCookies && bake() > 1.6 ? clamp((bake() - 1.6) * 2, 0, 1) : 0);
+    ovenSteam.update(dt, odSt.v > 0.5 && oven.hasCookies && bake() > 0.6 ? 1 : 0);
+    const txt = !ctx.power() ? '' : oven.on ? (oven.hasCookies && bake() < 1 ? '350° ' + String(Math.max(0, Math.ceil(18 - oven.t))).padStart(2, '0') : '350°') : clockText(); if (txt !== disp.userData.last) { disp.userData.last = txt; const g = disp.userData.ctx; g.fillStyle = '#000'; g.fillRect(0, 0, 128, 32); g.fillStyle = '#4fb3ff'; g.font = 'bold 22px monospace'; g.fillText(txt, 8, 25); disp.needsUpdate = true; } // only re-upload when the text changes
   });
   colK(5.55, 0, 0.06, 6.31, 1.1, 0.74);
   // ---- microwave ----
   const MW = G(K, 5.93, 1.45, 0.06);
-  B(MW, 0.76, 0.42, 0.4, ss, 0, 0, 0.2); B(MW, 0.56, 0.36, 0.38, M(0xe8e8e8, 0.5), -0.08, 0.03, 0.2);
+  B(MW, 0.02, 0.42, 0.4, ss, -0.37, 0, 0.2); B(MW, 0.18, 0.42, 0.4, ss, 0.29, 0, 0.2); B(MW, 0.56, 0.03, 0.4, ss, -0.08, 0, 0.2); B(MW, 0.56, 0.03, 0.4, ss, -0.08, 0.39, 0.2); B(MW, 0.56, 0.36, 0.02, ss, -0.08, 0.03, 0.01); // hollow shell
+  const mwIn = M(0xe8e8e8, 0.5); B(MW, 0.54, 0.34, 0.005, mwIn, -0.08, 0.035, 0.025); B(MW, 0.005, 0.34, 0.37, mwIn, -0.355, 0.035, 0.205); B(MW, 0.005, 0.34, 0.37, mwIn, 0.195, 0.035, 0.205); B(MW, 0.54, 0.004, 0.37, mwIn, -0.08, 0.031, 0.205);
   const mwLight = M(0xe8e8e8, 0.5, 0, { emissive: 0xffe9b0, emissiveIntensity: 0 }); B(MW, 0.54, 0.01, 0.36, mwLight, -0.08, 0.37, 0.2);
-  const turn = G(MW, -0.08, 0.05, 0.2); markMoves(turn); C(turn, 0.14, 0.14, 0.01, M(0xdfe8ee, 0.1, 0, { transparent: true, opacity: 0.6 }), 0, 0, 0, 24); C(turn, 0.07, 0.05, 0.06, M(0xf4f1ea, 0.3), 0, 0.01, 0, 16); C(turn, 0.065, 0.065, 0.01, M(0xa0522d), 0, 0.055, 0, 16);
-  const mwd = G(MW, -0.38, 0.01, 0.4); B(mwd, 0.58, 0.4, 0.025, ss, 0.29, 0, 0); B(mwd, 0.4, 0.26, 0.004, M(0x0d0d0d, 0.1, 0.2, { transparent: true, opacity: 0.8 }), 0.25, 0.07, 0.013); B(mwd, 0.02, 0.3, 0.03, ssDark, 0.53, 0.05, 0.025);
+  const turn = G(MW, -0.08, 0.05, 0.2); markMoves(turn); C(turn, 0.14, 0.14, 0.01, M(0xdfe8ee, 0.1, 0, { transparent: true, opacity: 0.6 }), 0, 0, 0, 24);
+  const mwBowl = pastaBowl(turn).g; mwBowl.position.y = 0.01; mwBowl.visible = false; markDyn(mwBowl); noRay(mwBowl);
+  const mwSteam = Puffs(turn, { n: 4, size: 0.015, height: 0.16, opacity: 0.22, spread: 0.03, y: 0.07 });
+  const mwd = G(MW, -0.38, 0.01, 0.4); B(mwd, 0.05, 0.4, 0.025, ss, 0.025, 0, 0); B(mwd, 0.13, 0.4, 0.025, ss, 0.515, 0, 0); B(mwd, 0.4, 0.07, 0.025, ss, 0.25, 0, 0); B(mwd, 0.4, 0.07, 0.025, ss, 0.25, 0.33, 0); B(mwd, 0.4, 0.26, 0.004, M(0x0d0d0d, 0.1, 0.2, { transparent: true, opacity: 0.45 }), 0.25, 0.07, 0.006); B(mwd, 0.02, 0.3, 0.03, ssDark, 0.53, 0.05, 0.025);
   const mwDoor = hinge(ctx, mwd, 'y', -1.7, 'microwave', 'click');
   const kpd = B(MW, 0.15, 0.36, 0.02, M(0x111111, 0.3), 0.29, 0.03, 0.405); const mwDisp = canvasTex(64, 24, g => { }); plane(MW, 0.1, 0.035, new THREE.MeshBasicMaterial({ map: mwDisp }), 0.29, 0.33, 0.416);
   for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) B(MW, 0.025, 0.02, 0.005, M(0x444444), 0.255 + c * 0.035, 0.1 + r * 0.04, 0.416);
-  const mw = { on: false, t: 0 };
-  ctx.interact(kpd, { label: () => mw.on ? 'Stop microwave' : 'Heat leftovers (30s)', action: () => { if (!ctx.power()) return ctx.msg('No power.'); if (mwDoor.open) return ctx.msg('Close the microwave door first.'); mw.on = !mw.on; mw.t = 0; Sfx.beep(1, 2000); if (mw.on) mw.snd = Sfx.loop('hum', VK(5.93, 1.6, 0.3), 0.15); else mw.snd && mw.snd.stop(); } });
+  const mw = { on: false, t: 0, ready: false };
+  const takeBowl = () => { if (!mwDoor.open) { mwDoor.open = true; Sfx.click(); } mw.ready = false; mwBowl.visible = false; ctx.give('bowl', { hot: true }, { rise: true }); ctx.msg('Hot leftovers! Left-click to eat.'); };
+  ctx.interact(kpd, {
+    label: () => mw.ready ? 'Take the hot leftovers 🍝' : mw.on ? 'Stop microwave (0:' + String(Math.max(0, 30 - Math.floor(mw.t * 3.75))).padStart(2, '0') + ')' : 'Heat leftovers (30s)',
+    action: () => {
+      if (mw.ready) return takeBowl();
+      if (!ctx.power()) return ctx.msg('No power.'); if (mwDoor.open) return ctx.msg('Close the microwave door first.');
+      mw.on = !mw.on; mw.t = 0; Sfx.beep(1, 2000); if (mw.on) { mwBowl.visible = true; mw.snd = Sfx.loop('hum', VK(5.93, 1.6, 0.3), 0.15); } else { mw.snd && mw.snd.stop(); mwBowl.visible = false; }
+    }
+  });
+  const bowlHit = B(turn, 0.15, 0.07, 0.15, new THREE.MeshBasicMaterial({ visible: false }), 0, 0.01, 0); markDyn(bowlHit);
+  ctx.interact(bowlHit, { label: () => mw.ready ? 'Take the hot leftovers 🍝' : '', action: () => { if (mw.ready) takeBowl(); } });
   ctx.tick(MW, dt => {
-    if (mw.on) { mw.t += dt; turn.rotation.y += dt * 1.5; if (mw.t > 8 || !ctx.power() || mwDoor.open) { mw.on = false; mw.snd && mw.snd.stop(); if (mw.t > 8) { Sfx.beep(3, 2000); ctx.msg('Leftovers are hot. Smells great.'); ctx.eat(0.6); ctx.task('microwave'); } } }
+    mwSteam.update(dt, mw.ready ? 1 : 0); bowlHit.visible = mw.ready;
+    if (mw.on) { mw.t += dt; turn.rotation.y += dt * 1.5; if (mw.t > 8 || !ctx.power() || mwDoor.open) { mw.on = false; mw.snd && mw.snd.stop(); if (mw.t > 8) { mw.ready = true; Sfx.beep(3, 2000); ctx.msg('Ding! Leftovers are hot — open the microwave.'); ctx.task('microwave'); } else mwBowl.visible = false; } }
     mwLight.emissiveIntensity = (mw.on || mwDoor.v > 0.2) && ctx.power() ? 1 : 0;
     const txt = !ctx.power() ? '' : mw.on ? '0:' + String(Math.max(0, 30 - Math.floor(mw.t * 3.75))).padStart(2, '0') : clockText(); if (txt !== mwDisp.userData.last) { mwDisp.userData.last = txt; const g = mwDisp.userData.ctx; g.fillStyle = '#000'; g.fillRect(0, 0, 64, 24); g.fillStyle = '#4fffa0'; g.font = 'bold 18px monospace'; g.fillText(txt, 4, 19); mwDisp.needsUpdate = true; }
   });
@@ -1821,7 +2390,13 @@ function buildApartment(scene, ctx) {
   C(snacks, 0.04, 0.04, 0.25, M(0xf2a516, 0.3, 0, { transparent: true, opacity: 0.8 }), 0.28, 0.7, 0.05, 12);
   for (let i = 0; i < 5; i++) S(snacks, 0.04, M([0x5d8f45, 0xc0262d, 0xe8892b][i % 3], 0.6), -0.25 + i * 0.1, 0.75, 0.15, 8, 6);
   C(snacks, 0.05, 0.05, 0.1, M(0xe8e2d0, 0.6), -0.1, 1.33, 0, 12); B(snacks, 0.18, 0.1, 0.14, M(0xffffff, 0.8), 0.2, 1.33, 0); C(snacks, 0.035, 0.035, 0.2, M(0x2b5a2b, 0.3), -0.3, 1.33, 0.05, 10);
-  ctx.interact(snacks, { label: 'Grab a snack 🧀', action: () => { ctx.eat(0.4); ctx.msg(['Cheese and grapes. Classy.', 'A cold glass of milk.', 'Leftover pizza slice!', 'Yogurt with honey.'][(Math.random() * 4) | 0]); Sfx.noise(0.2, 0.1, 1200, 1); ctx.task('eat'); } });
+  const snackSt = { i: 0 };
+  ctx.interact(snacks, {
+    label: () => 'Grab ' + SNACKS[SNACK_ORDER[snackSt.i]] + ' 🧀',
+    action: () => { Sfx.noise(0.2, 0.1, 1200, 1); ctx.give('snack', { kind: SNACK_ORDER[snackSt.i] }, { rise: true }); snackSt.i = (snackSt.i + 1) % SNACK_ORDER.length; },
+    altLabel: () => 'pick ' + SNACKS[SNACK_ORDER[(snackSt.i + 1) % SNACK_ORDER.length]] + ' instead',
+    alt: () => { snackSt.i = (snackSt.i + 1) % SNACK_ORDER.length; Sfx.click(); }
+  });
   const frDoors = [];
   for (const sd of [-1, 1]) {
     const piv = G(FR, sd * 0.46, 0.71, 0); const lw = 0.455;
@@ -2237,6 +2812,8 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, 1, 0.05, 700); camera.rotation.order = 'YXZ';
 scene.add(camera);
+renderer.localClippingEnabled = true; // used only by bitten food
+Crumbs.init(scene);
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.3;
@@ -2294,7 +2871,10 @@ const ctx = {
   task: (id) => completeTask(id),
   need(k, d) { P.needs[k] = clamp(P.needs[k] + d, 0, 1); if (d > 0.05) floatNeed(k, d); },
   heatAt(p) { return A.heat.find(h => h.on && Math.hypot(h.pos.x - p.x, h.pos.z - p.z) < 0.14 && p.y - h.pos.y > -0.03 && p.y - h.pos.y < 0.12) || null; },
-  give(type, d) { if (held) dropHeld(); const g = spawnItem({ id: uid(), t: type, x: P.pos.x, y: 0, z: P.pos.z, r: P.yaw, d: d || {} }); startHold(g); },
+  give(type, d, opts) { if (held) dropHeld(); const g = spawnItem({ id: uid(), t: type, x: P.pos.x, y: 0, z: P.pos.z, r: P.yaw, d: d || {} }); startHold(g, opts); return g; },
+  burnerAt(p) { return A.heat.find(h => Math.hypot(h.pos.x - p.x, h.pos.z - p.z) < 0.14 && p.y - h.pos.y > -0.03 && p.y - h.pos.y < 0.12) || null; },
+  toggleBurner(b, on) { if (b.toggle) b.toggle(on); else b.on = on; },
+  bite(g) { bite(g); },
   removeItem(g) { removeItem(g); },
   sit(pos, yaw, lie) {
     P.sit = { pos: pos.clone(), yaw, lie, prev: P.pos.clone(), root: arguments[3] || null }; P.yaw = yaw; P.pitch = lie ? 0.9 : -0.1;
@@ -2470,7 +3050,7 @@ function updateAction(dt) {
 const PR = 0.19; // player radius
 const _cand = [];
 function gatherColliders(feet, cx, cz, reach) { // broad phase: boxes at body height near the player
-  _cand.length = 0; const y0 = feet + 0.3, y1 = feet + (P.crouch ? 1.1 : 1.75);
+  _cand.length = 0; const y0 = feet + 0.3, y1 = feet + (P.crouch ? 1.5 : 1.75);
   const test = (b, ref) => { if (!b || b.isEmpty() || b.max.y <= y0 || b.min.y >= y1) return; if (cx + reach < b.min.x || cx - reach > b.max.x || cz + reach < b.min.z || cz - reach > b.max.z) return; _cand.push(b, ref); };
   for (const c of STATIC) test(c.box, c);
   for (const g of itemsGroup.children) test(g.userData.box, g);
@@ -2488,7 +3068,7 @@ function penetration(x, z, b) {
   _push.x = pick[0]; _push.z = pick[1]; _push.d = Math.abs(pick[0] + pick[1]); return _push.d;
 }
 function blockedExcept(x, z, skip) { // is a circle at (x,z) overlapping anything other than box `skip`? (shallow test, no recursion)
-  const y0 = P.pos.y + 0.3, y1 = P.pos.y + (P.crouch ? 1.1 : 1.75);
+  const y0 = P.pos.y + 0.3, y1 = P.pos.y + (P.crouch ? 1.5 : 1.75);
   const hit = (b) => { if (!b || b === skip || b.isEmpty() || b.max.y <= y0 || b.min.y >= y1) return false; const qx = clamp(x, b.min.x, b.max.x), qz = clamp(z, b.min.z, b.max.z); return (x - qx) ** 2 + (z - qz) ** 2 < PR * PR; };
   for (const c of STATIC) if (hit(c.box)) return true;
   for (const g of itemsGroup.children) if (hit(g.userData.box)) return true;
@@ -2551,10 +3131,10 @@ function updatePlayer(dt) {
   }
   if (uiOpen() || P.action) { mx = mz = 0; }
   const len = Math.hypot(mx, mz); if (len > 1) { mx /= len; mz /= len; }
-  P.crouch = !!(keys.ControlLeft || keys.KeyC || P.crouchToggle);
+  P.crouch = !!(keys.ShiftLeft || P.crouchToggle); // sneak: Left Shift (or the touch Sneak toggle)
   const tired = P.needs.energy < 0.15 ? 0.7 : 1;
-  const running = (keys.ShiftLeft || keys.ShiftRight || joyRun()) && !P.crouch;
-  const speed = (running ? 4.3 : 2.5) * (P.crouch ? 0.5 : 1) * (P.caffeine > 0 ? 1.3 : 1) * tired;
+  const running = (keys.ControlLeft || P.sprintLatch || joyRun()) && !P.crouch && len > 0.2; // sprint: Left Ctrl or double-tap W
+  const speed = (running ? 4.3 : 2.5) * (P.crouch ? 0.45 : 1) * (P.caffeine > 0 ? 1.3 : 1) * tired;
   const s = Math.sin(P.yaw), c = Math.cos(P.yaw);
   const vx = (mx * c + mz * s) * speed * dt, vz = (-mx * s + mz * c) * speed * dt;
   const ox = P.pos.x, oz = P.pos.z;
@@ -2563,10 +3143,11 @@ function updatePlayer(dt) {
   const moved = Math.hypot(P.pos.x - ox, P.pos.z - oz);
   P.vy -= 9.8 * dt; P.pos.y += P.vy * dt; if (P.pos.y <= 0) { if (P.vy < -2) Sfx.step(); P.pos.y = 0; P.vy = 0; if (keys.Space && !uiOpen() && !P.action) P.vy = 3.6; }
   if (moved > 0.001 && P.pos.y === 0) { P.bob += moved * 3.4; P.stepAcc += moved; if (P.stepAcc > (running ? 0.85 : 0.65)) { P.stepAcc = 0; Sfx.step(P.crouch || roomAt(P.pos.x, P.pos.z) === 'corridor'); } }
-  P.eye = lerp(P.eye, P.crouch ? 1.05 : 1.62, dt * 10);
-  const fov = lerp(camera.fov, running && moved > 0.01 ? 77 : 70, dt * 6); if (Math.abs(fov - camera.fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
+  P.eye = lerp(P.eye, P.crouch ? 1.38 : 1.62, dt * 10);
+  const fov = lerp(camera.fov, running && moved > 0.01 ? 75 : 70, dt * 6); if (Math.abs(fov - camera.fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
   camera.position.set(P.pos.x, P.pos.y + P.eye + Math.sin(P.bob) * 0.03, P.pos.z);
-  camera.rotation.set(P.pitch, P.yaw, Math.sin(P.bob * 0.5) * 0.004);
+  camera.rotation.set(P.pitch + (P.chew > 0 ? Math.sin(P.chew * 26) * 0.004 * P.chew : 0) + (P.shake > 0 ? (Math.random() - 0.5) * P.shake * 0.06 : 0), P.yaw, Math.sin(P.bob * 0.5) * 0.004);
+  if (P.shake > 0) P.shake -= dt;
   if (P.pos.z < 1.4 && P.pos.x > 4.1 && P.pos.x < 7.6) completeTask('outside');
 }
 
@@ -2575,15 +3156,17 @@ let skipMoves = 0, locked = false, dragging = false, dragDist = 0, lastMouse = n
 const EL = { menu: $('#menu'), start: $('#start'), tasks: $('#tasks'), phone: $('#phone'), prompt: $('#prompt'), vignette: $('#vignette'), wet: $('#wet'), action: $('#action'), perf: $('#perfHud') };
 const uiOpen = () => !EL.menu.hidden || !EL.start.hidden || !EL.tasks.hidden || !EL.phone.hidden;
 const tryLock = () => { if (isTouch) return; try { const p = canvas.requestPointerLock(); p && p.catch && p.catch(() => { }); } catch (e) { } };
+// mouse: right click = use / interact, left click = hit, bite or the aimed thing's grab action
 canvas.addEventListener('mousedown', (e) => {
   Sfx.init();
-  if (e.button === 2) { if (held) dropHeld(); return; }
-  if (locked) { primary(); return; }
+  if (e.button === 2) { primary(); return; }
+  if (e.button !== 0) return;
+  if (locked) { leftAction(); return; }
   dragging = true; dragDist = 0; lastMouse = [e.clientX, e.clientY];
 });
 addEventListener('mouseup', (e) => {
-  if (!dragging) return; dragging = false;
-  if (dragDist < 6 && e.target === canvas) { if (!hover && !held) { tryLock(); return; } primary(); }
+  if (!dragging || e.button !== 0) return; dragging = false;
+  if (dragDist < 6 && e.target === canvas) { if (!hover && !held) { tryLock(); return; } leftAction(); }
 });
 addEventListener('mousemove', (e) => {
   const rect = canvas.getBoundingClientRect(); mouseNDC.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1); mouseInCanvas = e.target === canvas;
@@ -2591,7 +3174,6 @@ addEventListener('mousemove', (e) => {
   else if (dragging && lastMouse) { const dx = e.clientX - lastMouse[0], dy = e.clientY - lastMouse[1]; dragDist += Math.abs(dx) + Math.abs(dy); dragLook.x += dx * 1.2; dragLook.y += dy * 1.2; lastMouse = [e.clientX, e.clientY]; }
 });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
-canvas.addEventListener('wheel', (e) => { if (held) held.userData.item.r = (held.userData.item.r || 0) + Math.sign(e.deltaY) * PI / 12; }, { passive: true });
 // drag-to-look only: ease mouse deltas in over ~40 ms (pointer lock and touch stay raw)
 const dragLook = { x: 0, y: 0 };
 function applyDragLook(dt) { if (!dragLook.x && !dragLook.y) return; const k = 1 - Math.exp(-dt / 0.04); const dx = dragLook.x * k, dy = dragLook.y * k; dragLook.x -= dx; dragLook.y -= dy; if (Math.abs(dragLook.x) + Math.abs(dragLook.y) < 0.01) { look(dragLook.x + dx, dragLook.y + dy); dragLook.x = dragLook.y = 0; return; } look(dx, dy); }
@@ -2603,24 +3185,25 @@ document.addEventListener('pointerlockchange', () => {
   suppressMenu = false;
 });
 function unlock() { if (locked) { suppressMenu = true; document.exitPointerLock(); } }
+let lastW = 0;
+function toggleHud() { document.body.classList.toggle('nohud'); }
 addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-  Sfx.init(); keys[e.code] = true;
-  if (e.code === 'Tab' || e.code === 'KeyP') { e.preventDefault(); togglePhone(); return; }
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  Sfx.init();
+  if (e.ctrlKey && /^(Key[A-Z]|Digit\d|Space)$/.test(e.code)) e.preventDefault(); // Ctrl is sprint: stop Ctrl+S / Ctrl+D / Ctrl+A… browser shortcuts
+  if (e.code === 'Space' || e.code === 'F1') e.preventDefault();
+  if (e.code === 'KeyW' && !e.repeat) { const now = e.timeStamp; if (now - lastW < 300) P.sprintLatch = true; lastW = now; } // double-tap W to sprint
+  keys[e.code] = true;
+  if (e.code === 'F1') { toggleHud(); return; }
   if (e.code === 'Escape') { if (!$('#phone').hidden) { closePhone(); return; } if (!$('#tasks').hidden) { $('#tasks').hidden = true; return; } if (!$('#menu').hidden) { closeMenu(); return; } if (!locked && $('#start').hidden) openMenu(); return; }
-  if (uiOpen()) return;
-  if (e.code === 'KeyE') primary();
-  if (e.code === 'KeyG') grab();
-  if (e.code === 'KeyF') useHeld();
-  if (e.code === 'KeyQ' && held) dropHeld();
-  if (e.code === 'KeyR' && held) held.userData.item.r = (held.userData.item.r || 0) + PI / 8;
-  if (e.code === 'KeyL') { const r = roomAt(P.pos.x, P.pos.z); const key = r === 'living' ? (P.pos.z > 5.6 ? 'kitchen' : 'living') : r; if (A.lights[key]) { A.lights[key].on = !A.lights[key].on; Sfx.click(); completeTask('lights'); } }
-  if (e.code === 'KeyM') { settings.muted = !settings.muted; Sfx.setMuted(settings.muted); store.set('settings', settings); toast(settings.muted ? '🔇 Muted' : '🔊 Sound on'); }
-  if (e.code === 'KeyT') { renderTasks(); $('#tasks').hidden = false; unlock(); }
-  if (e.code === 'KeyH') openMenu('help');
+  if (uiOpen() || e.repeat) return;
+  if (e.code === 'KeyE') pickUp();
+  if (e.code === 'KeyQ') dropHeld();
 });
-addEventListener('keyup', (e) => { keys[e.code] = false; });
-addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+addEventListener('keyup', (e) => { keys[e.code] = false; if (e.code === 'KeyW') P.sprintLatch = false; });
+// Ctrl+W can't be blocked by a web page: ask before the tab closes mid-game
+addEventListener('beforeunload', (e) => { if ($('#start').hidden) { e.preventDefault(); e.returnValue = ''; } });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; P.sprintLatch = false; });
 
 // ---- raycasting ----
 const ray = new THREE.Raycaster();
@@ -2658,68 +3241,141 @@ function updateHover() {
 
 // ---- holding things in your hand ----
 const helper = new THREE.Box3Helper(new THREE.Box3(), 0x6fe08a); helper.visible = false; scene.add(helper);
-const HAND = V3(0.26, -0.3, -0.55);
+const HAND = V3(0.26, -0.3, -0.55), HAND_FOOD = V3(0.17, -0.25, -0.5); // food sits a little closer to the middle so you can watch it go
 const _off = V3(), _n = V3(), _place = V3(), _ctr = V3(); // scratch vectors reused every frame
 const TWEENS = [];
-function startHold(g) {
+const _vb = new THREE.Box3(), _vbb = new THREE.Box3();
+function visibleBox(g) { // bounds of the visible, solid parts only (ignores steam, crumbs, hidden extras)
+  _vb.makeEmpty(); g.updateMatrixWorld(true);
+  (function walk(o) { if (!o.visible || o.userData.noRay) return; if (o.isMesh && o.geometry) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); _vbb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld); _vb.union(_vbb); } for (const c of o.children) walk(c); })(g);
+  return _vb;
+}
+function startHold(g, opts) {
   if (!g) return;
   held = g; heldSet.clear(); g.traverse(o => heldSet.add(o));
   g.userData.box = null;
-  g.updateMatrixWorld(true);
-  const b = new THREE.Box3().setFromObject(g); const sz = b.getSize(V3()); g.userData.size = sz;
+  g.scale.setScalar(1); const sz = visibleBox(g).getSize(V3()); g.userData.size = sz;
   const s = Math.min(1, 0.32 / Math.max(sz.x, sz.y, sz.z, 0.01));
   g.parent && g.parent.remove(g); camera.add(g); g.position.copy(HAND); g.scale.setScalar(s); g.rotation.set(0, (g.userData.item.r || 0) - P.yaw, 0);
+  g.userData.rise = opts && opts.rise ? 1 : 0; // handed to you from a pan / oven / fridge: it rises into view
   Sfx.click();
+}
+function updateAnim(dt) {
+  if (P.chew > 0) P.chew -= dt;
+  const a = P.anim; if (!a) return;
+  a.t += dt; const k = a.t / a.dur;
+  if (!a.fired && k >= a.at) { a.fired = true; a.fire && a.fire(a); }
+  if (k >= 1) { P.anim = null; a.finish && a.finish(); }
 }
 function updateHeld(dt) {
   if (!held) { helper.visible = false; placeTarget = null; return; }
-  const inst = held.userData.item;
-  const a = P.anim; const off = _off.set(0, Math.sin(P.bob * 2) * 0.012, 0); let rx = 0, rz = 0;
+  const inst = held.userData.item, F = inst.food;
+  const a = P.anim && P.anim.g === held ? P.anim : null; const off = _off.set(0, Math.sin(P.bob * 2) * 0.012, 0); let rx = 0, rz = 0;
+  if (held.userData.rise > 0) { held.userData.rise = Math.max(0, held.userData.rise - dt * 3.2); const r = held.userData.rise; off.y -= r * r * 0.35; rx += r * 0.5; }
   if (a) {
-    a.t += dt; const k = Math.min(1, a.t / a.dur), up = Math.sin(Math.min(1, k * 1.6) * Math.PI / 2) * (k > 0.85 ? (1 - k) / 0.15 : 1);
-    off.set(-0.24 * up, 0.22 * up, 0.25 * up); rx = a.kind === 'drink' ? -0.9 * up : 0.2 * up; rz = a.kind === 'drink' ? 0.3 * up : 0;
-    if (a.kind === 'eat' && Math.random() < dt * 4) Sfx.crunch();
-    if (k >= 1) { P.anim = null; a.done(); }
+    const up = Math.sin(Math.min(1, a.t / a.dur) * Math.PI);
+    if (a.kind === 'sip') { off.x -= 0.22 * up; off.y += 0.24 * up; off.z += 0.28 * up; rx -= 0.9 * up; rz += 0.3 * up; }
+    else { off.x -= 0.2 * up; off.y += 0.2 * up; off.z += 0.3 * up; rx += 0.35 * up; }
   }
-  if (!held) return;
-  held.position.copy(HAND).add(off); held.rotation.set(rx, (inst.r || 0) - P.yaw, rz);
+  held.position.copy(F ? HAND_FOOD : HAND).add(off); held.rotation.set(rx, F ? (F.handYaw || 0) : (inst.r || 0) - P.yaw, rz);
   const h = a ? null : firstHit(3, { solidOnly: true }); placeTarget = null;
   if (h) { const n = h.face ? _n.copy(h.face.normal).transformDirection(h.object.matrixWorld) : _n.set(0, 1, 0); if (n.y > 0.6) placeTarget = _place.copy(h.point); }
   if (placeTarget) { const sz = held.userData.size; helper.box.setFromCenterAndSize(_ctr.copy(placeTarget).setY(placeTarget.y + sz.y / 2), sz); helper.visible = true; } else helper.visible = false;
 }
 function releaseTo(pos) {
   pos = pos.clone(); const g = held; held = null; heldSet.clear(); helper.visible = false;
-  camera.remove(g); itemsGroup.add(g); g.scale.setScalar(1); g.position.copy(pos); g.rotation.set(0, g.userData.item.r || 0, 0);
-  Object.assign(g.userData.item, { x: pos.x, y: pos.y, z: pos.z }); itemBox(g); return g;
+  const it = g.userData.item; if (it.food) it.r = P.yaw + (it.food.handYaw || 0); // food keeps the facing it had in your hand
+  camera.remove(g); itemsGroup.add(g); g.scale.setScalar(1); g.position.copy(pos); g.rotation.set(0, it.r || 0, 0);
+  Object.assign(it, { x: pos.x, y: pos.y, z: pos.z }); itemBox(g); return g;
 }
 function placeHeld() { if (!held) return; if (!placeTarget) return toast('Aim at a table, counter or the floor to set it down.'); releaseTo(placeTarget); Sfx.noise(0.12, 0.25, 400, 1, 'lowpass'); }
 function dropHeld() { if (!held) return; const p = P.pos.clone(); p.x -= Math.sin(P.yaw) * 0.5; p.z -= Math.cos(P.yaw) * 0.5; p.y = 0; releaseTo(p); Sfx.noise(0.12, 0.3, 300, 1, 'lowpass'); }
+const labelOf = (d, k = 'label') => { const v = d && d[k]; return typeof v === 'function' ? v() : v; };
+// Right click: use / interact (doors, appliances, eat, sit, set down what you hold)
 function primary() {
   Sfx.init();
   if (P.action || P.anim) return;
   if (hover && hover.int) { const d = hover.int; try { d.action && d.action(); } catch (e) { console.error(e); } return; }
   const nd = nearDoor(); if (nd) { nd.def.action(); return; }
-  if (held) return placeHeld();
+  if (held) { if (placeTarget) return placeHeld(); if (held.userData.item.food) return bite(held); return toast('Aim at a table, counter or the floor to set it down.'); }
+}
+// Left click: the aimed thing's grab action (flip, switch…), else a bite of what you hold, else a punch
+let handHintT = 0;
+function leftAction() {
+  Sfx.init();
+  if (P.action || P.anim) return;
+  if (held && held.userData.item.food) return bite(held); // food in hand: left click always takes a bite
+  if (hover && hover.int && hover.int.alt && labelOf(hover.int, 'altLabel')) { try { hover.int.alt(); } catch (e) { console.error(e); } return; }
+  if (held) {
+    const it = held.userData.item; if (it.handUse) return it.handUse();
+    if (performance.now() - handHintT > 2500) { handHintT = performance.now(); toast('Right-click a counter or table to set it down · Q to drop it.'); }
+    return;
+  }
+  punch();
+}
+// E: pick up the item you're looking at
+function pickUp() {
+  if (P.action || P.anim) return;
+  if (held) return toast('Your hands are full — right-click a surface to set it down, or press Q to drop it.');
+  const r = hover && hover.root; if (!r) return;
+  if (!CATALOG[r.userData.item.t].small) return toast('That\'s too big to carry.');
+  startHold(r);
 }
 function nearDoor() {
   const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); let best = null, bd = 1.7;
   for (const d of A.doors) { const dx = d.center.x - P.pos.x, dz = d.center.z - P.pos.z, dist = Math.hypot(dx, dz); if (dist < bd && (dx * fx + dz * fz) / (dist || 1) > 0.35) { bd = dist; best = d; } }
   return best;
 }
-function grab() {
-  if (P.action) return;
-  if (held) return placeHeld();
-  const r = hover && hover.root; if (!r) return;
-  if (!CATALOG[r.userData.item.t].small) return toast('That\'s too big to carry.');
-  startHold(r);
+// ---- eating: bring it to your mouth, bite lands halfway, chew with crumbs ----
+const _cp = V3();
+function bite(g) {
+  if (!g || P.action || P.anim) return;
+  const it = g.userData.item, F = it && it.food; if (!F) return;
+  if (F.empty && F.empty()) return toast(F.emptyMsg || 'It\'s empty.');
+  if (!(it.d.left > 0)) return;
+  const drink = F.mode === 'drink'; if (drink) Sfx.sip();
+  P.anim = { t: 0, dur: drink ? 1.0 : 0.6, at: 0.5, kind: drink ? 'sip' : 'bite', g, fire: (a) => landBite(g, a) };
 }
-function useHeld() {
-  if (!held || P.anim || P.action) return;
-  const inst = held.userData.item; if (!inst.use) return toast('Nothing to do with this. Click to set it down, Q to drop.');
-  const kind = inst.t === 'mug' ? 'drink' : 'eat';
-  if (kind === 'drink' && !(inst.d && inst.d.fill)) return inst.use();
-  if (kind === 'drink') Sfx.sip();
-  P.anim = { t: 0, dur: kind === 'drink' ? 1.4 : 1.8, kind, done: () => { const r = inst.use(); if (r === 'consume' && held) { const g = held; held = null; heldSet.clear(); helper.visible = false; camera.remove(g); removeItem(g); } } };
+function landBite(g, a) {
+  const it = g.userData.item, F = it.food; if (!F || !(it.d.left > 0)) return;
+  const first = it.d.left === F.bites;
+  it.d.left--; camera.getWorldPosition(_cp); F.apply(_cp);
+  if (F.hunger) ctx.need('hunger', F.hunger / F.bites);
+  if (first) { F.onFirst && F.onFirst(); if (F.hunger) completeTask('eat'); }
+  F.onSip && F.onSip(first);
+  if (F.mode === 'drink') Sfx.gulp();
+  else { Sfx.bite(F.sound); Sfx.chew(F.sound); P.chew = 0.9; (g === held ? g : (F.part || g)).getWorldPosition(_cp); _cp.y += 0.02; Crumbs.spawn(_cp, F.crumb, 9, g === held ? P.pos.y : g.position.y); }
+  if (it.d.left <= 0) {
+    const r = F.done ? F.done() : 'consume';
+    if (F.msg) toast(F.msg);
+    if (r === 'consume') a.finish = () => { if (held === g) { held = null; heldSet.clear(); helper.visible = false; } removeItem(g); };
+  }
+}
+// ---- punching (left click with empty hands) ----
+const fist = new THREE.Group();
+{
+  const skin = M(0xe2b08a, 0.6), f = new THREE.Mesh(new THREE.SphereGeometry(0.042, 14, 10), skin); f.scale.set(1, 0.85, 1.2); fist.add(f);
+  for (let i = 0; i < 4; i++) { const k = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 6), skin); k.position.set(-0.024 + i * 0.016, 0.018, -0.035); fist.add(k); }
+  const sl = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.046, 0.32, 14), M(0x7a4b32, 0.9)); sl.rotation.x = Math.PI / 2; sl.position.z = 0.19; fist.add(sl);
+  fist.visible = false; fist.traverse(o => { o.userData.noRay = true; o.raycast = () => { }; }); camera.add(fist);
+}
+function punch() { P.anim = { t: 0, dur: 0.34, at: 0.35, kind: 'punch', fire: punchHit }; Sfx.whoosh(); }
+function updateFist() {
+  const a = P.anim, on = !!(a && a.kind === 'punch'); if (fist.visible !== on) fist.visible = on; if (!on) return;
+  const k = Math.min(1, a.t / a.dur), ext = k < 0.35 ? k / 0.35 : 1 - (k - 0.35) / 0.65;
+  fist.position.set(0.2 - 0.14 * ext, -0.26 + 0.12 * ext, -0.3 - 0.32 * ext); fist.rotation.set(0.1, 0.25 - 0.2 * ext, 0);
+}
+function punchHit() {
+  const h = firstHit(1.6); if (!h) return;
+  const io = findIntDeep(h.object), lab = io ? labelOf(io.userData.int) || '' : '';
+  P.shake = 0.15;
+  if (/door/i.test(lab) && !/oven|microwave|fridge|freezer|cabinet|dishwasher|washer|dryer|shower|closet|pizza|laptop/i.test(lab)) { Sfx.knock(); return; }
+  const r = ctx.rootOf(h.object);
+  if (r && r !== held && r.userData.item && CATALOG[r.userData.item.t].small) { // bonk: nudge it away and give it a wobble
+    const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); r.position.x += fx * 0.07; r.position.z += fz * 0.07; r.rotation.y += rand(-0.5, 0.5);
+    Object.assign(r.userData.item, { x: r.position.x, z: r.position.z, r: r.rotation.y }); r.userData.wiggle = 0.6; itemBox(r); Sfx.thud(); Sfx.noise(0.1, 0.2, 1200, 1); return;
+  }
+  Sfx.thud();
 }
 
 // ---- tasks ----
@@ -2786,7 +3442,7 @@ function spawnAtDoor(type, d) { return spawnItem({ id: uid(), t: type, x: 8.05 +
 function updateEvents(gameMin) {
   for (let i = orders.length - 1; i >= 0; i--) {
     const o = orders[i]; o.left -= gameMin;
-    if (o.left <= 0) { orders.splice(i, 1); spawnAtDoor(o.type, o.label ? { label: o.label } : {}); Sfx.doorbell(); setTimeout(() => Sfx.knock(), 1200); toast('🔔 Ding-dong! Your ' + o.name.toLowerCase() + ' is outside the front door.'); addText('DoorDash', 'Your ' + o.name + ' was left at your door. Enjoy!'); }
+    if (o.left <= 0) { orders.splice(i, 1); spawnAtDoor(o.type, o.label ? { label: o.label } : {}); Sfx.doorbell(); setTimeout(() => Sfx.knock(), 1200); toast('🔔 Ding-dong! Your ' + o.name.toLowerCase() + ' order is outside the front door.'); addText('DoorDash', 'Your ' + o.name + ' was left at your door. Enjoy!'); }
   }
   nextPackage -= gameMin;
   if (nextPackage <= 0) { nextPackage = 60 * (5 + Math.random() * 6); if (hour() > 8 && hour() < 20) { spawnAtDoor('package', {}); Sfx.knock(); toast('📦 *knock knock* A package was left at your door.'); addText('Amazon', 'Delivered: your package is at the front door.'); } }
@@ -2818,7 +3474,7 @@ $('#resetTasks').onclick = () => { done.clear(); store.set('tasks', []); P.needs
 // ---- start ----
 $('#enter').onclick = () => {
   Sfx.init(); Sfx.setMuted(settings.muted); $('#start').hidden = true; tryLock();
-  toast(isTouch ? 'Drag to look, joystick to walk, tap Use on things.' : 'WASD to walk · mouse to look · E to use · Tab for your phone');
+  toast(isTouch ? 'Drag to look, joystick to walk, tap Use on things.' : 'WASD walk · right-click use · left-click eat / hit · E pick up · Esc menu');
   setTimeout(() => toast('☕ Good morning! How about an espresso at the coffee bar?'), 6000);
 };
 
@@ -2837,8 +3493,8 @@ if (isTouch) {
   addEventListener('touchend', e => { for (const t of e.changedTouches) { if (t.identifier === sid) { sid = null; joy.x = joy.y = 0; knob.style.transform = ''; } if (t.identifier === lookId) { lookId = null; if (lmoved < 10 && performance.now() - ltime < 300) primary(); } } });
   canvas.addEventListener('touchstart', e => { Sfx.init(); const t = e.changedTouches[0]; if (lookId === null) { lookId = t.identifier; lp = [t.clientX, t.clientY]; ltime = performance.now(); lmoved = 0; } }, { passive: true });
   const btn = (id, fn) => { const el = $(id); el.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); Sfx.init(); fn(); }, { passive: false }); };
-  btn('#tUse', primary); btn('#tGrab', () => held ? dropHeld() : grab()); btn('#tUseHeld', useHeld); btn('#tJump', () => { if (P.pos.y === 0) P.vy = 3.6; if (P.sit && !P.sit.locked) { P.pos.copy(P.sit.prev); P.sit = null; } });
-  btn('#tCrouch', () => { P.crouchToggle = !P.crouchToggle; }); btn('#tMenu', () => openMenu()); btn('#tPhone', () => togglePhone());
+  btn('#tUse', primary); btn('#tGrab', () => held ? dropHeld() : pickUp()); btn('#tUseHeld', leftAction); btn('#tJump', () => { if (P.pos.y === 0) P.vy = 3.6; if (P.sit && !P.sit.locked) { P.pos.copy(P.sit.prev); P.sit = null; } });
+  btn('#tCrouch', () => { P.crouchToggle = !P.crouchToggle; $('#tCrouch').classList.toggle('on', P.crouchToggle); }); btn('#tMenu', () => openMenu()); btn('#tPhone', () => togglePhone());
 }
 
 // ---- HUD ----
@@ -2849,14 +3505,20 @@ function updateHud() {
 }
 let lastPrompt = null;
 function updatePrompt() {
-  const pr = EL.prompt;
-  let html = '';
-  const verb = isTouch ? 'Use' : 'E';
-  if (!P.action && hover && hover.int) { const lab = typeof hover.int.label === 'function' ? hover.int.label() : hover.int.label; if (lab) html = `<b>${verb}</b> ${lab}`; }
-  if (!html && !P.action && !(hover && hover.int)) { const nd = nearDoor(); if (nd) html = `<b>${verb}</b> ${nd.def.label()}`; }
-  if (!P.action && !held && hover && hover.root && CATALOG[hover.root.userData.item.t].small) html += ` <b>${isTouch ? 'Grab' : 'G'}</b> pick up`;
-  if (held && !P.anim) { const d = CATALOG[held.userData.item.t], i = held.userData.item; html += (html ? ' · ' : '') + `<span class="nm">${d.name}</span>${i.use ? ` <b>${isTouch ? 'Eat/Drink' : 'F'}</b> ${i.useLabel || (i.t === 'mug' ? 'drink' : 'eat')}` : ''} <b>${isTouch ? 'Use' : 'Click'}</b> set down <b>${isTouch ? 'Grab' : 'Q'}</b> drop`; }
-  if (!html && P.sit && !P.action) html = P.sit.lie ? 'Resting… move to get up' : 'Move to stand up';
+  const pr = EL.prompt; let html = '';
+  const RK = isTouch ? 'Use' : 'Right-click', LK = isTouch ? 'Eat/Hit' : 'Left-click', QK = isTouch ? 'Grab' : 'Q';
+  if (!P.action && !(P.anim && P.anim.kind !== 'punch')) {
+    if (hover && hover.int) { const lab = labelOf(hover.int); if (lab) html = `<b>${RK}</b> ${lab}`; const al = hover.int.alt && labelOf(hover.int, 'altLabel'); if (al) html += ` <b>${LK}</b> ${al}`; }
+    if (!html && !(hover && hover.int)) { const nd = nearDoor(); if (nd) html = `<b>${RK}</b> ${nd.def.label()}`; }
+    if (!held && hover && hover.root && CATALOG[hover.root.userData.item.t].small) html += (html ? ' · ' : '') + (isTouch ? '<b>Grab</b> to pick up' : 'Press <b>E</b> to pick up');
+    if (held) {
+      const d = CATALOG[held.userData.item.t], i = held.userData.item, F = i.food; let use = '';
+      if (F && !(F.empty && F.empty()) && i.d.left > 0) use = ` <b>${LK}</b> ${F.mode === 'drink' ? 'sip' : F.verb} (${i.d.left} left)`; else if (i.handUse) use = ` <b>${LK}</b> ${i.handLabel || 'use'}`;
+      const nm = F && F.name !== 'drink' && F.name !== 'food' ? F.name.charAt(0).toUpperCase() + F.name.slice(1) : d.name;
+      html += (html ? ' · ' : '') + `<span class="nm">${nm}</span>${use} <b>${RK}</b> set down <b>${QK}</b> drop`;
+    }
+    if (!html && P.sit) html = P.sit.lie ? 'Resting… move to get up' : 'Move to stand up';
+  }
   if (html !== lastPrompt) { lastPrompt = html; pr.innerHTML = html; pr.hidden = !html; }
   document.body.classList.toggle('canuse', !!(hover && hover.int));
 }
@@ -2900,7 +3562,7 @@ function frame(now) {
   for (const c of STATIC) if (c.upd) c.upd();
   applyDragLook(dt); updatePlayer(dt); camera.updateMatrixWorld();
   updateAction(dt);
-  castFrame(); updateHover(); updateHeld(dt); updatePrompt();
+  castFrame(); updateHover(); updateAnim(dt); updateHeld(dt); updateFist(); updatePrompt(); Crumbs.update(dt);
   runTicks(playing ? dt : 0);
   for (let i = TWEENS.length - 1; i >= 0; i--) if (TWEENS[i](now)) TWEENS.splice(i, 1);
   updateLightPool(dt);
@@ -2956,7 +3618,7 @@ P.pos.set(A.spawn.x, 0, A.spawn.z); P.yaw = A.spawn.yaw; P.day = P.dayTarget = d
 updateHud(); renderTasks();
 camera.position.set(P.pos.x, P.eye, P.pos.z); camera.rotation.set(P.pitch, P.yaw, 0); camera.updateMatrixWorld();
 precompile().then(() => requestAnimationFrame(frame));
-window.__game = { STATIC_LIST: () => STATIC, moveAndSlide, dragLook, PR, POOL, SOURCES, lightStats, optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
+window.__game = { STATIC_LIST: () => STATIC, moveAndSlide, dragLook, PR, POOL, SOURCES, lightStats, optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, leftAction, pickUp, bite, Crumbs, clock: () => clockT, FOOD: { FOOD_MODELS, FRUIT, pastaBowl, pizzaSlice }, held: () => held, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
 
 </script>
 

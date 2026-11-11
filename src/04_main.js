@@ -16,6 +16,8 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, 1, 0.05, 700); camera.rotation.order = 'YXZ';
 scene.add(camera);
+renderer.localClippingEnabled = true; // used only by bitten food
+Crumbs.init(scene);
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.3;
@@ -73,7 +75,10 @@ const ctx = {
   task: (id) => completeTask(id),
   need(k, d) { P.needs[k] = clamp(P.needs[k] + d, 0, 1); if (d > 0.05) floatNeed(k, d); },
   heatAt(p) { return A.heat.find(h => h.on && Math.hypot(h.pos.x - p.x, h.pos.z - p.z) < 0.14 && p.y - h.pos.y > -0.03 && p.y - h.pos.y < 0.12) || null; },
-  give(type, d) { if (held) dropHeld(); const g = spawnItem({ id: uid(), t: type, x: P.pos.x, y: 0, z: P.pos.z, r: P.yaw, d: d || {} }); startHold(g); },
+  give(type, d, opts) { if (held) dropHeld(); const g = spawnItem({ id: uid(), t: type, x: P.pos.x, y: 0, z: P.pos.z, r: P.yaw, d: d || {} }); startHold(g, opts); return g; },
+  burnerAt(p) { return A.heat.find(h => Math.hypot(h.pos.x - p.x, h.pos.z - p.z) < 0.14 && p.y - h.pos.y > -0.03 && p.y - h.pos.y < 0.12) || null; },
+  toggleBurner(b, on) { if (b.toggle) b.toggle(on); else b.on = on; },
+  bite(g) { bite(g); },
   removeItem(g) { removeItem(g); },
   sit(pos, yaw, lie) {
     P.sit = { pos: pos.clone(), yaw, lie, prev: P.pos.clone(), root: arguments[3] || null }; P.yaw = yaw; P.pitch = lie ? 0.9 : -0.1;
@@ -249,7 +254,7 @@ function updateAction(dt) {
 const PR = 0.19; // player radius
 const _cand = [];
 function gatherColliders(feet, cx, cz, reach) { // broad phase: boxes at body height near the player
-  _cand.length = 0; const y0 = feet + 0.3, y1 = feet + (P.crouch ? 1.1 : 1.75);
+  _cand.length = 0; const y0 = feet + 0.3, y1 = feet + (P.crouch ? 1.5 : 1.75);
   const test = (b, ref) => { if (!b || b.isEmpty() || b.max.y <= y0 || b.min.y >= y1) return; if (cx + reach < b.min.x || cx - reach > b.max.x || cz + reach < b.min.z || cz - reach > b.max.z) return; _cand.push(b, ref); };
   for (const c of STATIC) test(c.box, c);
   for (const g of itemsGroup.children) test(g.userData.box, g);
@@ -267,7 +272,7 @@ function penetration(x, z, b) {
   _push.x = pick[0]; _push.z = pick[1]; _push.d = Math.abs(pick[0] + pick[1]); return _push.d;
 }
 function blockedExcept(x, z, skip) { // is a circle at (x,z) overlapping anything other than box `skip`? (shallow test, no recursion)
-  const y0 = P.pos.y + 0.3, y1 = P.pos.y + (P.crouch ? 1.1 : 1.75);
+  const y0 = P.pos.y + 0.3, y1 = P.pos.y + (P.crouch ? 1.5 : 1.75);
   const hit = (b) => { if (!b || b === skip || b.isEmpty() || b.max.y <= y0 || b.min.y >= y1) return false; const qx = clamp(x, b.min.x, b.max.x), qz = clamp(z, b.min.z, b.max.z); return (x - qx) ** 2 + (z - qz) ** 2 < PR * PR; };
   for (const c of STATIC) if (hit(c.box)) return true;
   for (const g of itemsGroup.children) if (hit(g.userData.box)) return true;
@@ -330,10 +335,10 @@ function updatePlayer(dt) {
   }
   if (uiOpen() || P.action) { mx = mz = 0; }
   const len = Math.hypot(mx, mz); if (len > 1) { mx /= len; mz /= len; }
-  P.crouch = !!(keys.ControlLeft || keys.KeyC || P.crouchToggle);
+  P.crouch = !!(keys.ShiftLeft || P.crouchToggle); // sneak: Left Shift (or the touch Sneak toggle)
   const tired = P.needs.energy < 0.15 ? 0.7 : 1;
-  const running = (keys.ShiftLeft || keys.ShiftRight || joyRun()) && !P.crouch;
-  const speed = (running ? 4.3 : 2.5) * (P.crouch ? 0.5 : 1) * (P.caffeine > 0 ? 1.3 : 1) * tired;
+  const running = (keys.ControlLeft || P.sprintLatch || joyRun()) && !P.crouch && len > 0.2; // sprint: Left Ctrl or double-tap W
+  const speed = (running ? 4.3 : 2.5) * (P.crouch ? 0.45 : 1) * (P.caffeine > 0 ? 1.3 : 1) * tired;
   const s = Math.sin(P.yaw), c = Math.cos(P.yaw);
   const vx = (mx * c + mz * s) * speed * dt, vz = (-mx * s + mz * c) * speed * dt;
   const ox = P.pos.x, oz = P.pos.z;
@@ -342,10 +347,11 @@ function updatePlayer(dt) {
   const moved = Math.hypot(P.pos.x - ox, P.pos.z - oz);
   P.vy -= 9.8 * dt; P.pos.y += P.vy * dt; if (P.pos.y <= 0) { if (P.vy < -2) Sfx.step(); P.pos.y = 0; P.vy = 0; if (keys.Space && !uiOpen() && !P.action) P.vy = 3.6; }
   if (moved > 0.001 && P.pos.y === 0) { P.bob += moved * 3.4; P.stepAcc += moved; if (P.stepAcc > (running ? 0.85 : 0.65)) { P.stepAcc = 0; Sfx.step(P.crouch || roomAt(P.pos.x, P.pos.z) === 'corridor'); } }
-  P.eye = lerp(P.eye, P.crouch ? 1.05 : 1.62, dt * 10);
-  const fov = lerp(camera.fov, running && moved > 0.01 ? 77 : 70, dt * 6); if (Math.abs(fov - camera.fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
+  P.eye = lerp(P.eye, P.crouch ? 1.38 : 1.62, dt * 10);
+  const fov = lerp(camera.fov, running && moved > 0.01 ? 75 : 70, dt * 6); if (Math.abs(fov - camera.fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
   camera.position.set(P.pos.x, P.pos.y + P.eye + Math.sin(P.bob) * 0.03, P.pos.z);
-  camera.rotation.set(P.pitch, P.yaw, Math.sin(P.bob * 0.5) * 0.004);
+  camera.rotation.set(P.pitch + (P.chew > 0 ? Math.sin(P.chew * 26) * 0.004 * P.chew : 0) + (P.shake > 0 ? (Math.random() - 0.5) * P.shake * 0.06 : 0), P.yaw, Math.sin(P.bob * 0.5) * 0.004);
+  if (P.shake > 0) P.shake -= dt;
   if (P.pos.z < 1.4 && P.pos.x > 4.1 && P.pos.x < 7.6) completeTask('outside');
 }
 
@@ -354,15 +360,17 @@ let skipMoves = 0, locked = false, dragging = false, dragDist = 0, lastMouse = n
 const EL = { menu: $('#menu'), start: $('#start'), tasks: $('#tasks'), phone: $('#phone'), prompt: $('#prompt'), vignette: $('#vignette'), wet: $('#wet'), action: $('#action'), perf: $('#perfHud') };
 const uiOpen = () => !EL.menu.hidden || !EL.start.hidden || !EL.tasks.hidden || !EL.phone.hidden;
 const tryLock = () => { if (isTouch) return; try { const p = canvas.requestPointerLock(); p && p.catch && p.catch(() => { }); } catch (e) { } };
+// mouse: right click = use / interact, left click = hit, bite or the aimed thing's grab action
 canvas.addEventListener('mousedown', (e) => {
   Sfx.init();
-  if (e.button === 2) { if (held) dropHeld(); return; }
-  if (locked) { primary(); return; }
+  if (e.button === 2) { primary(); return; }
+  if (e.button !== 0) return;
+  if (locked) { leftAction(); return; }
   dragging = true; dragDist = 0; lastMouse = [e.clientX, e.clientY];
 });
 addEventListener('mouseup', (e) => {
-  if (!dragging) return; dragging = false;
-  if (dragDist < 6 && e.target === canvas) { if (!hover && !held) { tryLock(); return; } primary(); }
+  if (!dragging || e.button !== 0) return; dragging = false;
+  if (dragDist < 6 && e.target === canvas) { if (!hover && !held) { tryLock(); return; } leftAction(); }
 });
 addEventListener('mousemove', (e) => {
   const rect = canvas.getBoundingClientRect(); mouseNDC.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1); mouseInCanvas = e.target === canvas;
@@ -370,7 +378,6 @@ addEventListener('mousemove', (e) => {
   else if (dragging && lastMouse) { const dx = e.clientX - lastMouse[0], dy = e.clientY - lastMouse[1]; dragDist += Math.abs(dx) + Math.abs(dy); dragLook.x += dx * 1.2; dragLook.y += dy * 1.2; lastMouse = [e.clientX, e.clientY]; }
 });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
-canvas.addEventListener('wheel', (e) => { if (held) held.userData.item.r = (held.userData.item.r || 0) + Math.sign(e.deltaY) * PI / 12; }, { passive: true });
 // drag-to-look only: ease mouse deltas in over ~40 ms (pointer lock and touch stay raw)
 const dragLook = { x: 0, y: 0 };
 function applyDragLook(dt) { if (!dragLook.x && !dragLook.y) return; const k = 1 - Math.exp(-dt / 0.04); const dx = dragLook.x * k, dy = dragLook.y * k; dragLook.x -= dx; dragLook.y -= dy; if (Math.abs(dragLook.x) + Math.abs(dragLook.y) < 0.01) { look(dragLook.x + dx, dragLook.y + dy); dragLook.x = dragLook.y = 0; return; } look(dx, dy); }
@@ -382,24 +389,25 @@ document.addEventListener('pointerlockchange', () => {
   suppressMenu = false;
 });
 function unlock() { if (locked) { suppressMenu = true; document.exitPointerLock(); } }
+let lastW = 0;
+function toggleHud() { document.body.classList.toggle('nohud'); }
 addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-  Sfx.init(); keys[e.code] = true;
-  if (e.code === 'Tab' || e.code === 'KeyP') { e.preventDefault(); togglePhone(); return; }
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  Sfx.init();
+  if (e.ctrlKey && /^(Key[A-Z]|Digit\d|Space)$/.test(e.code)) e.preventDefault(); // Ctrl is sprint: stop Ctrl+S / Ctrl+D / Ctrl+A… browser shortcuts
+  if (e.code === 'Space' || e.code === 'F1') e.preventDefault();
+  if (e.code === 'KeyW' && !e.repeat) { const now = e.timeStamp; if (now - lastW < 300) P.sprintLatch = true; lastW = now; } // double-tap W to sprint
+  keys[e.code] = true;
+  if (e.code === 'F1') { toggleHud(); return; }
   if (e.code === 'Escape') { if (!$('#phone').hidden) { closePhone(); return; } if (!$('#tasks').hidden) { $('#tasks').hidden = true; return; } if (!$('#menu').hidden) { closeMenu(); return; } if (!locked && $('#start').hidden) openMenu(); return; }
-  if (uiOpen()) return;
-  if (e.code === 'KeyE') primary();
-  if (e.code === 'KeyG') grab();
-  if (e.code === 'KeyF') useHeld();
-  if (e.code === 'KeyQ' && held) dropHeld();
-  if (e.code === 'KeyR' && held) held.userData.item.r = (held.userData.item.r || 0) + PI / 8;
-  if (e.code === 'KeyL') { const r = roomAt(P.pos.x, P.pos.z); const key = r === 'living' ? (P.pos.z > 5.6 ? 'kitchen' : 'living') : r; if (A.lights[key]) { A.lights[key].on = !A.lights[key].on; Sfx.click(); completeTask('lights'); } }
-  if (e.code === 'KeyM') { settings.muted = !settings.muted; Sfx.setMuted(settings.muted); store.set('settings', settings); toast(settings.muted ? '🔇 Muted' : '🔊 Sound on'); }
-  if (e.code === 'KeyT') { renderTasks(); $('#tasks').hidden = false; unlock(); }
-  if (e.code === 'KeyH') openMenu('help');
+  if (uiOpen() || e.repeat) return;
+  if (e.code === 'KeyE') pickUp();
+  if (e.code === 'KeyQ') dropHeld();
 });
-addEventListener('keyup', (e) => { keys[e.code] = false; });
-addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+addEventListener('keyup', (e) => { keys[e.code] = false; if (e.code === 'KeyW') P.sprintLatch = false; });
+// Ctrl+W can't be blocked by a web page: ask before the tab closes mid-game
+addEventListener('beforeunload', (e) => { if ($('#start').hidden) { e.preventDefault(); e.returnValue = ''; } });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; P.sprintLatch = false; });
 
 // ---- raycasting ----
 const ray = new THREE.Raycaster();
@@ -437,68 +445,141 @@ function updateHover() {
 
 // ---- holding things in your hand ----
 const helper = new THREE.Box3Helper(new THREE.Box3(), 0x6fe08a); helper.visible = false; scene.add(helper);
-const HAND = V3(0.26, -0.3, -0.55);
+const HAND = V3(0.26, -0.3, -0.55), HAND_FOOD = V3(0.17, -0.25, -0.5); // food sits a little closer to the middle so you can watch it go
 const _off = V3(), _n = V3(), _place = V3(), _ctr = V3(); // scratch vectors reused every frame
 const TWEENS = [];
-function startHold(g) {
+const _vb = new THREE.Box3(), _vbb = new THREE.Box3();
+function visibleBox(g) { // bounds of the visible, solid parts only (ignores steam, crumbs, hidden extras)
+  _vb.makeEmpty(); g.updateMatrixWorld(true);
+  (function walk(o) { if (!o.visible || o.userData.noRay) return; if (o.isMesh && o.geometry) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); _vbb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld); _vb.union(_vbb); } for (const c of o.children) walk(c); })(g);
+  return _vb;
+}
+function startHold(g, opts) {
   if (!g) return;
   held = g; heldSet.clear(); g.traverse(o => heldSet.add(o));
   g.userData.box = null;
-  g.updateMatrixWorld(true);
-  const b = new THREE.Box3().setFromObject(g); const sz = b.getSize(V3()); g.userData.size = sz;
+  g.scale.setScalar(1); const sz = visibleBox(g).getSize(V3()); g.userData.size = sz;
   const s = Math.min(1, 0.32 / Math.max(sz.x, sz.y, sz.z, 0.01));
   g.parent && g.parent.remove(g); camera.add(g); g.position.copy(HAND); g.scale.setScalar(s); g.rotation.set(0, (g.userData.item.r || 0) - P.yaw, 0);
+  g.userData.rise = opts && opts.rise ? 1 : 0; // handed to you from a pan / oven / fridge: it rises into view
   Sfx.click();
+}
+function updateAnim(dt) {
+  if (P.chew > 0) P.chew -= dt;
+  const a = P.anim; if (!a) return;
+  a.t += dt; const k = a.t / a.dur;
+  if (!a.fired && k >= a.at) { a.fired = true; a.fire && a.fire(a); }
+  if (k >= 1) { P.anim = null; a.finish && a.finish(); }
 }
 function updateHeld(dt) {
   if (!held) { helper.visible = false; placeTarget = null; return; }
-  const inst = held.userData.item;
-  const a = P.anim; const off = _off.set(0, Math.sin(P.bob * 2) * 0.012, 0); let rx = 0, rz = 0;
+  const inst = held.userData.item, F = inst.food;
+  const a = P.anim && P.anim.g === held ? P.anim : null; const off = _off.set(0, Math.sin(P.bob * 2) * 0.012, 0); let rx = 0, rz = 0;
+  if (held.userData.rise > 0) { held.userData.rise = Math.max(0, held.userData.rise - dt * 3.2); const r = held.userData.rise; off.y -= r * r * 0.35; rx += r * 0.5; }
   if (a) {
-    a.t += dt; const k = Math.min(1, a.t / a.dur), up = Math.sin(Math.min(1, k * 1.6) * Math.PI / 2) * (k > 0.85 ? (1 - k) / 0.15 : 1);
-    off.set(-0.24 * up, 0.22 * up, 0.25 * up); rx = a.kind === 'drink' ? -0.9 * up : 0.2 * up; rz = a.kind === 'drink' ? 0.3 * up : 0;
-    if (a.kind === 'eat' && Math.random() < dt * 4) Sfx.crunch();
-    if (k >= 1) { P.anim = null; a.done(); }
+    const up = Math.sin(Math.min(1, a.t / a.dur) * Math.PI);
+    if (a.kind === 'sip') { off.x -= 0.22 * up; off.y += 0.24 * up; off.z += 0.28 * up; rx -= 0.9 * up; rz += 0.3 * up; }
+    else { off.x -= 0.2 * up; off.y += 0.2 * up; off.z += 0.3 * up; rx += 0.35 * up; }
   }
-  if (!held) return;
-  held.position.copy(HAND).add(off); held.rotation.set(rx, (inst.r || 0) - P.yaw, rz);
+  held.position.copy(F ? HAND_FOOD : HAND).add(off); held.rotation.set(rx, F ? (F.handYaw || 0) : (inst.r || 0) - P.yaw, rz);
   const h = a ? null : firstHit(3, { solidOnly: true }); placeTarget = null;
   if (h) { const n = h.face ? _n.copy(h.face.normal).transformDirection(h.object.matrixWorld) : _n.set(0, 1, 0); if (n.y > 0.6) placeTarget = _place.copy(h.point); }
   if (placeTarget) { const sz = held.userData.size; helper.box.setFromCenterAndSize(_ctr.copy(placeTarget).setY(placeTarget.y + sz.y / 2), sz); helper.visible = true; } else helper.visible = false;
 }
 function releaseTo(pos) {
   pos = pos.clone(); const g = held; held = null; heldSet.clear(); helper.visible = false;
-  camera.remove(g); itemsGroup.add(g); g.scale.setScalar(1); g.position.copy(pos); g.rotation.set(0, g.userData.item.r || 0, 0);
-  Object.assign(g.userData.item, { x: pos.x, y: pos.y, z: pos.z }); itemBox(g); return g;
+  const it = g.userData.item; if (it.food) it.r = P.yaw + (it.food.handYaw || 0); // food keeps the facing it had in your hand
+  camera.remove(g); itemsGroup.add(g); g.scale.setScalar(1); g.position.copy(pos); g.rotation.set(0, it.r || 0, 0);
+  Object.assign(it, { x: pos.x, y: pos.y, z: pos.z }); itemBox(g); return g;
 }
 function placeHeld() { if (!held) return; if (!placeTarget) return toast('Aim at a table, counter or the floor to set it down.'); releaseTo(placeTarget); Sfx.noise(0.12, 0.25, 400, 1, 'lowpass'); }
 function dropHeld() { if (!held) return; const p = P.pos.clone(); p.x -= Math.sin(P.yaw) * 0.5; p.z -= Math.cos(P.yaw) * 0.5; p.y = 0; releaseTo(p); Sfx.noise(0.12, 0.3, 300, 1, 'lowpass'); }
+const labelOf = (d, k = 'label') => { const v = d && d[k]; return typeof v === 'function' ? v() : v; };
+// Right click: use / interact (doors, appliances, eat, sit, set down what you hold)
 function primary() {
   Sfx.init();
   if (P.action || P.anim) return;
   if (hover && hover.int) { const d = hover.int; try { d.action && d.action(); } catch (e) { console.error(e); } return; }
   const nd = nearDoor(); if (nd) { nd.def.action(); return; }
-  if (held) return placeHeld();
+  if (held) { if (placeTarget) return placeHeld(); if (held.userData.item.food) return bite(held); return toast('Aim at a table, counter or the floor to set it down.'); }
+}
+// Left click: the aimed thing's grab action (flip, switch…), else a bite of what you hold, else a punch
+let handHintT = 0;
+function leftAction() {
+  Sfx.init();
+  if (P.action || P.anim) return;
+  if (held && held.userData.item.food) return bite(held); // food in hand: left click always takes a bite
+  if (hover && hover.int && hover.int.alt && labelOf(hover.int, 'altLabel')) { try { hover.int.alt(); } catch (e) { console.error(e); } return; }
+  if (held) {
+    const it = held.userData.item; if (it.handUse) return it.handUse();
+    if (performance.now() - handHintT > 2500) { handHintT = performance.now(); toast('Right-click a counter or table to set it down · Q to drop it.'); }
+    return;
+  }
+  punch();
+}
+// E: pick up the item you're looking at
+function pickUp() {
+  if (P.action || P.anim) return;
+  if (held) return toast('Your hands are full — right-click a surface to set it down, or press Q to drop it.');
+  const r = hover && hover.root; if (!r) return;
+  if (!CATALOG[r.userData.item.t].small) return toast('That\'s too big to carry.');
+  startHold(r);
 }
 function nearDoor() {
   const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); let best = null, bd = 1.7;
   for (const d of A.doors) { const dx = d.center.x - P.pos.x, dz = d.center.z - P.pos.z, dist = Math.hypot(dx, dz); if (dist < bd && (dx * fx + dz * fz) / (dist || 1) > 0.35) { bd = dist; best = d; } }
   return best;
 }
-function grab() {
-  if (P.action) return;
-  if (held) return placeHeld();
-  const r = hover && hover.root; if (!r) return;
-  if (!CATALOG[r.userData.item.t].small) return toast('That\'s too big to carry.');
-  startHold(r);
+// ---- eating: bring it to your mouth, bite lands halfway, chew with crumbs ----
+const _cp = V3();
+function bite(g) {
+  if (!g || P.action || P.anim) return;
+  const it = g.userData.item, F = it && it.food; if (!F) return;
+  if (F.empty && F.empty()) return toast(F.emptyMsg || 'It\'s empty.');
+  if (!(it.d.left > 0)) return;
+  const drink = F.mode === 'drink'; if (drink) Sfx.sip();
+  P.anim = { t: 0, dur: drink ? 1.0 : 0.6, at: 0.5, kind: drink ? 'sip' : 'bite', g, fire: (a) => landBite(g, a) };
 }
-function useHeld() {
-  if (!held || P.anim || P.action) return;
-  const inst = held.userData.item; if (!inst.use) return toast('Nothing to do with this. Click to set it down, Q to drop.');
-  const kind = inst.t === 'mug' ? 'drink' : 'eat';
-  if (kind === 'drink' && !(inst.d && inst.d.fill)) return inst.use();
-  if (kind === 'drink') Sfx.sip();
-  P.anim = { t: 0, dur: kind === 'drink' ? 1.4 : 1.8, kind, done: () => { const r = inst.use(); if (r === 'consume' && held) { const g = held; held = null; heldSet.clear(); helper.visible = false; camera.remove(g); removeItem(g); } } };
+function landBite(g, a) {
+  const it = g.userData.item, F = it.food; if (!F || !(it.d.left > 0)) return;
+  const first = it.d.left === F.bites;
+  it.d.left--; camera.getWorldPosition(_cp); F.apply(_cp);
+  if (F.hunger) ctx.need('hunger', F.hunger / F.bites);
+  if (first) { F.onFirst && F.onFirst(); if (F.hunger) completeTask('eat'); }
+  F.onSip && F.onSip(first);
+  if (F.mode === 'drink') Sfx.gulp();
+  else { Sfx.bite(F.sound); Sfx.chew(F.sound); P.chew = 0.9; (g === held ? g : (F.part || g)).getWorldPosition(_cp); _cp.y += 0.02; Crumbs.spawn(_cp, F.crumb, 9, g === held ? P.pos.y : g.position.y); }
+  if (it.d.left <= 0) {
+    const r = F.done ? F.done() : 'consume';
+    if (F.msg) toast(F.msg);
+    if (r === 'consume') a.finish = () => { if (held === g) { held = null; heldSet.clear(); helper.visible = false; } removeItem(g); };
+  }
+}
+// ---- punching (left click with empty hands) ----
+const fist = new THREE.Group();
+{
+  const skin = M(0xe2b08a, 0.6), f = new THREE.Mesh(new THREE.SphereGeometry(0.042, 14, 10), skin); f.scale.set(1, 0.85, 1.2); fist.add(f);
+  for (let i = 0; i < 4; i++) { const k = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 6), skin); k.position.set(-0.024 + i * 0.016, 0.018, -0.035); fist.add(k); }
+  const sl = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.046, 0.32, 14), M(0x7a4b32, 0.9)); sl.rotation.x = Math.PI / 2; sl.position.z = 0.19; fist.add(sl);
+  fist.visible = false; fist.traverse(o => { o.userData.noRay = true; o.raycast = () => { }; }); camera.add(fist);
+}
+function punch() { P.anim = { t: 0, dur: 0.34, at: 0.35, kind: 'punch', fire: punchHit }; Sfx.whoosh(); }
+function updateFist() {
+  const a = P.anim, on = !!(a && a.kind === 'punch'); if (fist.visible !== on) fist.visible = on; if (!on) return;
+  const k = Math.min(1, a.t / a.dur), ext = k < 0.35 ? k / 0.35 : 1 - (k - 0.35) / 0.65;
+  fist.position.set(0.2 - 0.14 * ext, -0.26 + 0.12 * ext, -0.3 - 0.32 * ext); fist.rotation.set(0.1, 0.25 - 0.2 * ext, 0);
+}
+function punchHit() {
+  const h = firstHit(1.6); if (!h) return;
+  const io = findIntDeep(h.object), lab = io ? labelOf(io.userData.int) || '' : '';
+  P.shake = 0.15;
+  if (/door/i.test(lab) && !/oven|microwave|fridge|freezer|cabinet|dishwasher|washer|dryer|shower|closet|pizza|laptop/i.test(lab)) { Sfx.knock(); return; }
+  const r = ctx.rootOf(h.object);
+  if (r && r !== held && r.userData.item && CATALOG[r.userData.item.t].small) { // bonk: nudge it away and give it a wobble
+    const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); r.position.x += fx * 0.07; r.position.z += fz * 0.07; r.rotation.y += rand(-0.5, 0.5);
+    Object.assign(r.userData.item, { x: r.position.x, z: r.position.z, r: r.rotation.y }); r.userData.wiggle = 0.6; itemBox(r); Sfx.thud(); Sfx.noise(0.1, 0.2, 1200, 1); return;
+  }
+  Sfx.thud();
 }
 
 // ---- tasks ----
@@ -565,7 +646,7 @@ function spawnAtDoor(type, d) { return spawnItem({ id: uid(), t: type, x: 8.05 +
 function updateEvents(gameMin) {
   for (let i = orders.length - 1; i >= 0; i--) {
     const o = orders[i]; o.left -= gameMin;
-    if (o.left <= 0) { orders.splice(i, 1); spawnAtDoor(o.type, o.label ? { label: o.label } : {}); Sfx.doorbell(); setTimeout(() => Sfx.knock(), 1200); toast('🔔 Ding-dong! Your ' + o.name.toLowerCase() + ' is outside the front door.'); addText('DoorDash', 'Your ' + o.name + ' was left at your door. Enjoy!'); }
+    if (o.left <= 0) { orders.splice(i, 1); spawnAtDoor(o.type, o.label ? { label: o.label } : {}); Sfx.doorbell(); setTimeout(() => Sfx.knock(), 1200); toast('🔔 Ding-dong! Your ' + o.name.toLowerCase() + ' order is outside the front door.'); addText('DoorDash', 'Your ' + o.name + ' was left at your door. Enjoy!'); }
   }
   nextPackage -= gameMin;
   if (nextPackage <= 0) { nextPackage = 60 * (5 + Math.random() * 6); if (hour() > 8 && hour() < 20) { spawnAtDoor('package', {}); Sfx.knock(); toast('📦 *knock knock* A package was left at your door.'); addText('Amazon', 'Delivered: your package is at the front door.'); } }
@@ -597,7 +678,7 @@ $('#resetTasks').onclick = () => { done.clear(); store.set('tasks', []); P.needs
 // ---- start ----
 $('#enter').onclick = () => {
   Sfx.init(); Sfx.setMuted(settings.muted); $('#start').hidden = true; tryLock();
-  toast(isTouch ? 'Drag to look, joystick to walk, tap Use on things.' : 'WASD to walk · mouse to look · E to use · Tab for your phone');
+  toast(isTouch ? 'Drag to look, joystick to walk, tap Use on things.' : 'WASD walk · right-click use · left-click eat / hit · E pick up · Esc menu');
   setTimeout(() => toast('☕ Good morning! How about an espresso at the coffee bar?'), 6000);
 };
 
@@ -616,8 +697,8 @@ if (isTouch) {
   addEventListener('touchend', e => { for (const t of e.changedTouches) { if (t.identifier === sid) { sid = null; joy.x = joy.y = 0; knob.style.transform = ''; } if (t.identifier === lookId) { lookId = null; if (lmoved < 10 && performance.now() - ltime < 300) primary(); } } });
   canvas.addEventListener('touchstart', e => { Sfx.init(); const t = e.changedTouches[0]; if (lookId === null) { lookId = t.identifier; lp = [t.clientX, t.clientY]; ltime = performance.now(); lmoved = 0; } }, { passive: true });
   const btn = (id, fn) => { const el = $(id); el.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); Sfx.init(); fn(); }, { passive: false }); };
-  btn('#tUse', primary); btn('#tGrab', () => held ? dropHeld() : grab()); btn('#tUseHeld', useHeld); btn('#tJump', () => { if (P.pos.y === 0) P.vy = 3.6; if (P.sit && !P.sit.locked) { P.pos.copy(P.sit.prev); P.sit = null; } });
-  btn('#tCrouch', () => { P.crouchToggle = !P.crouchToggle; }); btn('#tMenu', () => openMenu()); btn('#tPhone', () => togglePhone());
+  btn('#tUse', primary); btn('#tGrab', () => held ? dropHeld() : pickUp()); btn('#tUseHeld', leftAction); btn('#tJump', () => { if (P.pos.y === 0) P.vy = 3.6; if (P.sit && !P.sit.locked) { P.pos.copy(P.sit.prev); P.sit = null; } });
+  btn('#tCrouch', () => { P.crouchToggle = !P.crouchToggle; $('#tCrouch').classList.toggle('on', P.crouchToggle); }); btn('#tMenu', () => openMenu()); btn('#tPhone', () => togglePhone());
 }
 
 // ---- HUD ----
@@ -628,14 +709,20 @@ function updateHud() {
 }
 let lastPrompt = null;
 function updatePrompt() {
-  const pr = EL.prompt;
-  let html = '';
-  const verb = isTouch ? 'Use' : 'E';
-  if (!P.action && hover && hover.int) { const lab = typeof hover.int.label === 'function' ? hover.int.label() : hover.int.label; if (lab) html = `<b>${verb}</b> ${lab}`; }
-  if (!html && !P.action && !(hover && hover.int)) { const nd = nearDoor(); if (nd) html = `<b>${verb}</b> ${nd.def.label()}`; }
-  if (!P.action && !held && hover && hover.root && CATALOG[hover.root.userData.item.t].small) html += ` <b>${isTouch ? 'Grab' : 'G'}</b> pick up`;
-  if (held && !P.anim) { const d = CATALOG[held.userData.item.t], i = held.userData.item; html += (html ? ' · ' : '') + `<span class="nm">${d.name}</span>${i.use ? ` <b>${isTouch ? 'Eat/Drink' : 'F'}</b> ${i.useLabel || (i.t === 'mug' ? 'drink' : 'eat')}` : ''} <b>${isTouch ? 'Use' : 'Click'}</b> set down <b>${isTouch ? 'Grab' : 'Q'}</b> drop`; }
-  if (!html && P.sit && !P.action) html = P.sit.lie ? 'Resting… move to get up' : 'Move to stand up';
+  const pr = EL.prompt; let html = '';
+  const RK = isTouch ? 'Use' : 'Right-click', LK = isTouch ? 'Eat/Hit' : 'Left-click', QK = isTouch ? 'Grab' : 'Q';
+  if (!P.action && !(P.anim && P.anim.kind !== 'punch')) {
+    if (hover && hover.int) { const lab = labelOf(hover.int); if (lab) html = `<b>${RK}</b> ${lab}`; const al = hover.int.alt && labelOf(hover.int, 'altLabel'); if (al) html += ` <b>${LK}</b> ${al}`; }
+    if (!html && !(hover && hover.int)) { const nd = nearDoor(); if (nd) html = `<b>${RK}</b> ${nd.def.label()}`; }
+    if (!held && hover && hover.root && CATALOG[hover.root.userData.item.t].small) html += (html ? ' · ' : '') + (isTouch ? '<b>Grab</b> to pick up' : 'Press <b>E</b> to pick up');
+    if (held) {
+      const d = CATALOG[held.userData.item.t], i = held.userData.item, F = i.food; let use = '';
+      if (F && !(F.empty && F.empty()) && i.d.left > 0) use = ` <b>${LK}</b> ${F.mode === 'drink' ? 'sip' : F.verb} (${i.d.left} left)`; else if (i.handUse) use = ` <b>${LK}</b> ${i.handLabel || 'use'}`;
+      const nm = F && F.name !== 'drink' && F.name !== 'food' ? F.name.charAt(0).toUpperCase() + F.name.slice(1) : d.name;
+      html += (html ? ' · ' : '') + `<span class="nm">${nm}</span>${use} <b>${RK}</b> set down <b>${QK}</b> drop`;
+    }
+    if (!html && P.sit) html = P.sit.lie ? 'Resting… move to get up' : 'Move to stand up';
+  }
   if (html !== lastPrompt) { lastPrompt = html; pr.innerHTML = html; pr.hidden = !html; }
   document.body.classList.toggle('canuse', !!(hover && hover.int));
 }
@@ -679,7 +766,7 @@ function frame(now) {
   for (const c of STATIC) if (c.upd) c.upd();
   applyDragLook(dt); updatePlayer(dt); camera.updateMatrixWorld();
   updateAction(dt);
-  castFrame(); updateHover(); updateHeld(dt); updatePrompt();
+  castFrame(); updateHover(); updateAnim(dt); updateHeld(dt); updateFist(); updatePrompt(); Crumbs.update(dt);
   runTicks(playing ? dt : 0);
   for (let i = TWEENS.length - 1; i >= 0; i--) if (TWEENS[i](now)) TWEENS.splice(i, 1);
   updateLightPool(dt);
@@ -735,4 +822,4 @@ P.pos.set(A.spawn.x, 0, A.spawn.z); P.yaw = A.spawn.yaw; P.day = P.dayTarget = d
 updateHud(); renderTasks();
 camera.position.set(P.pos.x, P.eye, P.pos.z); camera.rotation.set(P.pitch, P.yaw, 0); camera.updateMatrixWorld();
 precompile().then(() => requestAnimationFrame(frame));
-window.__game = { STATIC_LIST: () => STATIC, moveAndSlide, dragLook, PR, POOL, SOURCES, lightStats, optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, grab, useHeld, camera, ctx, renderer, scene, keys, openPhone, advanceTime };
+window.__game = { STATIC_LIST: () => STATIC, moveAndSlide, dragLook, PR, POOL, SOURCES, lightStats, optStats, stats, setPerf, blocked, probe() { camera.updateMatrixWorld(); castFrame(); updateHover(); const d = hover && hover.int; return d ? (typeof d.label === 'function' ? d.label() : d.label) : (hover && hover.root ? 'ROOT ' + hover.root.userData.item.t : null); }, perf, THREE, A, P, CATALOG, itemsGroup, primary, leftAction, pickUp, bite, Crumbs, clock: () => clockT, FOOD: { FOOD_MODELS, FRUIT, pastaBowl, pizzaSlice }, held: () => held, camera, ctx, renderer, scene, keys, openPhone, advanceTime };

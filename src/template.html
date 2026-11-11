@@ -156,6 +156,8 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
 .homebar { align-self: center; width: 120px; height: 6px; border-radius: 3px; background: #ddd; border: 0; margin-top: 10px; }
 #phoneBadge { position: absolute; top: 18px; right: 70px; width: 10px; height: 10px; border-radius: 50%; background: var(--bad); }
 #perfHud { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(60px + env(safe-area-inset-bottom, 0px)); margin: 0; padding: 8px 10px; font: 12px/1.45 ui-monospace, 'SF Mono', Menlo, Consolas, monospace; color: #c8f7c5; background: rgba(0,0,0,.72); border-radius: 8px; white-space: pre; pointer-events: none; z-index: 4; }
+body.nohud #hud > *:not(#perfHud) { display: none !important; }
+#tCrouch.on { background: var(--accent); color: var(--accent-ink); }
 #enter:disabled { opacity: .6; cursor: progress; }
 @media (max-width: 640px) { .stats { min-width: 110px; padding: 6px 8px; } .mood { font-size: 11px; } #panel { top: calc(56px + env(safe-area-inset-top, 0px)); bottom: calc(180px + env(safe-area-inset-bottom, 0px)); } .card-big { padding: 20px; } }
 @media (prefers-reduced-motion: reduce) { #toast, #fade, #cross { transition: none; } }
@@ -184,7 +186,7 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
   <div id="prompt" class="glass" hidden></div>
   <pre id="perfHud" hidden></pre>
   <div id="toast" class="glass"></div>
-  <div id="hint" class="glass"><kbd>E</kbd> use · <kbd>G</kbd> pick up · <kbd>F</kbd> eat/drink · <kbd>Tab</kbd> phone · <kbd>T</kbd> to-dos · <kbd>Esc</kbd> menu</div>
+  <div id="hint" class="glass"><kbd>Right-click</kbd> use · <kbd>Left-click</kbd> eat / hit · <kbd>E</kbd> pick up · <kbd>Q</kbd> drop · <kbd>Esc</kbd> menu &amp; phone</div>
   <div id="action" hidden><div id="actionRing"></div><span id="actionLabel"></span></div>
 </div>
 <div id="vignette"></div><div id="wet"></div>
@@ -194,18 +196,20 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
   <div class="card-big glass">
     <h1>Fall <em>Apartment</em></h1>
     <p class="lede">Your apartment, room by room. Live a day in it: keep yourself fed, rested and clean, cook and brew coffee, do the laundry, order delivery to your door, and open packages. Time passes, the sun sets over the fall trees, and there are 31 things to do.</p>
-    <ul class="keys touchonly"><li><kbd>Stick</kbd>walk</li><li><kbd>Drag</kbd>look around</li><li><kbd>Use</kbd>or tap things</li><li><kbd>Grab</kbd>carry small items</li><li><kbd>Phone</kbd>order food &amp; more</li><li><kbd>Eat/Drink</kbd>what you hold</li></ul>
+    <ul class="keys touchonly"><li><kbd>Stick</kbd>walk (push to the edge to sprint)</li><li><kbd>Drag</kbd>look around</li><li><kbd>Use</kbd>or tap things</li><li><kbd>Grab / Drop</kbd>carry small items</li><li><kbd>Eat / Hit</kbd>bite, sip or punch</li><li><kbd>Sneak</kbd>walk quietly</li><li><kbd>Phone</kbd>order food &amp; more</li></ul>
     <ul class="keys deskonly">
-      <li><kbd>WASD</kbd>walk · <kbd>Shift</kbd>run</li>
-      <li><kbd>Mouse</kbd>look around</li>
-      <li><kbd>E</kbd>/click use things</li>
-      <li><kbd>G</kbd>pick up · <kbd>Q</kbd>drop</li>
-      <li><kbd>F</kbd>eat or drink</li>
-      <li><kbd>Tab</kbd>your phone</li>
-      <li><kbd>T</kbd>to-do list</li>
-      <li><kbd>L</kbd>room lights</li>
-      <li><kbd>Space</kbd>jump · <kbd>C</kbd>crouch</li>
-      <li><kbd>Esc</kbd>pause</li>
+      <li><kbd>W A S D</kbd>move</li>
+      <li><kbd>Space</kbd>jump</li>
+      <li><kbd>Left Ctrl</kbd>or <kbd>W W</kbd>sprint</li>
+      <li><kbd>Left Shift</kbd>sneak</li>
+      <li><kbd>Mouse</kbd>look</li>
+      <li><kbd>E</kbd>pick up what you aim at</li>
+      <li><kbd>Right-click</kbd>use · open · eat · sit · set down</li>
+      <li><kbd>Left-click</kbd>hit · bite / sip · flip &amp; grab actions</li>
+      <li><kbd>Q</kbd>drop what you hold</li>
+      <li><kbd>Esc</kbd>pause menu (phone, to-dos)</li>
+      <li><kbd>F1</kbd>hide HUD</li>
+      <li><kbd>F3</kbd>performance stats</li>
     </ul>
     <div class="btns"><button id="enter" class="primary">Walk in</button></div>
   </div>
@@ -234,11 +238,21 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
     </div>
     <div class="msec" data-sec="help" hidden>
       <h2>Controls</h2>
-      <ul class="keys">
-        <li><kbd>WASD</kbd>walk</li><li><kbd>Shift</kbd>run</li><li><kbd>Space</kbd>jump</li><li><kbd>C</kbd>crouch</li>
-        <li><kbd>E</kbd>use / open / sit</li><li><kbd>G</kbd>pick up small things</li><li><kbd>F</kbd>eat or drink</li><li><kbd>Q</kbd>drop · <kbd>R</kbd>turn</li>
-        <li><kbd>Tab</kbd>phone</li><li><kbd>T</kbd>to-do list</li><li><kbd>L</kbd>room lights</li><li><kbd>M</kbd>mute</li>
+      <ul class="keys deskonly">
+      <li><kbd>W A S D</kbd>move</li>
+      <li><kbd>Space</kbd>jump</li>
+      <li><kbd>Left Ctrl</kbd>or <kbd>W W</kbd>sprint</li>
+      <li><kbd>Left Shift</kbd>sneak</li>
+      <li><kbd>Mouse</kbd>look</li>
+      <li><kbd>E</kbd>pick up what you aim at</li>
+      <li><kbd>Right-click</kbd>use · open · eat · sit · set down</li>
+      <li><kbd>Left-click</kbd>hit · bite / sip · flip &amp; grab actions</li>
+      <li><kbd>Q</kbd>drop what you hold</li>
+      <li><kbd>Esc</kbd>pause menu (phone, to-dos)</li>
+      <li><kbd>F1</kbd>hide HUD</li>
+      <li><kbd>F3</kbd>performance stats</li>
       </ul>
+      <ul class="keys touchonly"><li><kbd>Stick</kbd>walk, push to the edge to sprint</li><li><kbd>Drag</kbd>look</li><li><kbd>Tap</kbd>or <kbd>Use</kbd>use / interact</li><li><kbd>Grab / Drop</kbd>pick up or drop</li><li><kbd>Eat / Hit</kbd>bite, sip or punch</li><li><kbd>Jump</kbd> · <kbd>Sneak</kbd></li></ul>
       <p class="lede" style="font-size:14px">If the mouse won't lock in your browser, click-and-drag to look and click on things to use them.</p>
       <div class="btns"><button class="ghostbtn" data-open="main">Back</button></div>
     </div>
@@ -263,9 +277,9 @@ body.touch.build #prompt { bottom: calc(260px + env(safe-area-inset-bottom, 0px)
 
 <div class="touchui">
   <div id="stick"><div id="knob"></div></div>
-  <div id="ttop"><button id="tMenu">Menu</button><button id="tPhone">Phone</button><button id="tCrouch">Crouch</button></div>
+  <div id="ttop"><button id="tMenu">Menu</button><button id="tPhone">Phone</button><button id="tCrouch">Sneak</button></div>
   <div id="tbtns">
-    <button id="tGrab">Grab</button><button id="tUseHeld">Eat / drink</button><button id="tJump">Jump</button>
+    <button id="tGrab">Grab / Drop</button><button id="tUseHeld">Eat / Hit</button><button id="tJump">Jump</button>
     <button id="tUse" style="grid-column: span 3">Use</button>
   </div>
 </div>
