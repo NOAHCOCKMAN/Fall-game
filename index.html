@@ -326,10 +326,10 @@ body.touch #driveHud { bottom: auto; top: calc(64px + env(safe-area-inset-top, 0
           <li>Groceries $12 (put them away at your fridge), flowers for Lilah $6, energy drink $3.</li>
           <li>Say hi to Dana at the register.</li>
         </ol></details>
-        <details><summary>⛽ BP &amp; the garage (west end of Highway 150)</summary><ol>
-          <li>Caspian Pl down to Highway 150, turn right and follow it west to the end.</li>
+        <details><summary>⛽ BP &amp; Green's Landscaping (west on Highway 150)</summary><ol>
+          <li>Caspian Pl down to Highway 150, turn right — the BP is down the road on your right.</li>
           <li>Park at a pump and right-click it to fill the tank ($18). Snacks inside the shop.</li>
-          <li>Pull around back: Ray at Mooresville Auto &amp; Tire does a $20 check-up.</li>
+          <li>Next door on the left of the station: TREX Lawn Care — the 20-foot mascot is out front. Mowers inside, mums $5, Tom books a $15 fall cleanup, and the crew's in the yard.</li>
         </ol></details>
         <details><summary>💵 Money</summary><ol>
           <li>You start with $85 (top-right). Deliveries, gas and groceries cost cash.</li>
@@ -3257,8 +3257,8 @@ function buildWorld(scene, ctx, A) {
     { r: [-200, 30, 224, 44], n: 'hwy' },         // Highway 150
     { r: [44, -92, 52, 36], n: 'perth' },         // Perth Rd north to the Harris Teeter
     { r: [30, -92, 102, -38], n: 'htlot' },       // Harris Teeter lot
-    { r: [-134, 44, -80, 99], n: 'bp' },          // BP apron + forecourt
-    { r: [-134, 99, -84, 121], n: 'bplot' },      // behind: the garage's lot
+    { r: [-134, 2, -80, 30], n: 'bp' },           // BP apron + forecourt (north side of 150)
+    { r: [-182, 2, -140, 30], n: 'mow' },         // Green's Landscaping yard, west of the BP
     { r: [64, 52, 96, 76], n: 'out1' }, { r: [110, 52, 142, 78], n: 'out2' }, // outparcels across the hwy
   ];
   const road = (x0, z0, x1, z1, y = 0.02) => { const m = asphTex(); m.map.repeat.set((x1 - x0) / 9, (z1 - z0) / 9); plane(W, x1 - x0, z1 - z0, m, (x0 + x1) / 2, GY + y, (z0 + z1) / 2, -Math.PI / 2); };
@@ -3284,9 +3284,9 @@ function buildWorld(scene, ctx, A) {
   walk(-140, 27.4, 30, 29.3); walk(52.2, -88, 54.2, 30); walk(40.5, -10, 43.5, 30);
   A.streetLamps = A.streetLamps || [];
   const lamp = (x, z) => { C(W, 0.09, 0.12, 7, M(0x2a2a2a, 0.6), x, GY, z, 8); const h = S(W, 0.28, E(0xffe0a0, 0), x, GY + 7, z, 10, 8); A.streetLamps.push(h.material); COL(x - 0.15, GY, z - 0.15, x + 0.15, GY + 2, z + 0.15); };
-  for (const [x, z] of [[-20, -17], [2, -17], [24, -17], [-20, -32], [2, -32]]) lamp(x, z);          // back lot
-  for (let x = -180; x <= 210; x += 36) lamp(x, 28.4);                                                // hwy north
-  for (let x = -162; x <= 200; x += 36) if (x < -140 || x > -76) lamp(x, 45.6);                       // hwy south
+  for (const [x, z] of [[-20, -2.4], [2, -2.4], [24, -2.4], [-20, -32.3], [2, -32.3], [24, -32.3]]) lamp(x, z); // back lot, on the curbs — never in the aisle
+  for (let x = -180; x <= 210; x += 36) if ((x < -186 || x > -76) && !(x > -10 && x < 10) && !(x > 26 && x < 58)) lamp(x, 28.4); // hwy north, clear of every junction mouth
+  for (let x = -162; x <= 200; x += 36) if (!(x > 26 && x < 58) && !(x > -10 && x < 10)) lamp(x, 45.6); // hwy south
   for (const z of [-20, -50, -80]) lamp(54.8, z);                                                     // Perth
   const carCols = [0x2e3a46, 0xf2f2f2, 0x1f1f22, 0x7a8a99, 0x4a7fb5, 0xc9ccd0, 0x6b4a35, 0x8a9aa0];
   function parkedCar(x, z, ry, col) {
@@ -3329,10 +3329,10 @@ function buildWorld(scene, ctx, A) {
   sign(42.5, 25, (g) => { g.fillStyle = '#1f5a30'; g.fillRect(0, 40, 160, 44); g.fillStyle = '#fff'; g.font = 'bold 24px system-ui'; g.textAlign = 'center'; g.fillText('Caspian Pl', 80, 70); g.fillStyle = '#1f5a30'; g.fillRect(0, 88, 160, 44); g.fillStyle = '#fff'; g.fillText('Highway 150', 80, 118); }, 1.1, 1.1, 0, 3.0);
   sign(55.5, 24, (g) => { g.fillStyle = '#1f5a30'; g.fillRect(0, 40, 160, 44); g.fillStyle = '#fff'; g.font = 'bold 26px system-ui'; g.textAlign = 'center'; g.fillText('Perth Rd', 80, 70); g.fillStyle = '#1f5a30'; g.fillRect(0, 88, 160, 44); g.fillStyle = '#fff'; g.fillText('Highway 150', 80, 118); }, 1.1, 1.1, 0, 3.0);
   sign(-60, 28.6, (g) => { g.fillStyle = '#fff'; g.fillRect(20, 20, 120, 130); g.strokeStyle = '#111'; g.lineWidth = 4; g.strokeRect(24, 24, 112, 122); g.fillStyle = '#111'; g.textAlign = 'center'; g.font = '20px system-ui'; g.fillText('SPEED', 80, 52); g.fillText('LIMIT', 80, 74); g.font = 'bold 52px system-ui'; g.fillText('45', 80, 126); }, 0.85, 0.9);
-  sign(-72, 45.6, (g) => { g.fillStyle = '#1f5a30'; g.fillRect(0, 30, 160, 100); g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = 'bold 22px system-ui'; g.fillText('NC-150', 80, 68); g.font = '19px system-ui'; g.fillText('← bp · gas', 80, 104); }, 1.2, 1.2, Math.PI);
+  sign(-72, 45.6, (g) => { g.fillStyle = '#1f5a30'; g.fillRect(0, 30, 160, 100); g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = 'bold 22px system-ui'; g.fillText('NC-150', 80, 68); g.font = '19px system-ui'; g.fillText('bp · gas →', 80, 104); }, 1.2, 1.2, Math.PI);
   sign(56, -34, (g) => { g.fillStyle = '#1f4432'; g.fillRect(0, 30, 160, 100); g.fillStyle = '#f6efe0'; g.textAlign = 'center'; g.font = 'bold 20px Georgia'; g.fillText('Harris Teeter', 80, 72); g.font = '18px system-ui'; g.fillText('↑ just ahead', 80, 102); }, 1.25, 1.25);
   // street trees with trunks you can't drive through, set WELL back from every curb
-  { const leafColsT = [0xd9622b, 0xe8a23a, 0xb83a26, 0xe3c14b]; for (let x = -170; x <= 215; x += 26) { for (const sz of [25.2, 47.6]) { if (sz > 40 && x > -140 && x < -74) continue; if (sz > 40 && x > 60 && x < 146) continue; if (x > 27 && x < 57) continue; C(W, 0.14, 0.2, 2.6, M(0x4a3628, 0.9), x, GY, sz, 7); const lv = S(W, 1.5, M(leafColsT[(Math.random() * 4) | 0], 0.9), x, GY + 3.4, sz, 10, 8); lv.scale.y = 1.25; COL(x - 0.25, GY, sz - 0.25, x + 0.25, GY + 2, sz + 0.25); } } }
+  { const leafColsT = [0xd9622b, 0xe8a23a, 0xb83a26, 0xe3c14b]; for (let x = -170; x <= 215; x += 26) { for (const sz of [25.2, 47.6]) { if (sz < 40 && x > -186 && x < -76) continue; if (sz > 40 && x > 60 && x < 146) continue; if (x > 27 && x < 57) continue; C(W, 0.14, 0.2, 2.6, M(0x4a3628, 0.9), x, GY, sz, 7); const lv = S(W, 1.5, M(leafColsT[(Math.random() * 4) | 0], 0.9), x, GY + 3.4, sz, 10, 8); lv.scale.y = 1.25; COL(x - 0.25, GY, sz - 0.25, x + 0.25, GY + 2, sz + 0.25); } } }
 
   // ================= Harris Teeter plaza (next door) =================
   const HT = { x0: -118, x1: -72, z0: -34, z1: -58 };
@@ -3510,109 +3510,240 @@ function buildWorld(scene, ctx, A) {
     parkedCar(62, -62.5, 0.03, 0xf2f2f2); parkedCar(80, -62.3, -0.02, 0x2e3a46);
   }
 
-  // ================= the BP + the garage behind it (west end of Highway 150) =================
+  // ================= the BP (north side of 150) + Green's Landscaping beside it =================
   {
-    const cxB = 66, czB = -97; const B_ = G(W, cxB, 0, czB, Math.PI);
-    const colBP = (x0, y0, z0, x1, y1, z1) => COL(cxB - x1, y0, czB - z1, cxB - x0, y1, czB - z0);
-    // canopy
+    const B_ = G(W);
     const canM = M(0xf2f2f0, 0.7), greenM = M(0x1e7a46, 0.6);
-    B(B_, 34, 0.7, 20, canM, 167, GY + 5.0, -161); B(B_, 34.2, 0.5, 20.2, greenM, 167, GY + 4.6, -161);
+    // canopy
+    B(B_, 34, 0.7, 20, canM, -112, GY + 5.0, 16); B(B_, 34.2, 0.5, 20.2, greenM, -112, GY + 4.6, 16);
     const bpT = canvasTex(128, 128, (g) => { g.fillStyle = '#1e7a46'; g.fillRect(0, 0, 128, 128); for (let r = 54, i = 0; r > 10; r -= 11, i++) { g.fillStyle = ['#ffe600', '#ffffff', '#ffe600', '#1e7a46'][i % 4]; g.beginPath(); for (let k = 0; k < 20; k++) { const a = k / 20 * TAU, rr = k % 2 ? r * 0.62 : r; g.lineTo(64 + rr * Math.cos(a), 56 + rr * Math.sin(a)); } g.closePath(); g.fill(); } g.fillStyle = '#fff'; g.font = 'bold italic 30px system-ui'; g.textAlign = 'center'; g.fillText('bp', 64, 120); });
-    for (const ry of [0, Math.PI]) plane(B_, 4, 4, new THREE.MeshStandardMaterial({ map: bpT, emissive: 0xffffff, emissiveMap: bpT, emissiveIntensity: 0.25, roughness: 0.6 }), 167, GY + 4.65, -161 + (ry ? 10.2 : -10.2), 0, ry);
-    for (const [cx, cz] of [[154, -155], [180, -155], [154, -167], [180, -167]]) { C(B_, 0.22, 0.26, 5, canM, cx, GY, cz, 10); colBP(cx - 0.3, GY, cz - 0.3, cx + 0.3, GY + 2, cz + 0.3); }
-    // pump islands + dispensers
+    for (const fz of [26.2, 5.8]) plane(B_, 4, 4, new THREE.MeshStandardMaterial({ map: bpT, emissive: 0xffffff, emissiveMap: bpT, emissiveIntensity: 0.25, roughness: 0.6 }), -112, GY + 4.65, fz, 0, fz > 16 ? 0 : Math.PI);
+    for (const [cx2, cz2] of [[-125, 10], [-99, 10], [-125, 22], [-99, 22]]) { C(B_, 0.22, 0.26, 5, canM, cx2, GY, cz2, 10); COL(cx2 - 0.3, GY, cz2 - 0.3, cx2 + 0.3, GY + 2, cz2 + 0.3); }
+    // pump islands + dispensers (pull up alongside, nose north or south)
     A.pumps = [];
-    for (const ix of [160, 174]) {
-      B(B_, 3.2, 0.18, 10, curb, ix, GY, -161); EXT_FLOORS.push({ x0: cxB - ix - 1.6, z0: 59, x1: cxB - ix + 1.6, z1: 69, y: 0.18 });
-      for (const pz of [-158.2, -163.8]) {
+    for (const ix of [-118, -106]) {
+      B(B_, 3.2, 0.18, 10, curb, ix, GY, 15); EXT_FLOORS.push({ x0: ix - 1.6, z0: 10, x1: ix + 1.6, z1: 20, y: 0.18 });
+      for (const pz of [12.2, 17.8]) {
         const p = G(B_, ix, GY + 0.18, pz); B(p, 1.0, 1.9, 0.62, M(0xe8e8e6, 0.5), 0, 0, 0); B(p, 1.04, 0.5, 0.66, greenM, 0, 1.1, 0);
-        plane(p, 0.5, 0.3, E(0x1a2a1a, 0.6), 0, 1.25, 0.34); for (const s of [-1, 1]) B(p, 0.1, 0.5, 0.08, M(0x222222, 0.6), s * 0.38, 0.5, s * 0.28);
-        colBP(ix - 0.55, GY, pz - 0.35, ix + 0.55, GY + 2, pz + 0.35);
-        A.pumps.push(V3(cxB - ix, GY, czB - pz));
-        ctx.interact(p, { cook: true, reach: 4.8, label: () => { const c = A.car && A.car.g.position; if (!c || Math.hypot(c.x - (cxB - ix), c.z - (czB - pz)) > 6) return 'Pump ' + A.pumps.length + ' — park the Corolla here first'; return A.car.st.fuel > 0.97 ? 'Tank is full ⛽' : 'Fill up the Corolla ⛽ (' + Math.round(A.car.st.fuel * 100) + '%) · $18'; }, action: () => {
-          const c = A.car && A.car.g.position; if (!c || Math.hypot(c.x - (cxB - ix), c.z - (czB - pz)) > 6) return ctx.msg('Park the Corolla beside this pump first.');
+        plane(p, 0.5, 0.3, E(0x1a2a1a, 0.6), 0, 1.25, 0.34); for (const sd of [-1, 1]) B(p, 0.1, 0.5, 0.08, M(0x222222, 0.6), sd * 0.38, 0.5, sd * 0.28);
+        COL(ix - 0.55, GY, pz - 0.35, ix + 0.55, GY + 2, pz + 0.35);
+        A.pumps.push(V3(ix, GY, pz));
+        ctx.interact(p, { cook: true, reach: 4.8, label: () => { const c = A.car && A.car.g.position; if (!c || Math.hypot(c.x - ix, c.z - pz) > 6) return 'Pump ' + A.pumps.length + ' — park the Corolla here first'; return A.car.st.fuel > 0.97 ? 'Tank is full ⛽' : 'Fill up the Corolla ⛽ (' + Math.round(A.car.st.fuel * 100) + '%) · $18'; }, action: () => {
+          const c = A.car && A.car.g.position; if (!c || Math.hypot(c.x - ix, c.z - pz) > 6) return ctx.msg('Park the Corolla beside this pump first.');
           if (A.car.st.fuel > 0.97) return ctx.msg('She\'s already full.');
           if (!ctx.spend(18, 'gas')) return;
-          const snd = Sfx.loop('water', V3(cxB - ix, GY + 1, czB - pz), 0.1);
+          const snd = Sfx.loop('water', V3(ix, GY + 1, pz), 0.1);
           ctx.startAction({ label: 'Filling the tank', dur: 5, done: () => { snd.stop(); A.car.st.fuel = 1; Sfx.beep(2, 1500); ctx.task('fuel'); ctx.msg('⛽ Full tank. Receipt? No thanks.'); } });
           setTimeout(() => snd.stop(), 6500);
         } });
       }
     }
-    // price sign
-    const prT = canvasTex(160, 220, (g) => { g.fillStyle = '#1e7a46'; g.fillRect(0, 0, 160, 220); g.drawImage(bpT.userData.ctx ? bpT.userData.ctx.canvas : bpT.image, 30, 8, 100, 100); g.fillStyle = '#111'; g.fillRect(12, 116, 136, 96); g.fillStyle = '#ffe600'; g.textAlign = 'center'; g.font = 'bold 44px system-ui'; g.fillText('2.89', 80, 162); g.fillStyle = '#fff'; g.font = '20px system-ui'; g.fillText('Regular', 80, 196); });
-    const pr = G(W, -78.5, GY, 47); B(pr, 0.5, 2.6, 0.5, steel, 0, 0, 0); plane(pr, 1.6, 2.2, new THREE.MeshStandardMaterial({ map: prT, emissive: 0xffffff, emissiveMap: prT, emissiveIntensity: 0.25 }), 0, 3.6, 0.3); plane(pr, 1.6, 2.2, new THREE.MeshStandardMaterial({ map: prT, emissive: 0xffffff, emissiveMap: prT, emissiveIntensity: 0.25 }), 0, 3.6, -0.3, 0, Math.PI);
-    COL(-78.9, GY, 46.6, -78.1, GY + 2, 47.4);
-    // the shop
-    const SH = { x0: 156, x1: 182, z0: -176, z1: -190 };
+    // price sign by the entrance
+    const prT = canvasTex(160, 220, (g) => { g.fillStyle = '#1e7a46'; g.fillRect(0, 0, 160, 220); g.drawImage(bpT.userData.ctx.canvas, 30, 8, 100, 100); g.fillStyle = '#111'; g.fillRect(12, 116, 136, 96); g.fillStyle = '#ffe600'; g.textAlign = 'center'; g.font = 'bold 44px system-ui'; g.fillText('2.89', 80, 162); g.fillStyle = '#fff'; g.font = '20px system-ui'; g.fillText('Regular', 80, 196); });
+    const pr = G(W, -83, GY, 27); B(pr, 0.5, 2.6, 0.5, steel, 0, 0, 0);
+    for (const sd of [0.3, -0.3]) plane(pr, 1.6, 2.2, new THREE.MeshStandardMaterial({ map: prT, emissive: 0xffffff, emissiveMap: prT, emissiveIntensity: 0.25 }), 0, 3.6, sd, 0, sd < 0 ? Math.PI : 0);
+    COL(-83.4, GY, 26.6, -82.6, GY + 2, 27.4);
+    // the shop (door on the south face, toward the pumps)
+    const SH = { x0: -126, x1: -100, z0: 2, z1: -12 };
     const shM = M(0xe3ded2, 0.85);
     const sb = (x0, y0, z0, x1, y1, z1, m = shM) => B(B_, x1 - x0, y1 - y0, z1 - z0, m, (x0 + x1) / 2, GY + y0, (z0 + z1) / 2);
-    EXT_FLOORS.push({ x0: -116, z0: 79, x1: -90, z1: 93, y: 0.06 });
-    sb(SH.x0, 0, SH.z1, SH.x1, 4, SH.z1 + 0.4); colBP(SH.x0, GY, SH.z1, SH.x1, GY + 4, SH.z1 + 0.4);
-    sb(SH.x0, 0, SH.z1, SH.x0 + 0.4, 4, SH.z0); colBP(SH.x0, GY, SH.z1, SH.x0 + 0.4, GY + 4, SH.z0);
-    sb(SH.x1 - 0.4, 0, SH.z1, SH.x1, 4, SH.z0); colBP(SH.x1 - 0.4, GY, SH.z1, SH.x1, GY + 4, SH.z0);
-    // front wall with door gap x 167..169.2
-    sb(SH.x0, 0, SH.z0 - 0.4, 167, 4, SH.z0); colBP(SH.x0, GY, SH.z0 - 0.4, 167, GY + 4, SH.z0);
-    sb(169.2, 0, SH.z0 - 0.4, SH.x1, 4, SH.z0); colBP(169.2, GY, SH.z0 - 0.4, SH.x1, GY + 4, SH.z0);
-    sb(167, 3.0, SH.z0 - 0.4, 169.2, 4, SH.z0);
-    sb(SH.x0 - 0.2, 4, SH.z1 - 0.2, SH.x1 + 0.2, 4.35, SH.z0 + 0.2); B(B_, SH.x1 - SH.x0 + 0.4, 0.8, 0.3, greenM, 167 + 2, GY + 3.6, SH.z0 + 0.15);
-    plane(B_, (SH.x1 - SH.x0) * 0.8, 0.9, M(0xdfeef7, 0.1, 0.4, { transparent: true, opacity: 0.5 }), 169, GY + 1.9, SH.z0 + 0.01); // window strip
+    EXT_FLOORS.push({ x0: SH.x0, z0: SH.z1, x1: SH.x1, z1: SH.z0, y: 0.06 });
+    sb(SH.x0, 0, SH.z1 - 0.4, SH.x1, 4, SH.z1); COL(SH.x0, GY, SH.z1 - 0.4, SH.x1, GY + 4, SH.z1);
+    sb(SH.x0 - 0.4, 0, SH.z1, SH.x0, 4, SH.z0); COL(SH.x0 - 0.4, GY, SH.z1, SH.x0, GY + 4, SH.z0);
+    sb(SH.x1, 0, SH.z1, SH.x1 + 0.4, 4, SH.z0); COL(SH.x1, GY, SH.z1, SH.x1 + 0.4, GY + 4, SH.z0);
+    sb(SH.x0, 0, SH.z0, -114.2, 4, SH.z0 + 0.4); COL(SH.x0, GY, SH.z0, -114.2, GY + 4, SH.z0 + 0.4);
+    sb(-111.8, 0, SH.z0, SH.x1, 4, SH.z0 + 0.4); COL(-111.8, GY, SH.z0, SH.x1, GY + 4, SH.z0 + 0.4);
+    sb(-114.2, 3.0, SH.z0, -111.8, 4, SH.z0 + 0.4);
+    sb(SH.x0 - 0.2, 4, SH.z1 - 0.2, SH.x1 + 0.2, 4.35, SH.z0 + 0.2); B(B_, SH.x1 - SH.x0 + 0.4, 0.8, 0.3, greenM, (SH.x0 + SH.x1) / 2, GY + 3.6, SH.z0 + 0.25);
+    plane(B_, 20, 0.9, M(0xdfeef7, 0.1, 0.4, { transparent: true, opacity: 0.5 }), -113, GY + 1.9, SH.z0 + 0.41);
     const shInT = canvasTex(256, 64, (g) => { g.fillStyle = '#1e7a46'; g.fillRect(0, 0, 256, 64); g.fillStyle = '#fff'; g.font = 'bold 34px system-ui'; g.textAlign = 'center'; g.fillText('bp shop', 128, 44); });
-    plane(B_, 5, 1.1, new THREE.MeshStandardMaterial({ map: shInT, emissive: 0xffffff, emissiveMap: shInT, emissiveIntensity: 0.3 }), 168, GY + 3.55, SH.z0 + 0.32);
-    plane(B_, SH.x1 - SH.x0 - 0.9, -SH.z1 + SH.z0 - 0.9, M(0xffffff, 0.55, 0, { map: floorTex('tile') }), 169, GY + 0.06, -183, -Math.PI / 2);
-    plane(B_, SH.x1 - SH.x0 - 0.9, -SH.z1 + SH.z0 - 0.9, M(0xf2f0ea, 0.95), 169, GY + 3.9, -183, Math.PI / 2);
-    plane(B_, 10, 0.7, E(0xfff6e2, 1.4), 169, GY + 3.86, -183, Math.PI / 2);
-    // cooler wall + snack shelf + counter + Sam
-    B(B_, 10, 2.2, 0.8, M(0xcfd4d8, 0.5), 169, GY + 0.06, -189.2); plane(B_, 9.4, 1.7, E(0xcfe8ff, 0.9), 169, GY + 0.5, -188.75); colBP(164, GY, -189.8, 174, GY + 2.2, -188.4);
-    const snk = B(B_, 4.6, 1.5, 1.0, M(0x8a9aa0, 0.6), 165, GY + 0.06, -183); for (let i = 0; i < 12; i++) B(B_, 0.3, 0.34, 0.2, M([0xe07a3f, 0xd9b44a, 0xc0392b, 0x4a7fb5][i % 4], 0.6), 163.2 + (i % 6) * 0.72, GY + 0.6 + Math.floor(i / 6) * 0.55, -183 + (i % 2 ? 0.25 : -0.25));
-    colBP(162.7, GY, -183.6, 167.3, GY + 1.6, -182.4);
-    const cnt = B(B_, 3.4, 1.05, 1.0, M(0x4a4038, 0.7), 176, GY + 0.06, -180); colBP(174.3, GY, -180.6, 177.7, GY + 1.1, -179.4);
-    const sam = makePerson({ shirt: 0x1e7a46, pants: 0x222831, skin: 0xd9a06b, hair: 0x2a1a0e, hat: 0x1e7a46 });
-    sam.g.position.set(-110, GY + 0.06, 84.4); sam.g.rotation.y = Math.PI; W.add(sam.g);
-    ctx.tick(sam.g, (dt, t) => animPerson(sam, dt, t, 0));
-    makeTalker(ctx, sam, { name: 'Sam', firstLine: 'Hey! Pump\'s on whenever you\'re ready.', lines: ['Coffee\'s fresh… ish.', 'Ray out back will sort that Corolla right up.', 'Cold snap coming this weekend, they say.'] });
-    const snkHit = B(B_, 4.6, 1.7, 2.0, new THREE.MeshBasicMaterial({ visible: false }), 165, GY + 0.06, -183);
-    ctx.interact(snkHit, { cook: true, reach: 3, label: () => 'Grab road snacks 🥨 · $4', action: () => { if (!ctx.spend(4, 'snacks')) return; ctx.give('snack', { kind: 'cheese' }, { rise: true }); } });
-    const coolHit = B(B_, 9.4, 1.9, 0.5, new THREE.MeshBasicMaterial({ visible: false }), 169, GY + 0.1, -188.5);
+    plane(B_, 5, 1.1, new THREE.MeshStandardMaterial({ map: shInT, emissive: 0xffffff, emissiveMap: shInT, emissiveIntensity: 0.3 }), -113, GY + 3.55, SH.z0 + 0.52);
+    plane(B_, SH.x1 - SH.x0 - 0.9, SH.z0 - SH.z1 - 0.9, M(0xffffff, 0.55, 0, { map: floorTex('tile') }), -113, GY + 0.06, -5, -Math.PI / 2);
+    plane(B_, SH.x1 - SH.x0 - 0.9, SH.z0 - SH.z1 - 0.9, M(0xf2f0ea, 0.95), -113, GY + 3.9, -5, Math.PI / 2);
+    plane(B_, 10, 0.7, E(0xfff6e2, 1.4), -113, GY + 3.86, -5, Math.PI / 2);
+    // cooler (back wall) + snacks + counter + Sam
+    B(B_, 10, 2.2, 0.8, M(0xcfd4d8, 0.5), -113, GY + 0.06, -11.2); plane(B_, 9.4, 1.7, E(0xcfe8ff, 0.9), -113, GY + 0.5, -10.75); COL(-118, GY, -11.8, -108, GY + 2.2, -10.4);
+    const coolHit = B(B_, 9.4, 1.9, 0.5, new THREE.MeshBasicMaterial({ visible: false }), -113, GY + 0.1, -10.5);
     ctx.interact(coolHit, { cook: true, reach: 3, label: () => 'Energy drink from the cooler ⚡ · $3', action: () => { if (!ctx.spend(3, 'energy drink')) return; ctx.need('energy', 0.25); ctx.drink('coffee'); } });
+    B(B_, 4.6, 1.5, 1.0, M(0x8a9aa0, 0.6), -121, GY + 0.06, -5); for (let i = 0; i < 12; i++) B(B_, 0.3, 0.34, 0.2, M([0xe07a3f, 0xd9b44a, 0xc0392b, 0x4a7fb5][i % 4], 0.6), -122.8 + (i % 6) * 0.72, GY + 0.6 + Math.floor(i / 6) * 0.55, -5 + (i % 2 ? 0.25 : -0.25));
+    COL(-123.3, GY, -5.6, -118.7, GY + 1.6, -4.4);
+    const snkHit = B(B_, 4.6, 1.7, 2.0, new THREE.MeshBasicMaterial({ visible: false }), -121, GY + 0.06, -5);
+    ctx.interact(snkHit, { cook: true, reach: 3, label: () => 'Grab road snacks 🥨 · $4', action: () => { if (!ctx.spend(4, 'snacks')) return; ctx.give('snack', { kind: 'cheese' }, { rise: true }); } });
+    B(B_, 3.4, 1.05, 1.0, M(0x4a4038, 0.7), -104.5, GY + 0.06, -2); COL(-106.2, GY, -2.6, -102.8, GY + 1.1, -1.4);
+    const sam = makePerson({ shirt: 0x1e7a46, pants: 0x222831, skin: 0xd9a06b, hair: 0x2a1a0e, hat: 0x1e7a46 });
+    sam.g.position.set(-104.5, GY + 0.06, -3.6); W.add(sam.g);
+    ctx.tick(sam.g, (dt, t) => animPerson(sam, dt, t, 0));
+    makeTalker(ctx, sam, { name: 'Sam', firstLine: 'Hey! Pump\'s on whenever you\'re ready.', lines: ['Coffee\'s fresh… ish.', 'The crew next door will trade mulch for coffee, I swear.', 'Cold snap coming this weekend, they say.'] });
+  }
 
-    // ---- the garage behind the BP ----
-    const GA = { x0: 150, x1: 182, z0: -198, z1: -214 };
-    const gaM = M(0xb9bcbf, 0.7);
-    sb(GA.x0, 0, GA.z1, GA.x1, 4.6, GA.z1 + 0.5, gaM); colBP(GA.x0, GY, GA.z1, GA.x1, GY + 4.6, GA.z1 + 0.5);
-    sb(GA.x0, 0, GA.z1, GA.x0 + 0.5, 4.6, GA.z0, gaM); colBP(GA.x0, GY, GA.z1, GA.x0 + 0.5, GY + 4.6, GA.z0);
-    sb(GA.x1 - 0.5, 0, GA.z1, GA.x1, 4.6, GA.z0, gaM); colBP(GA.x1 - 0.5, GY, GA.z1, GA.x1, GY + 4.6, GA.z0);
-    // north face: two open bays + office strip
-    sb(GA.x0, 0, GA.z0 - 0.5, 154, 4.6, GA.z0, gaM); colBP(GA.x0, GY, GA.z0 - 0.5, 154, GY + 4.6, GA.z0);
-    sb(160, 0, GA.z0 - 0.5, 164, 4.6, GA.z0, gaM); colBP(160, GY, GA.z0 - 0.5, 164, GY + 4.6, GA.z0);
-    sb(170, 0, GA.z0 - 0.5, GA.x1, 4.6, GA.z0, gaM); colBP(170, GY, GA.z0 - 0.5, GA.x1, GY + 4.6, GA.z0);
-    sb(154, 3.2, GA.z0 - 0.5, 160, 4.6, GA.z0, gaM); sb(164, 3.2, GA.z0 - 0.5, 170, 4.6, GA.z0, gaM);
-    for (const x of [157, 167]) { const rd = B(B_, 5.6, 0.9, 0.12, M(0x7a8288, 0.5, 0.3), x, GY + 3.1, GA.z0 - 0.2); rd.rotation.x = 0.5; } // rolled-up doors
-    sb(GA.x0 + 0.2, 4.6, GA.z1 + 0.2, GA.x1 - 0.2, 4.95, GA.z0 - 0.2, M(0x4a4f55, 0.8));
-    const gaT = canvasTex(512, 80, (g) => { g.fillStyle = '#b32025'; g.fillRect(0, 0, 512, 80); g.fillStyle = '#fff'; g.font = 'bold 40px system-ui'; g.textAlign = 'center'; g.fillText('MOORESVILLE AUTO & TIRE', 256, 54); });
-    plane(B_, 14, 1.6, new THREE.MeshStandardMaterial({ map: gaT, emissive: 0xffffff, emissiveMap: gaT, emissiveIntensity: 0.25 }), 166, GY + 4.0, GA.z0 + 0.3);
-    plane(B_, GA.x1 - GA.x0 - 1, -GA.z1 + GA.z0 - 1, M(0x6d7277, 0.9), 166, GY + 0.05, -206, -Math.PI / 2); EXT_FLOORS.push({ x0: -116, z0: 101, x1: -84, z1: 117, y: 0.05 });
-    plane(B_, 10, 0.7, E(0xfff6e2, 1.3), 166, GY + 4.5, -206, Math.PI / 2);
-    // lift with a car up on it
-    const lift = G(B_, 157, GY + 0.05, -206);
-    for (const s of [-1.3, 1.3]) { B(lift, 0.3, 2.0, 0.3, M(0xd94f20, 0.5), s, 0, -1.2); B(lift, 0.3, 2.0, 0.3, M(0xd94f20, 0.5), s, 0, 1.2); B(lift, 0.25, 0.12, 3.4, M(0x333a40, 0.5), s, 1.6, 0); }
-    colBP(155.4, GY, -207.6, 158.6, GY + 2, -204.4);
-    const liftedCar = G(lift, 0, 1.75, 0); const lcM = M(0x5b6b73, 0.35, 0.5); B(liftedCar, 1.8, 0.55, 4.2, lcM, 0, 0.1, 0); B(liftedCar, 1.6, 0.5, 2.1, M(0x1c232b, 0.2, 0.4), 0, 0.62, -0.1);
-    for (const wx of [-0.86, 0.86]) for (const wz of [-1.35, 1.35]) { const w = C(liftedCar, 0.32, 0.32, 0.2, M(0x111111, 0.8), wx, 0.05, wz, 10); w.rotation.z = Math.PI / 2; }
-    // tires, tool wall, bench
-    for (const [tx, tz, n] of [[176, -210, 4], [179, -209, 3], [173.5, -211.5, 5]]) { for (let i = 0; i < n; i++) { const t = T(B_, 0.42, 0.16, M(0x16181a, 0.9), tx, GY + 0.22 + i * 0.34, tz, TAU); t.rotation.x = Math.PI / 2; } colBP(tx - 0.6, GY, tz - 0.6, tx + 0.6, GY + 1.6, tz + 0.6); }
-    B(B_, 6, 1.0, 0.8, M(0x4a4038, 0.7), 166, GY + 0.05, -213.1); colBP(163, GY, -213.6, 169, GY + 1.2, -212.6);
-    for (let i = 0; i < 10; i++) B(B_, 0.18, 0.5 + (i % 3) * 0.14, 0.06, M([0xc0392b, 0x4a7fb5, 0xd9b44a][i % 3], 0.6), 163 + i * 0.6, GY + 2.2, -213.4);
-    const ray = makePerson({ shirt: 0x3a6ea5, pants: 0x32383e, skin: 0xb97a4e, hair: 0x4a4a4a, apron: 0x2e3a46 });
-    ray.g.position.set(-93.5, GY + 0.05, 109.5); ray.g.rotation.y = 1.9; W.add(ray.g);
-    ctx.tick(ray.g, (dt, t) => animPerson(ray, dt, t, 0));
-    makeTalker(ctx, ray, { name: 'Ray', firstLine: 'Afternoon! Ray. That the Corolla from over at Avalon?', lines: ['Tires look decent. Rotate \'em in spring.', 'Bring her round back any time.', 'Sam up front makes terrible coffee. Don\'t tell him.'] });
-    const svcHit = B(B_, 3.2, 2, 3.2, new THREE.MeshBasicMaterial({ visible: false }), 166.5, GY + 0.05, -206);
-    ctx.interact(svcHit, { cook: true, reach: 4, label: () => 'Quick check-up for the Corolla 🔧 · $20', action: () => {
-      const c = A.car && A.car.g.position; if (!c || Math.hypot(c.x + 100, c.z - 103) > 14) return ctx.msg('Ray: "Pull the Corolla around back first — park it by the bay."');
-      if (!ctx.spend(20, 'check-up')) return;
-      ctx.startAction({ label: 'Watching Ray work', dur: 6, done: () => { ray.say('All set. She\'s healthy!'); A.car.st.fuel = Math.max(A.car.st.fuel, 0.35); ctx.need('fun', 0.12); ctx.task('garage'); ctx.msg('🔧 Check-up done. The Corolla purrs now.'); } });
-    } });
+  // ---- TREX Lawn Care: the landscaping crew works out of here (left of the station) ----
+  {
+    const L_ = G(W);
+    const sage = M(0xaebfa4, 0.8), sageDark = M(0x7f937a, 0.8), dkG = M(0x2e5a35, 0.6);
+    const LB = { x0: -178, x1: -146, z0: 4, z1: -14 };
+    EXT_FLOORS.push({ x0: LB.x0, z0: LB.z1, x1: LB.x1, z1: LB.z0, y: 0.06 });
+    const lb = (x0, y0, z0, x1, y1, z1, m = sage) => B(L_, x1 - x0, y1 - y0, z1 - z0, m, (x0 + x1) / 2, GY + y0, (z0 + z1) / 2);
+    lb(LB.x0, 0, LB.z1 - 0.4, LB.x1, 4.4, LB.z1); COL(LB.x0, GY, LB.z1 - 0.4, LB.x1, GY + 4.4, LB.z1);
+    lb(LB.x0 - 0.4, 0, LB.z1, LB.x0, 4.4, LB.z0); COL(LB.x0 - 0.4, GY, LB.z1, LB.x0, GY + 4.4, LB.z0);
+    lb(LB.x1, 0, LB.z1, LB.x1 + 0.4, 4.4, LB.z0); COL(LB.x1, GY, LB.z1, LB.x1 + 0.4, GY + 4.4, LB.z0);
+    // south face: a roll-door bay (open) + a glass shop door + windows
+    lb(LB.x0, 0, LB.z0, -172, 4.4, LB.z0 + 0.4); COL(LB.x0, GY, LB.z0, -172, GY + 4.4, LB.z0 + 0.4);
+    lb(-163, 0, LB.z0, -154.5, 4.4, LB.z0 + 0.4); COL(-163, GY, LB.z0, -154.5, GY + 4.4, LB.z0 + 0.4);
+    lb(-152.1, 0, LB.z0, LB.x1, 4.4, LB.z0 + 0.4); COL(-152.1, GY, LB.z0, LB.x1, GY + 4.4, LB.z0 + 0.4);
+    lb(-172, 3.0, LB.z0, -163, 4.4, LB.z0 + 0.4); lb(-154.5, 3.0, LB.z0, -152.1, 4.4, LB.z0 + 0.4);
+    const rolled = B(L_, 8.6, 0.85, 0.12, M(0x8a9298, 0.5, 0.3), -167.5, GY + 3.05, LB.z0 - 0.1); rolled.rotation.x = 0.5;
+    plane(L_, 2.2, 2.6, M(0xdfeef7, 0.1, 0.4, { transparent: true, opacity: 0.5 }), -153.3, GY + 0.2, LB.z0 + 0.41);
+    lb(LB.x0 - 0.2, 4.4, LB.z1 - 0.3, LB.x1 + 0.2, 4.75, LB.z0 + 0.3, sageDark);
+    // the TREX Lawn Care logo: mascot head + red TREX + black Lawn Care, on every side of the shop
+    const drawRex = (g, cx2, cy2, sc) => { // simplified mascot head: green rex, red cap, big grin
+      g.save(); g.translate(cx2, cy2); g.scale(sc, sc);
+      g.fillStyle = '#7ec832'; g.beginPath(); g.ellipse(6, 10, 30, 26, -0.15, 0, TAU); g.fill();               // head
+      g.beginPath(); g.ellipse(-26, 20, 26, 14, -0.25, 0, TAU); g.fill();                                      // snout
+      g.fillStyle = '#b71f1f'; g.beginPath(); g.moveTo(-46, 32); g.quadraticCurveTo(-10, 46, 20, 34); g.lineTo(14, 22); g.quadraticCurveTo(-12, 32, -42, 24); g.closePath(); g.fill(); // open mouth
+      g.fillStyle = '#fff'; for (let i = 0; i < 5; i++) { g.beginPath(); g.moveTo(-40 + i * 12, 25 + i * 1.5); g.lineTo(-34 + i * 12, 34 + i * 1.5); g.lineTo(-28 + i * 12, 26 + i * 1.5); g.closePath(); g.fill(); }
+      g.fillStyle = '#fff'; g.beginPath(); g.arc(12, 0, 9, 0, TAU); g.fill(); g.fillStyle = '#e8a020'; g.beginPath(); g.arc(13, 1, 6, 0, TAU); g.fill(); g.fillStyle = '#231a10'; g.beginPath(); g.arc(14, 2, 3, 0, TAU); g.fill();
+      g.fillStyle = '#d93a35'; g.beginPath(); g.ellipse(14, -16, 26, 13, -0.1, Math.PI, 0); g.fill(); g.fillRect(-26, -20, 44, 9); // cap + brim
+      g.fillStyle = '#f29b2b'; for (let i = 0; i < 3; i++) { g.beginPath(); g.moveTo(34 + i * 7, 2 + i * 10); g.lineTo(46 + i * 7, 6 + i * 10); g.lineTo(36 + i * 7, 14 + i * 10); g.closePath(); g.fill(); } // spikes
+      g.restore();
+    };
+    const gsT = canvasTex(640, 160, (g) => {
+      g.fillStyle = '#f6f3ea'; g.fillRect(0, 0, 640, 160); g.strokeStyle = '#2a2a2a'; g.lineWidth = 6; g.strokeRect(3, 3, 634, 154);
+      drawRex(g, 90, 72, 1.25);
+      g.textAlign = 'left'; g.fillStyle = '#c42b24'; g.font = '900 72px system-ui, sans-serif'; g.fillText('TREX', 185, 78);
+      g.fillStyle = '#231f1c'; g.font = '800 44px system-ui, sans-serif'; g.fillText('Lawn Care', 187, 128);
+    });
+    const gsM = new THREE.MeshStandardMaterial({ map: gsT, emissive: 0xffffff, emissiveMap: gsT, emissiveIntensity: 0.22 });
+    plane(L_, 14, 3.5, gsM, -162, GY + 5.9, LB.z0 - 0.1); A.glowMats.push(gsM);
+    for (const [sx2, ry2] of [[LB.x0 - 0.45, -Math.PI / 2], [LB.x1 + 0.45, Math.PI / 2]]) { const t2 = gsT.clone(); t2.needsUpdate = true; const m2 = new THREE.MeshStandardMaterial({ map: t2, emissive: 0xffffff, emissiveMap: t2, emissiveIntensity: 0.22 }); plane(L_, 10, 2.5, m2, sx2, GY + 2.8, -5, 0, ry2); A.glowMats.push(m2); }
+    const t3 = gsT.clone(); t3.needsUpdate = true; plane(L_, 7, 1.75, new THREE.MeshStandardMaterial({ map: t3 }), -162, GY + 2.2, LB.z1 + 1.1, 0, 0); // inside, over the counter wall
+    // interior: concrete, lights, the mower lineup, tool wall, bag shelves, counter
+    plane(L_, LB.x1 - LB.x0 - 0.9, LB.z0 - LB.z1 - 0.9, M(0x9aa0a3, 0.95), -162, GY + 0.06, -5, -Math.PI / 2);
+    plane(L_, 10, 0.7, E(0xfff6e2, 1.3), -162, GY + 4.3, -5, Math.PI / 2);
+    function mower(px, pz, ry, col = 0xc0262d) {
+      const m = G(L_, px, GY + 0.06, pz, ry);
+      B(m, 0.52, 0.16, 0.62, M(col, 0.5), 0, 0.12, 0); B(m, 0.4, 0.12, 0.3, M(0x1a1a1a, 0.6), 0, 0.28, -0.08);
+      for (const [wx, wz, r] of [[-0.24, -0.26, 0.09], [0.24, -0.26, 0.09], [-0.24, 0.26, 0.12], [0.24, 0.26, 0.12]]) { const w = C(m, r, r, 0.07, M(0x15181a, 0.8), wx, r, wz, 10); w.rotation.z = Math.PI / 2; }
+      for (const sd of [-1, 1]) B(m, 0.035, 0.8, 0.035, M(0x33383d, 0.5), sd * 0.2, 0.2, 0.45).rotation.x = -0.7;
+      B(m, 0.44, 0.035, 0.035, M(0x33383d, 0.5), 0, 0.86, 0.73);
+      return m;
+    }
+    for (let i = 0; i < 4; i++) mower(-174 + i * 2.1, -9.5, 0.15 - i * 0.08, [0xc0262d, 0xe07a3f, 0x2e5a35, 0xc0262d][i]);
+    COL(-175, GY, -10.6, -167, GY + 1, -8.4);
+    // the zero-turn (the dream machine)
+    const zt = G(L_, -150.5, GY + 0.06, -9, 0.5);
+    B(zt, 1.3, 0.3, 1.5, M(0xe07a3f, 0.5), 0, 0.25, 0); B(zt, 0.7, 0.5, 0.7, M(0x1a1a1a, 0.6), 0, 0.55, 0.25); B(zt, 0.6, 0.6, 0.1, M(0xc9542a, 0.5), 0, 0.75, 0.62);
+    for (const sd of [-1, 1]) { B(zt, 0.07, 0.6, 0.07, M(0x222, 0.5), sd * 0.22, 0.8, 0.1).rotation.x = -0.25; const w = C(zt, 0.3, 0.3, 0.22, M(0x15181a, 0.8), sd * 0.55, 0.3, -0.45, 12); w.rotation.z = Math.PI / 2; const w2 = C(zt, 0.16, 0.16, 0.16, M(0x15181a, 0.8), sd * 0.45, 0.16, 0.55, 10); w2.rotation.z = Math.PI / 2; }
+    COL(-151.6, GY, -10.1, -149.4, GY + 1.2, -7.9);
+    ctx.interact(zt, { cook: true, reach: 3.4, label: () => 'Zero-turn mower · $2,899 😮', action: () => ctx.msg('Tom: "She\'ll do your whole complex in eleven minutes. Dream big, kid."') });
+    // trimmer wall + bag shelves
+    for (let i = 0; i < 6; i++) { const t = G(L_, -176.9, GY + 1.4 + (i % 2) * 0.9, -6.5 + Math.floor(i / 2) * 1.6, 0); C(t, 0.03, 0.03, 1.4, M(0xd9b44a, 0.5), 0, 0, 0, 8).rotation.z = Math.PI / 2 - 0.25; B(t, 0.16, 0.1, 0.1, M(0x2e5a35, 0.6), 0.62, 0.12, 0); }
+    B(L_, 3.6, 1.5, 0.9, M(0x8a9aa0, 0.6), -158, GY + 0.06, -12.4); for (let i = 0; i < 8; i++) B(L_, 0.5, 0.3, 0.34, M(i % 2 ? 0xd9b44a : 0x7c8f6a, 0.8), -159.5 + (i % 4) * 1.0, GY + 0.65 + Math.floor(i / 4) * 0.55, -12.4).rotation.z = 0.08;
+    COL(-159.8, GY, -12.9, -156.2, GY + 1.6, -11.9);
+    const bagHit = B(L_, 3.6, 1.7, 1.3, new THREE.MeshBasicMaterial({ visible: false }), -158, GY + 0.06, -12.3);
+    ctx.interact(bagHit, { cook: true, reach: 3, label: () => 'Potted fall mums 🌼 · $5', action: () => { if (!ctx.spend(5, 'mums')) return; ctx.give('flowers', {}, { rise: true }); ctx.msg('Lilah is going to love these on the balcony.'); } });
+    // counter + Tom, the crew lead
+    B(L_, 2.8, 1.05, 0.9, M(0x4a4038, 0.7), -148.5, GY + 0.06, -12.2); COL(-149.9, GY, -12.65, -147.1, GY + 1.1, -11.75);
+    const tom = makePerson({ shirt: 0xd93a35, pants: 0x6b5a3a, skin: 0xe2b08a, hair: 0x8a6a3a, hat: 0xd93a35 });
+    tom.g.position.set(-148.5, GY + 0.06, -13.4); W.add(tom.g);
+    ctx.tick(tom.g, (dt, t) => animPerson(tom, dt, t, 0));
+    makeTalker(ctx, tom, { name: 'Tom', task: 'garage', firstLine: 'Welcome to TREX Lawn Care! You the fella from Avalon with the red Corolla?', lines: ['Leaf season. We\'re slammed.', 'That zero-turn? Eleven minutes, your whole complex. I\'m telling you.', 'Mums are five bucks. Wives love mums. Trust me.', 'Crew\'s out back loading the trailer if you need \'em.'] });
+    const svcHit = B(L_, 2.8, 1.2, 1.2, new THREE.MeshBasicMaterial({ visible: false }), -148.5, GY + 0.06, -12.1);
+    ctx.interact(svcHit, { cook: true, reach: 3.4, label: () => 'Book a fall cleanup 🍂 · $15', action: () => { if (!ctx.spend(15, 'fall cleanup')) return; ctx.need('fun', 0.12); queueReply('Lilah', ['Wait, the balcony planters look AMAZING. Did you do that??'], 3); ctx.msg('🍂 The crew will swing by Avalon tomorrow. Balcony\'s covered.'); } });
+    // the yard: work trailer with mowers, mulch pallets, sod, the crew's pickup
+    const tr = G(W, -174.5, GY, 13, 0.35);
+    B(tr, 2.2, 0.12, 4.6, M(0x3a3f45, 0.5, 0.4), 0, 0.5, 0); for (const sd of [-1, 1]) B(tr, 0.08, 0.5, 4.6, M(0x3a3f45, 0.5, 0.4), sd * 1.06, 0.56, 0);
+    const ramp = B(tr, 1.6, 0.06, 1.4, M(0x4a4f55, 0.5, 0.4), 0, 0.26, 2.9); ramp.rotation.x = 0.36;
+    for (const wz of [-0.8, 0.8]) for (const sd of [-1, 1]) { const w = C(tr, 0.3, 0.3, 0.2, M(0x15181a, 0.8), sd * 1.12, 0.3, wz, 10); w.rotation.z = Math.PI / 2; }
+    C(tr, 0.05, 0.05, 1.6, M(0x3a3f45, 0.5), 0, 0.45, -3.0, 8).rotation.x = Math.PI / 2;
+    COL(-176, GY, 10.5, -173, GY + 1, 15.5);
+    mower(-174.7, 12.6, 0.3).position.y = GY + 0.62; mower(-174.2, 14, -0.2).position.y = GY + 0.62;
+    for (const [mx, mz, n] of [[-159, 6.4, 6], [-155.5, 6.8, 4]]) { for (let i = 0; i < n; i++) B(W, 0.8, 0.3, 0.5, M(0x6b4a2f, 0.95), mx + (i % 2) * 0.85, GY + 0.3 * Math.floor(i / 2), mz + (i % 2) * 0.1, 0); COL(mx - 0.5, GY, mz - 0.4, mx + 1.4, GY + 1, mz + 0.6); }
+    for (let i = 0; i < 5; i++) { const sod = C(W, 0.22, 0.22, 0.6, M(0x7c8f6a, 0.9), -151 + (i % 3) * 0.5, GY + 0.22 + Math.floor(i / 3) * 0.45, 6.4 + (i % 2) * 0.3, 10); sod.rotation.z = Math.PI / 2; }
+    // the crew pickup
+    {
+      const pk = G(W, -145.5, GY, 16, -0.2); const pgreen = M(0x2e5a35, 0.4, 0.4);
+      B(pk, 1.9, 0.6, 5.0, pgreen, 0, 0.35, 0); B(pk, 1.8, 0.65, 1.7, pgreen, 0, 0.95, -0.9); B(pk, 1.7, 0.55, 0.06, M(0x1c232b, 0.1, 0.5), 0, 1.0, -0.05);
+      B(pk, 1.7, 0.45, 2.2, M(0x24282d, 0.7), 0, 0.68, 1.3);
+      for (const wx of [-0.9, 0.9]) for (const wz of [-1.6, 1.5]) { const w = C(pk, 0.36, 0.36, 0.24, M(0x111111, 0.8), wx, 0.36, wz, 12); w.rotation.z = Math.PI / 2; }
+      const dT = canvasTex(128, 64, (g) => { g.fillStyle = '#2e5a35'; g.fillRect(0, 0, 128, 64); g.fillStyle = '#f2ecd9'; g.font = 'bold 20px Georgia'; g.textAlign = 'center'; g.fillStyle = '#f2ecd9'; g.font = '900 24px system-ui'; g.fillText('TREX', 64, 28); g.font = '800 14px system-ui'; g.fillText('LAWN CARE', 64, 48); });
+      for (const sd of [-1, 1]) plane(pk, 1.1, 0.55, M(0xffffff, 0.7, 0, { map: dT }), sd * 0.96, 0.75, -0.9, 0, sd > 0 ? Math.PI / 2 : -Math.PI / 2);
+      COL(-147.2, GY + 0.25, 13.5, -143.8, GY + 1.5, 18.5);
+    }
+    // the crew: Carlos loading the trailer, Jesse out mowing a strip (with the engine running)
+    const carlos = makePerson({ shirt: 0xd93a35, pants: 0x6b5a3a, skin: 0xb97a4e, hair: 0x1a1208, hat: 0xd9b44a });
+    carlos.g.position.set(-166, GY, 10.5); W.add(carlos.g);
+    const cState = { t: 0, path: [], carry: false };
+    const sack = B(carlos.g, 0.5, 0.3, 0.3, M(0x6b4a2f, 0.95), 0, 1.05, 0.3); sack.visible = false;
+    ctx.tick(carlos.g, (dt, t) => {
+      if (!cState.path.length) { cState.t -= dt; if (cState.t <= 0) { cState.carry = !cState.carry; sack.visible = cState.carry; cState.path = [cState.carry ? [-172.8, 13.4] : [-158.4, 7.6]]; cState.t = 2.2 + Math.random() * 2; } animPerson(carlos, dt, t, 0); }
+      else if (walkPerson(carlos, dt, t, cState.path, 1.0)) cState.path = [];
+    });
+    makeTalker(ctx, carlos, { name: 'Carlos', firstLine: 'Hey! Watch the ramp, boss.', lines: ['Forty bags of mulch. My back knows every one.', 'Tom says one more yard, then lunch. He said that two yards ago.'] });
+    const jesse = makePerson({ shirt: 0xd93a35, pants: 0x4a4038, skin: 0xe8c39a, hair: 0x3a2a1a, hat: 0xd93a35 });
+    jesse.g.position.set(-190, GY, 14); W.add(jesse.g);
+    const jm = mower(-190, 14.6, 0, 0x2e5a35); jm.position.y = GY + 0.02;
+    const jPath = [[-196, 10], [-186, 10], [-186, 20], [-196, 20]]; let jIdx = 0;
+    const mowSnd = Sfx.loop('fan', () => jesse.g.position, 0.12);
+    ctx.tick(jesse.g, (dt, t) => {
+      if (walkPerson(jesse, dt, t, [jPath[jIdx]], 0.8)) jIdx = (jIdx + 1) % jPath.length;
+      jm.position.set(jesse.g.position.x - Math.sin(jesse.g.rotation.y) * 0.65, GY + 0.02, jesse.g.position.z - Math.cos(jesse.g.rotation.y) * 0.65);
+      jm.rotation.y = jesse.g.rotation.y;
+    });
+    makeTalker(ctx, jesse, { name: 'Jesse', firstLine: 'CAN\'T HEAR YA — MOWER!', lines: ['One more pass and this strip\'s done.', 'Fall grass is the best grass, man.'] });
+    // ---- the mascot: a 20-foot TREX Lawn Care dinosaur statue out front ----
+    {
+      const ST = G(W, -146.5, GY, 24.5, 0.35); markDyn(ST); // facing the highway
+      const grn = M(0x7ec832, 0.55), belly = M(0xa8dd55, 0.6), org = M(0xf29b2b, 0.55), redM = M(0xd93a35, 0.5), teeth = M(0xf6f2e6, 0.35), blk = M(0x231a10, 0.4);
+      // pedestal with the logo plaque
+      C(ST, 2.5, 2.8, 0.55, M(0x9aa0a3, 0.9), 0, 0, 0, 24);
+      const plq = gsT.clone(); plq.needsUpdate = true; plane(ST, 2.6, 0.65, M(0xffffff, 0.7, 0, { map: plq }), 0, 0.22, 2.62, -0.18);
+      const D = G(ST, 0, 0.55, 0);
+      // legs + feet with claws
+      for (const sd of [-1, 1]) {
+        const th = C(D, 0.62, 0.78, 1.6, grn, sd * 0.78, 0.55, -0.1, 16);
+        const ft = B(D, 1.0, 0.5, 1.5, belly, sd * 0.8, 0, 0.45);
+        for (let i = -1; i <= 1; i++) { const cl = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.42, 8), teeth); cl.rotation.x = Math.PI / 2 - 0.25; cl.position.set(sd * 0.8 + i * 0.3, 0.22, 1.3); D.add(cl); }
+      }
+      // big belly + red shirt torso
+      const bl = S(D, 1.35, belly, 0, 2.0, 0.28, 20, 14); bl.scale.set(0.98, 1.18, 0.92);
+      const bd = S(D, 1.42, grn, 0, 2.2, -0.05, 20, 14); bd.scale.set(1.0, 1.25, 0.95);
+      const shirt = C(D, 1.28, 1.44, 1.7, redM, 0, 2.75, 0.05, 20);
+      const shT = gsT.clone(); shT.needsUpdate = true; plane(D, 1.9, 0.55, M(0xffffff, 0.6, 0, { map: shT }), 0, 3.3, 1.52, -0.18);
+      // little arms out of red sleeves
+      for (const sd of [-1, 1]) {
+        C(D, 0.34, 0.4, 0.5, redM, sd * 1.3, 3.6, 0.5, 12).rotation.z = sd * 1.1;
+        const ar = C(D, 0.2, 0.26, 1.0, grn, sd * 1.62, 3.3, 0.78, 12); ar.rotation.set(-0.7, 0, sd * 0.5);
+        for (let i = 0; i < 2; i++) { const cl = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.3, 8), teeth); cl.position.set(sd * (1.78 + i * 0.14), 2.95, 1.2); cl.rotation.x = -0.9; D.add(cl); }
+      }
+      // neck + head
+      C(D, 0.72, 0.95, 1.0, grn, 0, 4.25, 0.12, 16);
+      const hd = S(D, 1.02, grn, 0, 5.35, 0.22, 20, 14); hd.scale.set(0.95, 0.92, 1.0);
+      const sn = S(D, 0.62, grn, 0, 5.1, 1.15, 16, 12); sn.scale.set(0.88, 0.62, 1.25);
+      for (const sd of [-1, 1]) S(D, 0.055, blk, sd * 0.2, 5.32, 1.72, 8, 6); // nostrils
+      // open jaw with teeth and a tongue
+      const jaw = S(D, 0.52, grn, 0, 4.55, 1.0, 16, 10); jaw.scale.set(0.8, 0.42, 1.2); jaw.rotation.x = 0.35;
+      const mouth = S(D, 0.45, M(0xb71f1f, 0.5), 0, 4.78, 1.05, 14, 10); mouth.scale.set(0.72, 0.4, 1.1); mouth.rotation.x = 0.3;
+      const tongue = S(D, 0.26, M(0xe06a6a, 0.5), 0, 4.72, 1.25, 12, 8); tongue.scale.set(0.9, 0.35, 1.3);
+      for (let i = 0; i < 6; i++) { const a = (i - 2.5) * 0.24;
+        const t1 = new THREE.Mesh(new THREE.ConeGeometry(0.085, 0.26, 8), teeth); t1.position.set(Math.sin(a) * 0.52, 4.98, 1.1 + Math.cos(a) * 0.52); t1.rotation.x = Math.PI - 0.3; D.add(t1);
+        const t2 = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.22, 8), teeth); t2.position.set(Math.sin(a) * 0.45, 4.6, 1.12 + Math.cos(a) * 0.45); t2.rotation.x = 0.3; D.add(t2);
+      }
+      // eyes + friendly brows
+      for (const sd of [-1, 1]) { S(D, 0.21, M(0xffffff, 0.3), sd * 0.42, 5.62, 0.98, 12, 8); S(D, 0.12, M(0xe8a020, 0.3), sd * 0.45, 5.62, 1.13, 10, 8); S(D, 0.06, blk, sd * 0.47, 5.63, 1.23, 8, 6); B(D, 0.3, 0.08, 0.12, grn, sd * 0.45, 5.85, 1.05).rotation.z = sd * -0.25; }
+      // the red cap
+      const cap = S(D, 0.78, redM, 0, 6.05, 0.1, 16, 10); cap.scale.set(1.0, 0.55, 1.0);
+      B(D, 1.05, 0.1, 0.85, redM, 0, 6.08, 0.75); S(D, 0.1, redM, 0, 6.48, 0.1, 8, 6);
+      // orange spikes down the back and tail
+      for (let i = 0; i < 5; i++) { const sp = new THREE.Mesh(new THREE.ConeGeometry(0.22 - i * 0.015, 0.5 - i * 0.04, 8), org); sp.position.set(0, 5.9 - i * 0.78, -0.75 - i * 0.28); sp.rotation.x = -0.5; D.add(sp); }
+      // tail: tapered segments curving up behind
+      let tx2 = 0, ty2 = 1.3, tz2 = -1.25;
+      for (let i = 0; i < 4; i++) { const seg = S(D, 0.75 - i * 0.16, grn, tx2, ty2, tz2, 14, 10); seg.scale.set(0.85, 0.72, 1.25); const sp = new THREE.Mesh(new THREE.ConeGeometry(0.16 - i * 0.02, 0.4 - i * 0.06, 8), org); sp.position.set(tx2, ty2 + 0.55 - i * 0.1, tz2); sp.rotation.x = -0.6; D.add(sp); tz2 -= 1.05 - i * 0.12; ty2 += 0.28 + i * 0.1; }
+      COL(-149.3, GY, 21.7, -143.7, GY + 6.6, 27.3);
+      ctx.interact(ST, { reach: 6, cook: true, label: () => 'Take a photo with the TREX guy 📸', action: () => { Sfx.click(); ctx.need('fun', 0.1); sendTextHook && sendTextHook(); ctx.msg('📸 Sent it to Lilah. He\'s 20 feet of pure lawn care.'); } });
+      var sendTextHook = () => { ctx.flowerPhotoRex && ctx.flowerPhotoRex(); };
+    }
+    // mowed-stripe decal under his route
+    for (let i = 0; i < 5; i++) plane(W, 12, 2.0, M(i % 2 ? 0x8fae6a : 0x7c9a58, 0.95), -191, GY + 0.015, 10 + i * 2.05, -Math.PI / 2);
   }
 
   // autumn woods (instanced), provably clear of every road, lot and parcel
@@ -3669,8 +3800,8 @@ function buildWorld(scene, ctx, A) {
     { id: 'hwy', n: 'Highway 150', r: [-202, 28, 226, 46], tip: '🛣 Highway 150. The BP is west at the end of the road; Perth Rd (east) goes up to Harris Teeter.' },
     { id: 'perth', n: 'Perth Rd', r: [42, -94, 56, 28], tip: '🛣 Perth Rd — Harris Teeter is just up ahead.' },
     { id: 'ht', n: 'Harris Teeter · Perth Rd', r: [28, -120, 108, -36], tip: '🛒 Harris Teeter: in through the sliding doors. Groceries $12, flowers $6, energy drink $3.' },
-    { id: 'bp', n: 'BP · Highway 150', r: [-136, 42, -78, 100], tip: '⛽ The BP. Park beside a pump and right-click it to fill the tank ($18). Snacks in the shop.' },
-    { id: 'garage', n: 'Mooresville Auto & Tire', r: [-136, 98, -82, 124], tip: '🔧 The garage behind the BP. Park by the bays and Ray will give the Corolla a check-up ($20).' },
+    { id: 'bp', n: 'BP · Highway 150', r: [-136, -16, -78, 32], tip: '⛽ The BP, on your right heading west. Park beside a pump and right-click it to fill up ($18).' },
+    { id: 'mow', n: 'TREX Lawn Care', r: [-184, -18, -138, 32], tip: '🦖 TREX Lawn Care — say hi to the big guy out front! Mowers inside, mums $5, and Tom books a fall cleanup.' },
   ];
   A.areaAt = (x, z, y = GY) => {
     if (y > -2) return null;
@@ -3686,14 +3817,14 @@ function buildWorld(scene, ctx, A) {
       { r: [-16, -0.06, 26, 16], c: '#e8c54a' }, { r: [9.87, 5.5, 14.1, 10.5], c: '#e8c54a' },
       { r: [-57, 1, -39, 13], c: '#e3dccd' }, { r: [-52, -28, -36, -16], c: '#e3dccd' }, { r: [-21, -54, 1, -41], c: '#e3dccd' },
       { r: [54, -116, 104, -92], c: '#1f4432' },
-      { r: [-116, 55, -82, 73], c: '#1e7a46' }, { r: [-116, 79, -90, 93], c: '#e3ded2' }, { r: [-116, 101, -84, 117], c: '#8a8f94' },
+      { r: [-128, 6, -96, 26], c: '#1e7a46' }, { r: [-126, -12, -100, 2], c: '#e3ded2' }, { r: [-178, -14, -146, 4], c: '#aebfa4' },
       { r: [72, 69, 88, 79], c: '#d6c3ab' }, { r: [119, 67, 133, 76], c: '#d6c3ab' },
     ],
     labels: [
       ['Apartment Complex', 5, 8, 12, '#4a3a28', 0], ['P', 3, -17, 15, '#f6f3ea', 0], ['stairs ▾', 8.8, -24.5, 10, '#4a3a28', 0],
       ['Caspian Pl', 35, 10, 10, '#4a3a28', -1.5708], ['HIGHWAY 150', -30, 37, 13, '#f6f3ea', 0],
       ['Perth Rd', 48, -18, 11, '#f6f3ea', -1.5708], ['Harris Teeter', 79, -104, 12, '#f6efe0', 0],
-      ['bp', -99, 64, 14, '#ffe600', 0], ['shop', -103, 86, 9, '#4a3a28', 0], ['Auto & Tire', -100, 109, 9, '#f6f3ea', 0],
+      ['bp', -112, 16, 14, '#ffe600', 0], ['shop', -113, -5, 9, '#4a3a28', 0], ['TREX Lawn Care 🦖', -162, -5, 10, '#b22620', 0],
     ],
   };
   return A;
@@ -3788,6 +3919,7 @@ const ctx = {
   removeHeld() { if (held) { const g = held; held = null; heldSet.clear(); helper.visible = false; camera.remove(g); removeItem(g); } },
   flowerPhoto() { sendText('Lilah', '📷 [photo of a fall bouquet]'); completeTask('text'); setTimeout(() => {}, 0); queueReply('Lilah', ['WAIT. Are those for me??', 'Okay you\'re the best husband. Love you ❤️'], 1.5); ctx.need('fun', 0.1); toast('📸 Sent to Lilah.'); },
   enterCar() { enterCar(); },
+  flowerPhotoRex() { sendText('Lilah', '📷 [photo with a 20-foot T-rex in a red cap]'); queueReply('Lilah', ['WHY is he so cute 😭', 'We\'re going back together this weekend. No arguments.'], 2); completeTask('text'); },
   removeItem(g) { removeItem(g); },
   sit(pos, yaw, lie) {
     P.sit = { pos: pos.clone(), yaw, lie, prev: P.pos.clone(), root: arguments[3] || null }; P.yaw = yaw; P.pitch = lie ? 0.9 : -0.1;
@@ -4448,7 +4580,7 @@ function updateCar(dt) {
   const step = st.sp * dt, nx = g.position.x + _fwd.x * step, nz = g.position.z + _fwd.z * step;
   const noseX = nx + _fwd.x * 1.9 * dir, noseZ = nz + _fwd.z * 1.9 * dir;
   if (carHit(nx, nz) || carHit(noseX, noseZ)) { if (Math.abs(st.sp) > 3) { Sfx.thud(); P.shake = 0.25; } st.sp = -st.sp * 0.22; }
-  else { g.position.x = clamp(nx, -235, 275); g.position.z = clamp(nz, -255, 25); }
+  else { g.position.x = clamp(nx, -240, 270); g.position.z = clamp(nz, -160, 190); }
   g.position.y = Math.min(A.groundAt(g.position.x, g.position.z, A.GY + 1), A.GY + 0.25);
   st.fuel = Math.max(0, st.fuel - Math.abs(step) * 0.00045);
   if (st.fuel < 0.15 && !fuelWarned && st.fuel > 0) { fuelWarned = true; toast('⛽ Low fuel! The BP is west on Highway 150 — press M for the map.'); }
@@ -4558,7 +4690,7 @@ const TASKS = [
   ['outside', 'Step out onto the balcony'], ['shower', 'Take a shower'], ['teeth', 'Brush your teeth'], ['toilet', 'Use the toilet'], ['hands', 'Wash your hands'], ['outfit', 'Pick an outfit in the closet'],
   ['sleep', 'Sleep in your bed'], ['lights', 'Flip a light switch'], ['breaker', 'Flip the main breaker'], ['computer', 'Use the computer'], ['read', 'Look through the wedding album'],
   ['simon', 'Beat the memory game from under the tree'], ['text', 'Text somebody back'], ['work', 'Do some work on the laptop'], ['neighbor', 'Say hi to Marcus in 2B'], ['paydriver', 'Pay a delivery driver at the door'],
-  ['drive', 'Take the Corolla for a drive'], ['horn', 'Honk the horn'], ['groceries', 'Buy groceries at Harris Teeter & put them away'], ['fuel', 'Fill up the tank at the BP'], ['garage', 'Get a check-up at the garage behind the BP'],
+  ['drive', 'Take the Corolla for a drive'], ['horn', 'Honk the horn'], ['groceries', 'Buy groceries at Harris Teeter & put them away'], ['fuel', 'Fill up the tank at the BP'], ['garage', 'Visit TREX Lawn Care by the BP (say hi to the big guy)'],
 ];
 const done = new Set(store.get('tasks', []));
 function completeTask(id) { if (done.has(id)) return; done.add(id); store.set('tasks', [...done]); const t = TASKS.find(t => t[0] === id); if (t) { toast('✅ ' + t[1] + '  (' + done.size + '/' + TASKS.length + ')', 'task'); Sfx.chime(); } updateHud(); }

@@ -87,6 +87,7 @@ const ctx = {
   removeHeld() { if (held) { const g = held; held = null; heldSet.clear(); helper.visible = false; camera.remove(g); removeItem(g); } },
   flowerPhoto() { sendText('Lilah', '📷 [photo of a fall bouquet]'); completeTask('text'); setTimeout(() => {}, 0); queueReply('Lilah', ['WAIT. Are those for me??', 'Okay you\'re the best husband. Love you ❤️'], 1.5); ctx.need('fun', 0.1); toast('📸 Sent to Lilah.'); },
   enterCar() { enterCar(); },
+  flowerPhotoRex() { sendText('Lilah', '📷 [photo with a 20-foot T-rex in a red cap]'); queueReply('Lilah', ['WHY is he so cute 😭', 'We\'re going back together this weekend. No arguments.'], 2); completeTask('text'); },
   removeItem(g) { removeItem(g); },
   sit(pos, yaw, lie) {
     P.sit = { pos: pos.clone(), yaw, lie, prev: P.pos.clone(), root: arguments[3] || null }; P.yaw = yaw; P.pitch = lie ? 0.9 : -0.1;
@@ -747,7 +748,7 @@ function updateCar(dt) {
   const step = st.sp * dt, nx = g.position.x + _fwd.x * step, nz = g.position.z + _fwd.z * step;
   const noseX = nx + _fwd.x * 1.9 * dir, noseZ = nz + _fwd.z * 1.9 * dir;
   if (carHit(nx, nz) || carHit(noseX, noseZ)) { if (Math.abs(st.sp) > 3) { Sfx.thud(); P.shake = 0.25; } st.sp = -st.sp * 0.22; }
-  else { g.position.x = clamp(nx, -235, 275); g.position.z = clamp(nz, -255, 25); }
+  else { g.position.x = clamp(nx, -240, 270); g.position.z = clamp(nz, -160, 190); }
   g.position.y = Math.min(A.groundAt(g.position.x, g.position.z, A.GY + 1), A.GY + 0.25);
   st.fuel = Math.max(0, st.fuel - Math.abs(step) * 0.00045);
   if (st.fuel < 0.15 && !fuelWarned && st.fuel > 0) { fuelWarned = true; toast('⛽ Low fuel! The BP is west on Highway 150 — press M for the map.'); }
@@ -857,7 +858,7 @@ const TASKS = [
   ['outside', 'Step out onto the balcony'], ['shower', 'Take a shower'], ['teeth', 'Brush your teeth'], ['toilet', 'Use the toilet'], ['hands', 'Wash your hands'], ['outfit', 'Pick an outfit in the closet'],
   ['sleep', 'Sleep in your bed'], ['lights', 'Flip a light switch'], ['breaker', 'Flip the main breaker'], ['computer', 'Use the computer'], ['read', 'Look through the wedding album'],
   ['simon', 'Beat the memory game from under the tree'], ['text', 'Text somebody back'], ['work', 'Do some work on the laptop'], ['neighbor', 'Say hi to Marcus in 2B'], ['paydriver', 'Pay a delivery driver at the door'],
-  ['drive', 'Take the Corolla for a drive'], ['horn', 'Honk the horn'], ['groceries', 'Buy groceries at Harris Teeter & put them away'], ['fuel', 'Fill up the tank at the BP'], ['garage', 'Get a check-up at the garage behind the BP'],
+  ['drive', 'Take the Corolla for a drive'], ['horn', 'Honk the horn'], ['groceries', 'Buy groceries at Harris Teeter & put them away'], ['fuel', 'Fill up the tank at the BP'], ['garage', 'Visit TREX Lawn Care by the BP (say hi to the big guy)'],
 ];
 const done = new Set(store.get('tasks', []));
 function completeTask(id) { if (done.has(id)) return; done.add(id); store.set('tasks', [...done]); const t = TASKS.find(t => t[0] === id); if (t) { toast('✅ ' + t[1] + '  (' + done.size + '/' + TASKS.length + ')', 'task'); Sfx.chime(); } updateHud(); }
