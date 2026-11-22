@@ -1,15 +1,16 @@
 // npm run validate — static checks on the step data + an apply() pass for every step prefix (A10).
-import { Model } from '../src/model/registry';
-import { ALL_PARTS } from '../src/model/parts';
+import { createModel } from '../src/model/parts';
 import { hasAnchor } from '../src/model/anchors';
 import { STEPS } from '../src/steps';
 import { applyStep } from '../src/engine/stepEngine';
 import { HANDLERS, anchorsOf, partsOf } from '../src/engine/actions';
 import { CAMERA_PRESETS } from '../src/scene/cameras';
+import { setFrontPose } from '../src/model/rig';
+import { Mesh, Vector3 } from 'three';
 
 const errors: string[] = [];
 const warns: string[] = [];
-const model = new Model(ALL_PARTS);
+const model = createModel();
 const ids = new Set<string>();
 
 for (const s of STEPS) {
@@ -45,8 +46,34 @@ if (!errors.length) {
     catch (e) { errors.push(`apply 0..${STEPS[n].number} threw: ${(e as Error).message}`); break; }
   }
 }
-// TODO(Noah): M4 adds the Ackermann sweep tire-vs-frame bounding-box check here.
+// Ackermann sweep: at full lock both ways (+ flex both ways) no front tire vertex may enter the frame rails' boxes.
+if (!errors.length) {
+  const i47 = STEPS.findIndex(s => s.number === '4.7');
+  model.reset();
+  for (let j = 0; j <= i47; j++) applyStep(STEPS[j], model);
+  const lock = Math.max(...STEPS[i47].actions.filter(a => a.type === 'steerSweep').map(a => (a as { innerMaxDeg: number }).innerMaxDeg));
+  const frame = ['frameRailL', 'frameRailR', 'boxPlateL', 'boxPlateR', 'frontClip'].map(id => model.bounds(id));
+  const v = new Vector3();
+  let worst = Infinity;
+  for (const steer of [lock, -lock]) for (const roll of [-14, 0, 14]) {
+    setFrontPose(model, { bump: 0, rollDeg: roll, steerDeg: steer });
+    model.root.updateMatrixWorld(true);
+    for (const id of ['wheelFrontL', 'wheelFrontR']) {
+      model.get(id).obj.traverse(o => {
+        const mesh = o as Mesh; if (!mesh.isMesh || (mesh as unknown as { isInstancedMesh?: boolean }).isInstancedMesh) return;
+        const pos = mesh.geometry.attributes.position;
+        for (let k = 0; k < pos.count; k += 3) {
+          v.fromBufferAttribute(pos, k).applyMatrix4(mesh.matrixWorld);
+          for (const b of frame) if (b.containsPoint(v)) errors.push(`Ackermann sweep: ${id} hits the frame at steer ${steer}°, roll ${roll}°`);
+          for (const b of frame) worst = Math.min(worst, b.distanceToPoint(v));
+        }
+      });
+    }
+  }
+  setFrontPose(model, { bump: 0, rollDeg: 0, steerDeg: 0 });
+  console.log(`Ackermann sweep ±${lock}° with ±14° flex: closest tire-to-frame gap ${worst.toFixed(2)} in`);
+}
 
 for (const w of [...new Set(warns)]) console.warn('warn:', w);
-if (errors.length) { for (const e of errors) console.error('ERROR:', e); console.error(`\n${errors.length} error(s)`); process.exit(1); }
+if (errors.length) { for (const e of [...new Set(errors)].slice(0, 40)) console.error('ERROR:', e); console.error(`\n${errors.length} error(s)`); process.exit(1); }
 console.log(`OK — ${STEPS.length} steps, ${model.parts.size} parts validated.`);

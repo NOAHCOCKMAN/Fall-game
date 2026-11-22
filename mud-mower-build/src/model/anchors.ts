@@ -1,5 +1,6 @@
 import { Vector3 } from 'three';
 import type { Vec3 } from '../steps/types';
+import { anchors2 } from './anchors2';
 
 /**
  * Named points, axes, seams, cut lines, fastener sets and measurement endpoints.
@@ -135,7 +136,7 @@ const P2: Record<string, AnchorDef> = {
   ] as Vec3[][])),
   'pt.towHole': A([[0, 11, 66.19]], { normal: [0, 0, 1] }),
 };
-Object.assign(anchors, P2);
+Object.assign(anchors, P2, anchors2);
 
 export function hasAnchor(name: string): boolean { return name in anchors; }
 

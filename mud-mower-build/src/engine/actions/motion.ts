@@ -27,17 +27,23 @@ function endPos(a: A<'move'>, m: import('../../model/registry').Model, o: import
 
 const AX = { x: new Vector3(1, 0, 0), y: new Vector3(0, 1, 0), z: new Vector3(0, 0, 1) };
 /** Rotate a part about its own pivot (local axis). */
+/** Rotate a part about its own pivot (local axis), or with `about` (an anchor) about that point (parent-space axis). */
+function rotTo(a: A<'rotate'>, m: import('../../model/registry').Model, o: import('three').Object3D, q0: Quaternion, p0: Vector3, k: number) {
+  const qr = new Quaternion().setFromAxisAngle(AX[a.axis], (a.deg * Math.PI / 180) * k);
+  if (!a.about) { o.quaternion.copy(q0).multiply(qr); return; }
+  const P = o.parent!.worldToLocal(m.anchorWorldCenter(a.about));
+  o.quaternion.copy(qr).multiply(q0);
+  o.position.copy(p0).sub(P).applyQuaternion(qr).add(P);
+}
 export const rotate: Handler<A<'rotate'>> = {
   apply(a, ctx) {
     const r = ctx.model.get(a.part);
-    r.obj.quaternion.multiply(new Quaternion().setFromAxisAngle(AX[a.axis], a.deg * Math.PI / 180));
+    rotTo(a, ctx.model, r.obj, r.obj.quaternion.clone(), r.obj.position.clone(), 1);
   },
   play(tl, a, ctx) {
     const r = ctx.model.get(a.part);
-    const q0 = r.obj.quaternion.clone();
-    track(tl, a.t, a.dur, (_s, u) => {
-      r.obj.quaternion.copy(q0).multiply(new Quaternion().setFromAxisAngle(AX[a.axis], (a.deg * Math.PI / 180) * easeInOut(u)));
-    });
+    const q0 = r.obj.quaternion.clone(), p0 = r.obj.position.clone();
+    track(tl, a.t, a.dur, (_s, u) => rotTo(a, ctx.model, r.obj, q0, p0, easeInOut(u)));
   },
 };
 

@@ -18,10 +18,12 @@ function rail(side: -1 | 1) {
   const xo = 6.5 * side, xi = (6.5 - 0.19) * side, xf = (6.5 - 1.25) * side;
   const lo = (a: number, b: number) => [Math.min(a, b), Math.max(a, b)] as const;
   const [w0, w1] = lo(xo, xi), [f0, f1] = lo(xo, xf);
+  const strap = new Group(); strap.name = 'strapTop'; strap.position.set(5.9 * side, 9.5, 46);   // limit strap anchor (4.5)
   return group(
     boxAt(m, [w0, 9.5, -10], [w1, 12.5, 60]),
     boxAt(m, [f0, 12.31, -10], [f1, 12.5, 60]),
     boxAt(m, [f0, 9.5, -10], [f1, 9.69, 60]),
+    strap,
   );
 }
 
@@ -87,7 +89,20 @@ function transaxle() {
     ['shiftLever', group(rod(mats.black(), [0, 5.6, 1], [1.5, 21, -2], 0.3), (() => { const k = new Mesh(new SphereGeometry(0.9, 12, 10), mats.black()); k.position.set(1.5, 21.4, -2); return k; })())],
     ['brakeShaft', (() => { const m = cylX(mats.zinc(), 0.4, 2); m.position.set(-6, -1.5, 3); return m; })()],
   ];
-  for (const [n, m] of parts) { m.name = n; g.add(m); }
+  // internals revealed by the 3.1 exploded view (hidden inside the case when collapsed)
+  const gear = solid('#9ea3a8', 0.35, 0.85);
+  const stack = (x: number, rs: number[]) => group(...rs.map((r, i) => { const c = cylX(gear, r, 0.8, 22); c.position.x = x - 2 + i * 1.1; return c; }));
+  const internals: [string, Mesh | Group, [number, number, number]][] = [
+    ['gearStackA', (() => { const st = stack(0, [2.2, 1.6, 1.2, 2.6]); st.position.set(0, 1.5, -2.5); return st; })(), [0, 9, -10]],
+    ['gearStackB', (() => { const st = stack(0, [1.4, 2.0, 2.4, 1.1]); st.position.set(0, 1.2, 2.5); return st; })(), [0, 9, 10]],
+    ['differential', (() => { const d = cylX(solid('#7b7f84', 0.4, 0.8), 2.4, 2.6, 20); d.position.set(0, -2, 0); return d; })(), [0, 3, 16]],
+    ['shiftForks', group(boxAt(solid('#c18a2f', 0.4, 0.7), [-1.6, 2.6, -0.3], [1.6, 4.2, 0.3]), boxAt(solid('#c18a2f', 0.4, 0.7), [-1.6, 2.6, 1.2], [1.6, 4.2, 1.8])), [0, 15, 2]],
+    ['sealL', (() => { const r = cylX(solid('#151515', 0.9, 0), 1.2, 0.4, 16); r.position.x = -10.6; return r; })(), [-6, 0, 0]],
+    ['sealR', (() => { const r = cylX(solid('#151515', 0.9, 0), 1.2, 0.4, 16); r.position.x = 10.6; return r; })(), [6, 0, 0]],
+  ];
+  const explode: Record<string, [number, number, number]> = { cover: [0, 12, 0], shiftLever: [0, 12, 0], tubeL: [-8, 0, 0], tubeR: [8, 0, 0], axleL: [-12, 0, 0], axleR: [12, 0, 0], input: [0, 0, 8], inputPulley: [0, 0, 10] };
+  for (const [n, m] of parts) { m.name = n; if (explode[n]) m.userData.explode = explode[n]; g.add(m); }
+  for (const [n, m, e] of internals) { m.name = n; m.userData.explode = e; g.add(m); }
   return g;
 }
 

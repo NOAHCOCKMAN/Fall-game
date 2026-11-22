@@ -31,6 +31,10 @@ export class Fx {
   /** Register any step-scoped object that isn't under `transient` (e.g. attached to a part). */
   trackObj(o: Object3D) { this.tracked.push(o); }
 
+  /** UI hooks wired by main (paint preset buttons, finale title card). */
+  showPresets: (on: boolean) => void = () => {};
+  showTitle: (text: string | null, replay: boolean) => void = () => {};
+
   note(text: string | null) {
     if (text) { this.noteEl.textContent = text; this.noteEl.hidden = false; }
     else this.noteEl.hidden = true;
@@ -43,6 +47,7 @@ export class Fx {
     this.sparks.clear(); this.blobs.clear();
     this.torch.intensity = 0;
     this.note(null);
+    this.showPresets(false); this.showTitle(null, false);
   }
 
   update(dt: number) { this.sparks.update(dt); this.blobs.update(dt); }

@@ -75,17 +75,24 @@ function installStart(ctx: Ctx, a: InstallA, home: { pos: Vector3; quat: Quatern
   return { pos: home.pos.clone().add(off), quat: home.quat.clone(), scale: home.scale.clone() };
 }
 
+/** Home placement, shifted by the action's offset (parent space) — e.g. the transaxle 3 in lower (3.2). */
+function target(r: import('../../model/registry').PartRec, a: InstallA): Place {
+  const h = homePlace(r);
+  if (a.offset) h.pos.add(new Vector3(...a.offset));
+  return h;
+}
+
 export const install: Handler<InstallA> = {
   apply(a, ctx) {
     const r = ctx.model.get(a.part);
-    setPlace(r.obj, homePlace(r));
+    setPlace(r.obj, target(r, a));
     r.obj.visible = true; r.look = { opacity: 1, ghost: 0, glow: 0 };
     ctx.model.applyLook(r);
   },
   play(tl, a, ctx) {
     const m = ctx.model, r = m.get(a.part);
     const start = currentPlace(r.obj), startVis = r.obj.visible, startLook = { ...r.look };
-    const home = homePlace(r), hw = worldOf(home);
+    const home = target(r, a), hw = worldOf(home);
     const sw = installStart(ctx, a, hw);
     const g = a.ghostFirst ? Math.min(0.8, a.dur * 0.3) : 0;
     track(tl, a.t, a.dur, (s) => {

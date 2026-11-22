@@ -30,16 +30,24 @@ export function painted(slot: PaintSlot, opts: { roughness?: number; metalness?:
 export const mats = {
   rawSteel: () => new MeshStandardMaterial({ color: '#8a8d90', metalness: 0.6, roughness: 0.45 }),
   oldSteel: () => new MeshStandardMaterial({ color: '#5d5048', metalness: 0.35, roughness: 0.8 }),
-  rubber: () => new MeshStandardMaterial({ color: '#1c1c1c', metalness: 0, roughness: 0.92 }),
-  zinc: () => new MeshStandardMaterial({ color: '#c9ccc4', metalness: 0.8, roughness: 0.35 }),
-  bronze: () => new MeshStandardMaterial({ color: '#b07a3c', metalness: 0.8, roughness: 0.35 }),
-  aluminum: () => new MeshStandardMaterial({ color: '#c3c6ca', metalness: 0.75, roughness: 0.3 }),
+  rubber: () => keep(new MeshStandardMaterial({ color: '#1c1c1c', metalness: 0, roughness: 0.92 })),
+  zinc: () => keep(new MeshStandardMaterial({ color: '#c9ccc4', metalness: 0.8, roughness: 0.35 })),
+  bronze: () => keep(new MeshStandardMaterial({ color: '#b07a3c', metalness: 0.8, roughness: 0.35 })),
+  aluminum: () => keep(new MeshStandardMaterial({ color: '#c3c6ca', metalness: 0.75, roughness: 0.3 })),
+  braided: () => keep(new MeshStandardMaterial({ color: '#8d9196', metalness: 0.6, roughness: 0.5 })),
+  loom: () => keep(new MeshStandardMaterial({ color: '#151515', metalness: 0.1, roughness: 0.8 })),
+  lens: () => keep(new MeshStandardMaterial({ color: '#e8eef2', metalness: 0.2, roughness: 0.15, emissive: '#000000' })),
+  redLens: () => keep(new MeshStandardMaterial({ color: '#b01515', metalness: 0.2, roughness: 0.2 })),
+  diamond: () => new MeshStandardMaterial({ color: '#b4b8bc', metalness: 0.85, roughness: 0.32 }),
   black: () => new MeshStandardMaterial({ color: '#202020', metalness: 0.2, roughness: 0.6 }),
   wood: () => new MeshStandardMaterial({ color: '#9a7650', metalness: 0, roughness: 0.85 }),
   cardboard: () => new MeshStandardMaterial({ color: '#b99566', metalness: 0, roughness: 0.95 }),
   red: () => new MeshStandardMaterial({ color: '#b5281f', metalness: 0.3, roughness: 0.5 }),
   toolRed: () => new MeshStandardMaterial({ color: '#a82a20', metalness: 0.4, roughness: 0.45 }),
 };
+
+/** Mark a material as never repainted (rubber, zinc, bronze, aluminum, lenses...). */
+export function keep<T extends MeshStandardMaterial>(m: T): T { m.userData.noPaint = true; return m; }
 
 /** Plain fixed-color material (not tied to the donor palette). */
 export function solid(color: string, roughness = 0.55, metalness = 0.2) {

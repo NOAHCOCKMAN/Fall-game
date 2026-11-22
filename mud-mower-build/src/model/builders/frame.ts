@@ -41,7 +41,10 @@ export const frameParts: PartDef[] = [
   {
     // panhard frame tab — LEFT rail at the new front axle position (B2: X = −6.5, Z = 48.5)
     ...HID, id: 'panhardTab', pivot: [-6.7, 8.2, 48.5],
-    build: () => group(boxAt(steel(), [-0.19, -1.4, -1.1], [0.19, 1.4, 1.1]), (() => { const h = new Mesh(new CylinderGeometry(0.33, 0.33, 0.42, 14), solid('#111', 0.9, 0)); h.rotation.z = Math.PI / 2; h.position.y = -0.4; return h; })()),
+    build: () => {
+      const hole = new Group(); hole.name = 'hole'; hole.position.set(0, -0.4, 0);
+      return group(boxAt(steel(), [-0.19, -1.4, -1.1], [0.19, 1.4, 1.1]), (() => { const h = new Mesh(new CylinderGeometry(0.33, 0.33, 0.42, 14), solid('#111', 0.9, 0)); h.rotation.z = Math.PI / 2; h.position.y = -0.4; return h; })(), hole);
+    },
   },
   { ...HID, id: 'xRear', build: () => xMember(8, 1.5) },
 

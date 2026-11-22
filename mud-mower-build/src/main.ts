@@ -1,8 +1,7 @@
 import { createStage } from './scene/setup';
 import { CameraRig } from './scene/cameras';
 import { DONOR_IDS, PALETTES } from './scene/materials';
-import { Model } from './model/registry';
-import { ALL_PARTS } from './model/parts';
+import { createModel } from './model/parts';
 import { Fx } from './fx/fx';
 import { StepEngine } from './engine/stepEngine';
 import { STEPS } from './steps';
@@ -11,9 +10,12 @@ import { StepList } from './ui/stepList';
 import { Panel } from './ui/panel';
 import { $, el, fmtTime } from './ui/dom';
 import { store } from './ui/store';
+import { HANDLERS } from './engine/actions';
+import { PAINT_PRESETS } from './model/paint';
+import { Color, Mesh, MeshStandardMaterial, SpotLight } from 'three';
 
 const stage = createStage($('canvasHost'));
-const model = new Model(ALL_PARTS);
+const model = createModel();
 stage.scene.add(model.root, model.shelfRoot);
 const fx = new Fx(stage.scene, $('note'));
 const rig = new CameraRig(stage.camera, stage.controls);
@@ -43,7 +45,7 @@ type Toggle = { id: string; label: string; on: boolean; set(v: boolean): void; e
 const toggles: Toggle[] = [
   { id: 'labels', label: 'Labels', on: true, set: v => { stage.labelRenderer.domElement.classList.toggle('hide-labels', !v); } },
   { id: 'xray', label: 'X-ray', on: false, set: v => model.setXray(v) },
-  { id: 'exploded', label: 'Exploded', on: false, set: () => { /* M4: explode step's group */ }, enabled: () => !!engine.step?.explodable },
+  { id: 'exploded', label: 'Exploded', on: false, set: v => setExploded(v), enabled: () => !!engine.step?.explodable },
   { id: 'measure', label: 'Measurements', on: true, set: v => stage.labelRenderer.domElement.classList.toggle('hide-measure', !v) },
   { id: 'free', label: 'Free cam', on: false, set: v => { rig.freeCam = v; if (!v) { rig.override = false; engine.seek(engine.time); } updateResume(); } },
 ];
@@ -160,11 +162,79 @@ $('drawerOpen').onclick = openDrawer; $('drawerClose').onclick = closeDrawer; sc
   handle.addEventListener('pointerup', () => { dragging = false; });
 }
 
+// ---------- exploded toggle ----------
+function setExploded(on: boolean) {
+  const g = engine.step?.explodable; if (!g) return;
+  engine.pause();
+  const h = HANDLERS.explode!;
+  h.apply({ t: 0, dur: 0, type: on ? 'explode' : 'collapse', group: g, factor: 1 }, { model, fx: null, step: engine.step, live: () => false });
+}
+
+// ---------- paint presets (9.2) + finale title card ----------
+const presetsEl = el('div', 'presets'); presetsEl.hidden = true; $('viewport').appendChild(presetsEl);
+model.paintPreset = (store.get('mm.paint') as typeof model.paintPreset) || 'factory';
+for (const p of PAINT_PRESETS) {
+  const b = el('button', 'preset', p.label); b.dataset.p = p.id;
+  b.onclick = () => {
+    model.paintPreset = p.id; store.set('mm.paint', p.id);
+    const t = engine.time; engine.open(engine.index, false); engine.seek(t);
+    refreshPresets();
+  };
+  presetsEl.appendChild(b);
+}
+function refreshPresets() { presetsEl.querySelectorAll<HTMLElement>('.preset').forEach(b => b.classList.toggle('on', b.dataset.p === model.paintPreset)); }
+refreshPresets();
+fx.showPresets = on => { presetsEl.hidden = !on; };
+const titleEl = el('div', 'title-card'); titleEl.hidden = true; $('viewport').appendChild(titleEl);
+fx.showTitle = (text, replay) => {
+  if (!text) { titleEl.hidden = true; return; }
+  if (titleEl.dataset.text !== text) {
+    titleEl.dataset.text = text; titleEl.innerHTML = '';
+    titleEl.appendChild(el('h1', '', text));
+    if (replay) {
+      const b = el('button', 'primary', 'Replay full build');
+      b.onclick = () => { auto.checked = true; engine.autoAdvance = true; engine.setSpeed(2); engine.open(0); };
+      titleEl.appendChild(b);
+    }
+  }
+  titleEl.hidden = false;
+};
+
+// ---------- environment (shop / dusk / grass / outdoors) + lights ----------
+const ENV = {
+  normal: { bg: '#d8d4cc', hemi: 1.4, sun: 2.4, floor: '#ffffff', wall: 1 },
+  dusk: { bg: '#232834', hemi: 0.22, sun: 0.18, floor: '#ffffff', wall: 1 },
+  grass: { bg: '#bcd6ea', hemi: 1.5, sun: 2.6, floor: '#86a85e', wall: 0 },
+  outdoor: { bg: '#b7d3ea', hemi: 1.5, sun: 2.6, floor: '#7d9c55', wall: 0 },
+} as const;
+const cA = new Color(), cB = new Color();
+const wall = stage.scene.children.find(o => (o as Mesh).isMesh && o.position.z === -70) as Mesh | undefined;
+function applyEnv() {
+  const w = model.world;
+  const A = ENV[w.envFrom ?? w.env], B = ENV[w.env], k = w.envK;
+  (stage.scene.background as Color).copy(cA.set(A.bg).lerp(cB.set(B.bg), k));
+  stage.hemi.intensity = A.hemi + (B.hemi - A.hemi) * k;
+  stage.sun.intensity = A.sun + (B.sun - A.sun) * k;
+  stage.floorMat.color.copy(cA.set(A.floor).lerp(cB.set(B.floor), k));
+  if (wall) { const op = A.wall + (B.wall - A.wall) * k; const wm = wall.material as MeshStandardMaterial; wm.transparent = op < 1; wm.opacity = op; wall.visible = op > 0.02; }
+  // lights: lens glow + spot lights on the installed lamps
+  for (const id of ['headlightL', 'headlightR', 'lightBar']) {
+    if (!model.has(id)) continue;
+    const o = model.get(id).obj;
+    const spot = o.getObjectByName('spot') as SpotLight | undefined;
+    const lens = o.getObjectByName('lens') as Mesh | undefined;
+    const on = o.visible ? w.lights : 0;
+    if (spot) spot.intensity = on * (id === 'lightBar' ? 2500 : 1600);
+    if (lens) { const lm = lens.material as MeshStandardMaterial; lm.emissive.set('#fff3c8'); lm.emissiveIntensity = on * 3; }
+  }
+}
+
 // ---------- render loop ----------
 let last = performance.now();
 function frame(now: number) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   fx.update(dt);
+  applyEnv();
   stage.controls.update();
   // underside preset: floor goes 85% transparent while the camera is below it
   const under = stage.camera.position.y < 0;

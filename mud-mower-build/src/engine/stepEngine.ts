@@ -17,6 +17,7 @@ export function applyStep(step: Step, model: Model, fx: Fx | null = null) {
   const ctx: Ctx = { model, fx: null, step, live: () => false };
   void fx;
   for (const a of byTime(step.actions)) {
+    if (a.donors && !a.donors.includes(model.donor)) continue;
     const h = handlerFor(a);
     if (h) h.apply(a, ctx);
   }
@@ -74,6 +75,7 @@ export class StepEngine {
     // captures the right start. Restore the snapshot afterwards so the timeline starts from the true start.
     const snap = this.model.snapshot();
     for (const a of byTime(step.actions)) {
+      if (a.donors && !a.donors.includes(this.model.donor)) continue;
       const h = handlerFor(a);
       if (!h) { console.warn(`[${step.number}] action '${a.type}' not implemented yet`); continue; }
       const shelf = this.model.shelfNext;
@@ -93,13 +95,21 @@ export class StepEngine {
   private buildCamera(tl: gsap.core.Timeline, step: Step) {
     let prev = this.rig.current();
     const keys = byTime(step.camera);
-    for (const k of keys) {
-      const from = prev, to = resolveCameraKey(k);
+    const veh = () => this.model.vehicle.getWorldPosition(new Vector3()).setY(0);
+    type Pose = { position: Vector3; target: Vector3; follow?: boolean };
+    const live = (p: Pose) => p.follow ? { position: p.position.clone().add(veh()), target: p.target.clone().add(veh()) } : p;
+    for (let i = 0; i < keys.length; i++) {
+      const k = keys[i];
+      const from: Pose = prev, to: Pose = { ...resolveCameraKey(k), follow: k.follow };
+      const next = keys[i + 1];
       const dur = k.dur ?? 1.2;
-      track(tl, k.t, dur, (_s, u) => {
+      // a follow key keeps tracking the tractor until the next key starts
+      const hold = k.follow ? (next ? next.t : step.durationSec) - k.t : dur;
+      track(tl, k.t, Math.max(dur, hold), (s, u) => {
         if (u <= 0 && k !== keys[0]) return;
-        const e = easeInOut(u);
-        this.rig.set(from.position.clone().lerp(to.position, e), from.target.clone().lerp(to.target, e));
+        const e = easeInOut(Math.min(1, s / dur));
+        const f = live(from), t2 = live(to);
+        this.rig.set(f.position.clone().lerp(t2.position, e), f.target.clone().lerp(t2.target, e));
       });
       prev = to;
     }
@@ -107,6 +117,7 @@ export class StepEngine {
 
   private buildCallouts(tl: gsap.core.Timeline, step: Step) {
     for (const c of step.callouts) {
+      if (c.donors && !c.donors.includes(this.model.donor)) continue;
       let label;
       if (this.model.has(c.anchor)) {
         // ride along with the part: attach just above its bounding box

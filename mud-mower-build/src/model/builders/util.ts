@@ -83,3 +83,64 @@ export function extrudeSide(mat: Material, profile: [number, number][], halfW: n
 export function ring(mat: Material, r: number, tubeR: number, arc = Math.PI * 2) { return new Mesh(new TorusGeometry(r, tubeR, 8, 32, arc), mat); }
 
 export function group(...children: Object3D[]) { const g = new Group(); children.forEach(c => g.add(c)); return g; }
+
+/** Square tube of section `size` from a to b (cage, bumper). */
+export function sqTube(mat: Material, a: V3, b: V3, size = 1) {
+  const va = new Vector3(...a), vb = new Vector3(...b);
+  const len = va.distanceTo(vb);
+  const m = new Mesh(new BoxGeometry(size, len, size), mat);
+  m.position.copy(va).add(vb).multiplyScalar(0.5);
+  m.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), vb.clone().sub(va).normalize());
+  return m;
+}
+
+/** Square tube polyline. */
+export function sqPath(mat: Material, pts: V3[], size = 1) {
+  const g = new Group();
+  for (let i = 0; i + 1 < pts.length; i++) g.add(sqTube(mat, pts[i], pts[i + 1], size));
+  return g;
+}
+
+/** Round tube polyline (DOM hoops, bars). */
+export function rodPath(mat: Material, pts: V3[], r: number) {
+  const g = new Group();
+  for (let i = 0; i + 1 < pts.length; i++) g.add(rod(mat, pts[i], pts[i + 1], r, 12));
+  for (let i = 1; i + 1 < pts.length; i++) { const s = new Mesh(SphereGeometryLazy(r), mat); s.position.set(...pts[i]); g.add(s); }
+  return g;
+}
+import { SphereGeometry, InstancedMesh, Matrix4, Quaternion } from 'three';
+function SphereGeometryLazy(r: number) { return new SphereGeometry(r, 10, 8); }
+
+/** Mud tire (axis X): carcass + instanced chevron lugs. */
+export function mudTire(mat: Material, diameter: number, width: number) {
+  const g = new Group();
+  const carcass = tire(mat, diameter - 1.2, width, 0);
+  g.add(carcass);
+  const R = diameter / 2 - 0.6;
+  const n = 22;
+  const lug = new BoxGeometry(width * 0.42, 1.2, 1.5);
+  const im = new InstancedMesh(lug, mat, n * 2);
+  const m4 = new Matrix4(), q = new Quaternion(), qa = new Quaternion(), s = new Vector3(1, 1, 1);
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    for (const side of [-1, 1]) {
+      const k = i * 2 + (side < 0 ? 0 : 1);
+      // radial position on the tread, offset along the axle; chevron = yawed ±28° on the tread surface
+      const pos = new Vector3(side * width * 0.22, Math.cos(a) * (R + 0.3), Math.sin(a) * (R + 0.3) + side * 0.0);
+      q.setFromAxisAngle(new Vector3(1, 0, 0), a);
+      qa.setFromAxisAngle(new Vector3(0, 1, 0), side * 0.5);
+      m4.compose(pos, q.clone().multiply(qa), s);
+      im.setMatrixAt(k, m4);
+    }
+  }
+  g.add(im);
+  return g;
+}
+
+/** Coil spring along +Y from 0 to len. */
+export function spring(mat: Material, radius: number, len: number, turns = 7, wire = 0.18) {
+  const pts: Vector3[] = [];
+  const N = turns * 16;
+  for (let i = 0; i <= N; i++) { const a = (i / 16) * Math.PI * 2; pts.push(new Vector3(Math.cos(a) * radius, (i / N) * len, Math.sin(a) * radius)); }
+  return new Mesh(new TubeGeometry(new CatmullRomCurve3(pts), N * 2, wire, 6, false), mat);
+}

@@ -38,7 +38,13 @@ export interface PartRec {
 export interface PartSnap {
   parent: Object3D; pos: Vector3; quat: Quaternion; scale: Vector3; visible: boolean; look: Look; paint: Color | null; wrap: Color | null;
 }
-export interface ModelSnap { parts: Map<string, PartSnap>; persistCount: number; shelfNext: number; }
+export interface ModelSnap { parts: Map<string, PartSnap>; persistCount: number; shelfNext: number; world: WorldState; }
+
+/** Scene-wide state that steps change (persisted through random access like part state). */
+export type EnvMode = 'normal' | 'dusk' | 'grass' | 'outdoor';
+export interface WorldState { mud: number; env: EnvMode; envFrom?: EnvMode; envK: number; lights: number; }
+export type PaintPreset = 'factory' | 'blackHood' | 'satin';
+const MUD = new Color('#4a3520');
 
 const tmpC = new Color();
 const RUST = new Color('#6b4630');
@@ -50,10 +56,16 @@ export class Model {
   readonly parts = new Map<string, PartRec>();
   /** Persistent effects (cooled weld beads, drill holes, traced lines) attached to parts; rebuilt on random access. */
   private persistList: Object3D[] = [];
+  /** Hooks run after reset()/restore() (e.g. re-shaping suspension links). */
+  readonly onReset: Array<() => void> = [];
   shelfNext = 0;
   xray = false;
   forceXray = false;
   donor: DonorId = 'jd112';
+  paintPreset: PaintPreset = 'factory';
+  world: WorldState = { mud: 0, env: 'normal', envK: 1, lights: 0 };
+  /** Current front-end pose (bump / articulation / steering), combined by concurrent actions. */
+  pose = { bump: 0, rollDeg: 0, steerDeg: 0 };
 
   constructor(defs: PartDef[]) {
     this.root.name = 'shopRoot';
@@ -110,11 +122,23 @@ export class Model {
       r.paint = null; r.wrap = null;
     }
     this.forceXray = false;
+    this.world = { mud: 0, env: 'normal', envK: 1, lights: 0 };
+    this.pose = { bump: 0, rollDeg: 0, steerDeg: 0 };
     this.clearPersist();
     this.shelfNext = 0;
     this.applyDonorShapes();
+    this.resetChildren();
     this.refreshLooks();
     this.root.updateMatrixWorld(true);
+    this.onReset.forEach(f => f());
+  }
+
+  /** Children moved by explode / oscillate (not parts) go back to their build-time pose. */
+  resetChildren() {
+    this.root.traverse(o => {
+      const h = o.userData.home as { p: Vector3; q: Quaternion } | undefined;
+      if (h) { o.position.copy(h.p); o.quaternion.copy(h.q); }
+    });
   }
 
   addPersist(obj: Object3D, parent: Object3D) { parent.add(obj); this.persistList.push(obj); }
@@ -133,7 +157,7 @@ export class Model {
         visible: r.obj.visible, look: { ...r.look }, paint: r.paint?.clone() ?? null, wrap: r.wrap?.clone() ?? null,
       });
     }
-    return { parts, persistCount: this.persistList.length, shelfNext: this.shelfNext };
+    return { parts, persistCount: this.persistList.length, shelfNext: this.shelfNext, world: { ...this.world } };
   }
 
   restore(s: ModelSnap) {
@@ -147,8 +171,13 @@ export class Model {
     }
     while (this.persistList.length > s.persistCount) this.dropPersist(this.persistList.pop()!);
     this.shelfNext = s.shelfNext;
+    this.world = { ...s.world };
+    this.pose = { bump: 0, rollDeg: 0, steerDeg: 0 };
     this.root.updateMatrixWorld(true);
+    this.onReset.forEach(f => f());
   }
+
+  setMud(k: number) { if (Math.abs(this.world.mud - k) > 1e-4) { this.world.mud = k; for (const id of MUDDY) if (this.has(id)) this.applyLook(this.get(id)); } }
 
   setDonor(d: DonorId) { this.donor = d; this.applyDonorShapes(); this.refreshLooks(); }
   setXray(on: boolean) { this.xray = on; this.refreshLooks(); }
@@ -173,6 +202,7 @@ export class Model {
         tmpC.copy(m.slot ? tmpC.set(pal[m.slot]) : m.base);
         if (m.weathered) tmpC.multiplyScalar(0.84).lerp(RUST, 0.1);
       }
+      if (this.world.mud > 0 && MUDDY.has(r.id) && !m.mat.userData.noMud) tmpC.lerp(MUD, Math.min(0.75, this.world.mud * 0.75));
       m.mat.color.copy(tmpC).lerp(GHOST_COLOR, r.look.ghost);
       const op = m.baseOpacity * r.look.opacity * (1 - 0.75 * r.look.ghost) * xr;
       m.mat.opacity = op;
@@ -237,3 +267,7 @@ export class Model {
 }
 
 export const SCRAP_BIN = new Vector3(75, 0, -30);
+
+/** Parts that get mud on them in the finale. */
+const MUDDY = new Set(['wheelRearL', 'wheelRearR', 'wheelFrontL', 'wheelFrontR', 'frameRailL', 'frameRailR', 'boxPlateL', 'boxPlateR', 'skidPlate',
+  'bumperFront', 'axleBeam', 'wishbone', 'floorboardL', 'floorboardR', 'fenderFlareL', 'fenderFlareR', 'hubRearL', 'hubRearR', 'transaxle2300', 'panhard', 'tieRod', 'dragLink']);
