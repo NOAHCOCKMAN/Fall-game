@@ -27,8 +27,12 @@ export class CameraRig {
   onOverride: (() => void) | null = null;
 
   constructor(public camera: PerspectiveCamera, public controls: OrbitControls) {
-    controls.addEventListener('start', () => {
-      if (!this.override) { this.override = true; this.onOverride?.(); }
+    // a press alone (e.g. a tap to select a part) keeps the scripted camera; an actual drag / zoom takes it over
+    let interacting = false;
+    controls.addEventListener('start', () => { interacting = true; });
+    controls.addEventListener('end', () => { interacting = false; });
+    controls.addEventListener('change', () => {
+      if (interacting && !this.override && !this.applying) { this.override = true; this.onOverride?.(); }
     });
   }
 
@@ -37,8 +41,10 @@ export class CameraRig {
   /** Presets are framed for a ~16:10 viewport; pull back on narrower ones (sidebar + panel, phones). */
   framing() { return Math.min(2.1, Math.max(1, 1.25 / this.camera.aspect)); }
 
+  private applying = false;
   set(pos: Vector3, target: Vector3) {
     if (!this.scripted) return;
+    this.applying = true; queueMicrotask(() => { this.applying = false; });
     this.lastPos.copy(pos); this.lastTarget.copy(target);
     const off = pos.clone().sub(target);
     // straight-down views: nudge so lookAt has a defined "up" (nose of the tractor at the top of the screen)

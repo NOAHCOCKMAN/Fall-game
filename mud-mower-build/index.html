@@ -18,17 +18,36 @@
     <main id="viewport">
       <div id="canvasHost"></div>
       <div id="topLeft">
-        <button id="drawerOpen" class="icon-btn mobile-only" aria-label="Open step list">☰</button>
+        <button id="drawerOpen" class="icon-btn mobile-only" aria-label="Open step list">☰ Steps</button>
+        <button id="sideToggle" class="icon-btn desktop-only" aria-label="Hide step list" title="Hide / show steps  [">⟨</button>
+        <button id="viewMenuBtn" class="icon-btn mobile-only" aria-expanded="false" aria-controls="viewMenu">View ▾</button>
+      </div>
+      <div id="topRight" class="desktop-only">
+        <button id="panelToggle" class="icon-btn" aria-label="Hide details panel" title="Hide / show details  ]">⟩</button>
+      </div>
+      <div id="viewMenu">
         <label class="donor">Donor
           <select id="donorPicker"></select>
         </label>
+        <div id="toggles"></div>
+        <label class="auto mobile-only"><input type="checkbox" id="autoAdvanceM" /> Auto-advance to next step</label>
       </div>
-      <div id="toggles"></div>
+      <div id="camDock" role="toolbar" aria-label="Camera">
+        <button id="camAuto" class="dock-btn" title="Scripted camera (follows the step)" aria-pressed="true">Auto</button>
+        <button id="camIn" class="dock-btn" title="Zoom in  (+)" aria-label="Zoom in">＋</button>
+        <button id="camOut" class="dock-btn" title="Zoom out  (−)" aria-label="Zoom out">－</button>
+        <button id="camFit" class="dock-btn" title="Fit the tractor  (0)" aria-label="Fit the tractor">⤢</button>
+        <button id="camViews" class="dock-btn" title="Quick views  (1–9)" aria-expanded="false" aria-controls="viewsMenu">Views</button>
+        <button id="helpBtn" class="dock-btn" title="Controls & shortcuts  (?)" aria-label="Controls and shortcuts">?</button>
+      </div>
+      <div id="viewsMenu" hidden></div>
+      <div id="hint" hidden></div>
+      <div id="help" hidden role="dialog" aria-label="Controls"></div>
       <div id="note" hidden></div>
       <div id="complete" hidden>✓ Step complete</div>
       <button id="resumeCam" hidden>Resume camera</button>
       <div id="bottombar">
-        <div class="step-title"><span id="stepNum"></span> <span id="stepTitle"></span></div>
+        <button class="step-title" id="stepTitleBtn" title="Show all steps"><span id="stepNum"></span> <span id="stepTitle"></span></button>
         <div class="transport">
           <button id="btnPrev" aria-label="Previous step">⏮</button>
           <button id="btnRestart" aria-label="Restart step">↺</button>
@@ -36,6 +55,7 @@
           <button id="btnNext" aria-label="Next step">⏭</button>
           <span id="time">0:00 / 0:00</span>
           <span class="speeds" id="speeds"></span>
+          <button id="speedCycle" class="mobile-only" aria-label="Playback speed">1×</button>
           <label class="auto"><input type="checkbox" id="autoAdvance" /> Auto</label>
         </div>
         <input id="scrubber" type="range" min="0" max="1000" value="0" step="1" aria-label="Step timeline" />

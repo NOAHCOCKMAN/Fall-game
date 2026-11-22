@@ -62,6 +62,9 @@ export class Particles {
     this.live = this.cap;
   }
 
+  /** true while any particle is alive (the renderer keeps drawing until they settle). */
+  get active() { return this.live > 0; }
+
   clear() { this.life.fill(0); this.pos.fill(-9999); this.live = 0; this.flag(); }
 
   update(dt: number) {

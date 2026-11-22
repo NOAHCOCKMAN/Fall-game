@@ -39,11 +39,16 @@ export interface Stage {
   renderer: WebGLRenderer; labelRenderer: CSS2DRenderer; scene: Scene; camera: PerspectiveCamera;
   controls: OrbitControls; floorMat: MeshStandardMaterial; host: HTMLElement;
   hemi: HemisphereLight; sun: DirectionalLight;
+  onResize: (() => void) | null;
+  /** Device-pixel cap: lower it to trade sharpness for speed. */
+  setPixelCap(cap: number): void;
 }
 
 export function createStage(host: HTMLElement): Stage {
   const renderer = new WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  let pixelCap = coarse ? 1.5 : 2;   // phones: sharp enough, much cheaper
+  renderer.setPixelRatio(Math.min(devicePixelRatio, pixelCap));
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = PCFShadowMap;
   renderer.toneMapping = ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
   renderer.outputColorSpace = SRGBColorSpace;
@@ -86,14 +91,24 @@ export function createStage(host: HTMLElement): Stage {
   controls.maxDistance = 600; controls.minDistance = 8;
   controls.target.set(0, 16, 24);
 
-  const resize = () => {
+  const stage: Stage = {
+    renderer, labelRenderer, scene, camera, controls, floorMat, host, hemi, sun, onResize: null,
+    setPixelCap(cap: number) { pixelCap = cap; renderer.setPixelRatio(Math.min(devicePixelRatio, pixelCap)); resize(); },
+  };
+  function resize() {
     const w = host.clientWidth, h = host.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h); labelRenderer.setSize(w, h);
     camera.aspect = w / h; camera.updateProjectionMatrix();
-  };
+    stage.onResize?.();
+  }
   new ResizeObserver(resize).observe(host);
   resize();
 
-  return { renderer, labelRenderer, scene, camera, controls, floorMat, host, hemi, sun };
+  // touch: one finger orbits, two fingers pinch-zoom + pan; mouse: left orbit, right / shift-drag pan, wheel zoom
+  controls.screenSpacePanning = true;
+  controls.zoomToCursor = true;
+  controls.rotateSpeed = coarse ? 0.7 : 0.9;
+  controls.panSpeed = 0.9;
+  return stage;
 }

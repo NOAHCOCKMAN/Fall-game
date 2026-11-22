@@ -11,8 +11,11 @@ button:hover:not(:disabled) { border-color: #5a6068; }
 button:disabled { opacity: 0.4; cursor: default; }
 button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .mobile-only { display: none !important; }
+button:active:not(:disabled) { transform: translateY(1px); }
 
-#app { display: grid; grid-template-columns: 280px 1fr 380px; height: 100%; }
+#app { --side-w: 280px; --panel-w: 380px; display: grid; grid-template-columns: var(--side-w) 1fr var(--panel-w); height: 100%; transition: grid-template-columns .2s ease; }
+#app.no-side { --side-w: 0px; } #app.no-side #sidebar { display: none; }
+#app.no-panel { --panel-w: 0px; } #app.no-panel #panel { display: none; }
 
 /* ---- sidebar ---- */
 #sidebar { background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; display: flex; flex-direction: column; }
@@ -35,10 +38,15 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .label-layer { position: absolute; inset: 0; pointer-events: none; }
 .label-layer.hide-labels .co.callout { display: none !important; }
 .label-layer.hide-measure .co.measure { display: none !important; }
-#topLeft { position: absolute; top: 10px; left: 10px; display: flex; gap: 8px; align-items: center; }
+#topLeft { position: absolute; top: 10px; left: 10px; display: flex; gap: 8px; align-items: center; z-index: 3; }
+#topRight { position: absolute; top: 10px; right: 10px; z-index: 3; }
+.icon-btn { background: rgba(20,22,25,.88); min-width: 34px; min-height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+#viewMenu { position: absolute; top: 10px; left: 56px; right: 56px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; z-index: 2; pointer-events: none; }
+#viewMenu > * { pointer-events: auto; }
+#app.no-side #viewMenu { left: 56px; }
 .donor { background: rgba(20,22,25,.85); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
 .donor select { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 3px 4px; }
-#toggles { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: 60%; }
+#toggles { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
 .toggle { font-size: 12px; padding: 4px 9px; background: rgba(20,22,25,.85); }
 .toggle[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 #note { position: absolute; top: 56px; left: 50%; transform: translateX(-50%); background: rgba(15,17,19,.9); border: 1px solid var(--accent); color: var(--accent); padding: 10px 18px; border-radius: 10px; font-size: 18px; font-weight: 600; text-align: center; max-width: 90%; }
@@ -46,7 +54,8 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 #resumeCam { position: absolute; bottom: 118px; right: 12px; background: rgba(20,22,25,.9); font-size: 12px; }
 
 #bottombar { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 14px 10px; background: linear-gradient(to top, rgba(12,13,15,.92), rgba(12,13,15,.7)); border-top: 1px solid var(--line); }
-.step-title { font-size: 14px; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.step-title { display: block; width: 100%; text-align: left; background: none; border: none; padding: 0; font-size: 14px; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.step-title:hover #stepTitle { text-decoration: underline; text-underline-offset: 3px; }
 #stepNum { color: var(--accent); font-weight: 700; margin-right: 4px; }
 .transport { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .transport button { min-width: 38px; }
@@ -56,7 +65,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .speed { padding: 4px 7px; font-size: 12px; min-width: 0 !important; }
 .speed.on { border-color: var(--accent); color: var(--accent); }
 .auto { font-size: 12px; color: var(--muted); display: inline-flex; gap: 4px; align-items: center; margin-left: auto; }
-#scrubber { width: 100%; margin: 8px 0 0; accent-color: var(--accent); }
+#scrubber { width: 100%; margin: 8px 0 0; accent-color: var(--accent); height: 22px; cursor: pointer; }
 @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(242,197,0,.7); } 50% { box-shadow: 0 0 0 8px rgba(242,197,0,0); } }
 #btnNext.pulse { animation: pulse 1.2s ease-in-out infinite; border-color: var(--accent); }
 
@@ -92,8 +101,11 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
   .mobile-only { display: revert !important; }
   #sheetHandle.mobile-only { display: flex !important; }
   #app { display: block; }
-  #viewport { position: fixed; top: 0; left: 0; right: 0; height: 55dvh; }
-  #panel { position: fixed; left: 0; right: 0; bottom: 0; height: 45dvh; border-left: none; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; z-index: 5; }
+  #app { --sheet: 40dvh; }
+  #viewport { position: fixed; top: 0; left: 0; right: 0; height: calc(100dvh - var(--sheet)); transition: height .22s ease; }
+  #panel { position: fixed; left: 0; right: 0; bottom: 0; height: var(--sheet); border-left: none; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; z-index: 5; transition: height .22s ease; box-shadow: 0 -6px 18px rgba(0,0,0,.35); }
+  #app.sheet-drag #viewport, #app.sheet-drag #panel { transition: none; }
+  #app[data-sheet="peek"] #tabBody { display: none; }
   #sheetHandle { justify-content: center; padding: 8px 0 2px; cursor: grab; touch-action: none; }
   #sheetHandle span { width: 44px; height: 5px; border-radius: 3px; background: #555; }
   #tabs { flex-wrap: nowrap; overflow-x: auto; padding: 6px 10px; }
@@ -103,13 +115,28 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
   #scrim { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 15; }
   #scrim[hidden] { display: none !important; }
   .icon-btn { min-width: 44px; min-height: 44px; font-size: 18px; }
-  #toggles { top: 60px; max-width: 100%; left: 10px; justify-content: flex-start; }
-  .toggle { font-size: 11px; padding: 3px 7px; }
+  .desktop-only { display: none !important; }
+  #viewMenu { display: none; }
+  #viewport.view-open #viewMenu { display: flex; flex-direction: column; align-items: stretch; gap: 10px; top: 62px; left: 10px; right: auto; width: min(300px, calc(100vw - 20px)); padding: 12px; background: rgba(20,22,25,.96); border: 1px solid var(--line); border-radius: 12px; pointer-events: auto; z-index: 6; }
+  #viewport.view-open #toggles { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  #viewport.view-open .toggle { min-height: 44px; font-size: 14px; }
+  #viewport.view-open .donor { font-size: 14px; }
+  #viewport.view-open .donor select { flex: 1; min-height: 40px; font-size: 15px; }
+  #viewMenu .auto { font-size: 14px; color: var(--text); margin: 0; }
+  #viewMenu .auto input { width: 20px; height: 20px; }
+  .icon-btn { min-height: 44px; min-width: 44px; padding: 6px 12px; font-size: 15px; }
   #bottombar { padding: 6px 10px 8px; }
   .step-title { font-size: 13px; margin-bottom: 4px; }
-  .transport button { min-height: 48px; min-width: 52px; font-size: 18px; }
-  .transport .speeds button { min-height: 36px; min-width: 0; font-size: 12px; }
-  #time { order: 10; }
+  .transport { flex-wrap: nowrap; }
+  .transport button { min-height: 48px; min-width: 48px; font-size: 18px; flex: 1; }
+  .transport .primary { flex: 1.4; }
+  .transport .speeds, .transport .auto { display: none; }
+  #speedCycle { font-size: 15px; }
+  #time { position: absolute; right: 12px; top: 8px; margin: 0; }
+  .step-title { padding-right: 90px; font-size: 14px; }
+  #scrubber { height: 30px; }
+  .co-pill { font-size: 13px; }
+  .step-item { min-height: 46px; align-items: center; font-size: 15px; }
   #complete, #resumeCam { bottom: 150px; }
   #note { top: 100px; font-size: 15px; }
 }
@@ -122,3 +149,47 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .title-card h1 { margin: 0; font-size: clamp(26px, 5vw, 54px); color: #fff; text-shadow: 0 3px 18px rgba(0,0,0,.6); letter-spacing: .02em; text-align: center; }
 .title-card button { pointer-events: auto; font-size: 16px; padding: 10px 20px; background: var(--accent); color: #1a1a1a; border-color: var(--accent); font-weight: 700; }
 .presets[hidden], .title-card[hidden], #note[hidden], #complete[hidden], #resumeCam[hidden] { display: none !important; }
+
+/* ---- camera dock + quick views ---- */
+#camDock { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 6px; z-index: 3; }
+.dock-btn { min-width: 46px; min-height: 40px; padding: 4px 8px; font-size: 13px; background: rgba(20,22,25,.88); }
+#camAuto[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+#camAuto[aria-pressed="false"] { background: var(--accent); color: #1a1a1a; border-color: var(--accent); font-weight: 700; }
+#camIn, #camOut, #camFit { font-size: 18px; }
+#viewsMenu { position: absolute; right: 66px; top: 50%; transform: translateY(-50%); display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 10px; background: rgba(20,22,25,.96); border: 1px solid var(--line); border-radius: 12px; z-index: 6; width: 230px; }
+.view-item { display: flex; justify-content: space-between; align-items: center; min-height: 40px; font-size: 14px; }
+.view-item kbd { font: 11px/1 ui-monospace, monospace; color: var(--muted); }
+#resumeCam { display: none !important; }   /* replaced by the dock's Auto button */
+
+/* ---- selection card ---- */
+.sel-card { position: absolute; left: 12px; bottom: 122px; width: min(320px, calc(100% - 90px)); background: rgba(16,18,20,.95); border: 1px solid var(--accent); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; z-index: 4; box-shadow: 0 6px 20px rgba(0,0,0,.4); }
+.sel-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 15px; }
+.sel-close { min-width: 32px; min-height: 32px; }
+.sel-meta { font-size: 12.5px; color: var(--muted); }
+.sel-meta:empty { display: none; }
+.sel-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.sel-actions button { min-height: 38px; }
+.sel-actions .primary { background: var(--accent); color: #1a1a1a; border-color: var(--accent); font-weight: 700; }
+
+/* ---- hint + help ---- */
+#hint { position: absolute; left: 50%; top: 58px; transform: translateX(-50%); background: rgba(16,18,20,.92); color: #fff; border: 1px solid rgba(255,255,255,.2); border-radius: 999px; padding: 8px 16px; font-size: 13px; z-index: 4; white-space: nowrap; max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+#help { position: absolute; inset: 0; margin: auto; width: min(520px, calc(100% - 24px)); height: fit-content; max-height: calc(100% - 24px); overflow: auto; background: rgba(20,22,25,.98); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px 18px; z-index: 8; }
+.help-head { display: flex; justify-content: space-between; align-items: center; font-size: 16px; }
+#help h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 6px; }
+#help dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }
+#help dt { color: var(--accent); font-weight: 600; }
+#help dd { margin: 0; }
+@media (max-width: 1023px) {
+  #camDock { top: auto; bottom: 150px; transform: none; }
+  .dock-btn { min-width: 48px; min-height: 44px; font-size: 14px; }
+  #helpBtn { display: none; }
+  #viewsMenu { top: auto; bottom: 150px; transform: none; right: 66px; width: min(250px, calc(100vw - 90px)); }
+  .view-item { min-height: 44px; }
+  .sel-card { bottom: 138px; }
+  #hint { top: 64px; white-space: normal; border-radius: 12px; text-align: center; }
+  #app[data-sheet="full"] #camDock, #app[data-sheet="full"] .sel-card { display: none; }
+}
+@media (max-width: 1023px) and (max-height: 700px) { #camDock { bottom: 140px; gap: 4px; } .dock-btn { min-height: 40px; } }
+@media (prefers-reduced-motion: reduce) { #app, #viewport, #panel { transition: none !important; } }
+@media (min-width: 1024px) { #sidebar { grid-column: 1; grid-row: 1; } #viewport { grid-column: 2; grid-row: 1; } #panel { grid-column: 3; grid-row: 1; } }
+#viewsMenu[hidden], #help[hidden], #hint[hidden], .sel-card[hidden] { display: none !important; }

@@ -50,5 +50,7 @@ export class Fx {
     this.showPresets(false); this.showTitle(null, false);
   }
 
+  get animating() { return this.sparks.active || this.blobs.active || this.torch.intensity > 0; }
+
   update(dt: number) { this.sparks.update(dt); this.blobs.update(dt); }
 }
