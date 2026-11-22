@@ -4,6 +4,7 @@ import { makeBead, setBead, type BeadOpts } from '../../fx/weld';
 import type { Action } from '../../steps/types';
 import { seg, track } from '../context';
 import type { Handler } from './types';
+import { mergeStatic } from '../../model/registry';
 
 type WeldA = Extract<Action, { type: 'weld' }>;
 const opts = (a: WeldA): BeadOpts => ({ tack: a.tack, stitch: a.stitch, segs: !!anchorDef(a.seam).segs });
@@ -12,6 +13,8 @@ export const weld: Handler<WeldA> = {
   apply(a, ctx) {
     const b = makeBead(anchorLocal(a.seam), opts(a));
     setBead(b, 1, 0);
+    b.pieces.forEach(p => p.mesh.geometry.setDrawRange(0, Infinity));
+    mergeStatic(b.obj);                     // one draw call per finished bead (stitch welds have dozens of pieces)
     ctx.model.addPersist(b.obj, ctx.model.anchorSpace(a.seam));
   },
   play(tl, a, ctx) {

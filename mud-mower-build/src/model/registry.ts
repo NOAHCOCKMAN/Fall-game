@@ -1,5 +1,6 @@
 import { Box3, Color, Group, Material, Mesh, MeshStandardMaterial, Object3D, Quaternion, Vector3 } from 'three';
 import type { DonorId } from '../steps/types';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { GHOST_COLOR, HIGHLIGHT_COLOR, PALETTES, type PaintSlot } from '../scene/materials';
 import { anchorDef, anchorLocal, centerOf } from './anchors';
 
@@ -77,6 +78,7 @@ export class Model {
   private add(def: PartDef) {
     if (this.parts.has(def.id)) throw new Error(`Duplicate part id ${def.id}`);
     const obj = def.build();
+    mergeStatic(obj);
     obj.name = def.id;
     obj.userData.partId = def.id;
     if (def.pivot) obj.position.set(...def.pivot);
@@ -263,6 +265,42 @@ export class Model {
     if (k < floor.length) return new Vector3(floor[k][0], layer * 8, floor[k][1]);
     const s = rack[k - floor.length];
     return new Vector3(s[0], s[1] + layer * 6, s[2]);
+  }
+}
+
+/**
+ * Draw-call budget: merge a part's static meshes that share a material into one mesh.
+ * Anything under a named object (explode pieces, rig handles, markers), a donor-shape variant, or an InstancedMesh stays as is.
+ */
+export function mergeStatic(root: Object3D) {
+  root.updateMatrixWorld(true);
+  const inv = root.matrixWorld.clone().invert();
+  const groups = new Map<string, { mat: MeshStandardMaterial; meshes: Mesh[] }>();
+  root.traverse(o => {
+    const m = o as Mesh;
+    if (!m.isMesh || (m as unknown as { isInstancedMesh?: boolean }).isInstancedMesh || o === root) return;
+    for (let p: Object3D | null = o; p && p !== root; p = p.parent) if (p.name || p.userData.explode || p.userData.donorShape || p.userData.noMerge) return;
+    const mat = m.material as MeshStandardMaterial;
+    if (Array.isArray(m.material)) return;
+    const key = [mat.type, mat.color?.getHexString(), mat.roughness, mat.metalness, mat.opacity, mat.side, mat.transparent, mat.emissive?.getHexString(), mat.map?.uuid ?? '', JSON.stringify(mat.userData)].join('|');
+    const g = groups.get(key) ?? { mat, meshes: [] };
+    g.meshes.push(m); groups.set(key, g);
+  });
+  for (const { mat, meshes } of groups.values()) {
+    if (meshes.length < 2) continue;
+    const geos = meshes.map(m => {
+      let g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
+      for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal' && k !== 'uv') g.deleteAttribute(k);
+      if (!g.attributes.uv) g = g; // all primitives used here carry uvs
+      return g.applyMatrix4(inv.clone().multiply(m.matrixWorld));
+    });
+    let merged;
+    try { merged = mergeGeometries(geos, false); } catch { merged = null; }
+    if (!merged) continue;
+    meshes.forEach(m => m.removeFromParent());
+    const mm = new Mesh(merged, mat);
+    mm.userData.merged = true;
+    root.add(mm);
   }
 }
 

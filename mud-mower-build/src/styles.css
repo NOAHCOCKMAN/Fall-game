@@ -121,3 +121,4 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .title-card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; pointer-events: none; }
 .title-card h1 { margin: 0; font-size: clamp(26px, 5vw, 54px); color: #fff; text-shadow: 0 3px 18px rgba(0,0,0,.6); letter-spacing: .02em; text-align: center; }
 .title-card button { pointer-events: auto; font-size: 16px; padding: 10px 20px; background: var(--accent); color: #1a1a1a; border-color: var(--accent); font-weight: 700; }
+.presets[hidden], .title-card[hidden], #note[hidden], #complete[hidden], #resumeCam[hidden] { display: none !important; }

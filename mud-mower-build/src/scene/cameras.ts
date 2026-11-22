@@ -14,7 +14,7 @@ export const CAMERA_PRESETS: Record<string, { position: Vec3; target: Vec3 }> = 
   knuckleClose: { position: [6, 16, 66],    target: [14, 12, 47] },
   underside:    { position: [0, -40, 30],   target: [0, 12, 26] },
   rearLow:      { position: [26, 10, -40],  target: [0, 12, 0] },
-  driver:       { position: [0, 40, -6],    target: [0, 20, 40] },
+  driver:       { position: [0, 47, -5],    target: [0, 24, 42] },   // spec [0,40,-6]→[0,20,40], raised for the +4 in stance
   bench:        { position: [100, 50, 30],  target: [100, 34, 0] },
   shelf:        { position: [140, 50, 90],  target: [100, 10, 30] },
 };
@@ -22,6 +22,7 @@ export const CAMERA_PRESETS: Record<string, { position: Vec3; target: Vec3 }> = 
 /** Scripted camera driver. Any user touch on the viewport pauses scripted moves for the rest of the step. */
 export class CameraRig {
   override = false;   // set by user interaction during a step
+  noFrame = false;    // first-person presets (driver) are not pulled back
   freeCam = false;    // Free cam toggle: scripted moves off entirely
   onOverride: (() => void) | null = null;
 
@@ -40,7 +41,9 @@ export class CameraRig {
     if (!this.scripted) return;
     this.lastPos.copy(pos); this.lastTarget.copy(target);
     const off = pos.clone().sub(target);
-    let k = this.framing();
+    // straight-down views: nudge so lookAt has a defined "up" (nose of the tractor at the top of the screen)
+    if (Math.abs(off.x) + Math.abs(off.z) < 0.05 * off.length()) off.z -= 0.02 * off.length();
+    let k = this.noFrame ? 1 : this.framing();
     // never pull back through the pegboard wall / props along it (Z ≈ -70)
     if (off.z < 0) k = Math.min(k, Math.max(1, (-50 - target.z) / off.z));
     this.camera.position.copy(target).addScaledVector(off, k);

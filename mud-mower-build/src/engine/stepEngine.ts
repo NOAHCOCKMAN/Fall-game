@@ -109,6 +109,7 @@ export class StepEngine {
         if (u <= 0 && k !== keys[0]) return;
         const e = easeInOut(Math.min(1, s / dur));
         const f = live(from), t2 = live(to);
+        this.rig.noFrame = k.preset === 'driver';
         this.rig.set(f.position.clone().lerp(t2.position, e), f.target.clone().lerp(t2.target, e));
       });
       prev = to;

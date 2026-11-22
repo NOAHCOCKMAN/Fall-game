@@ -108,7 +108,7 @@ export const phase5: Step[] = [
     id: 'dt-cvt', number: '5.4', phase: 5, title: 'Torque converter (CVT)',
     summary: 'Back plate, jackshaft, driven, driver, straight belt line, belt — idle, engage, shift up.',
     durationSec: 26,
-    camera: [{ t: 0, preset: 'engineBay' }, { t: 5, position: [30, 20, 22], target: [2, 12, 35], dur: 1.6 }],
+    camera: [{ t: 0, preset: 'engineBay' }, { t: 5, position: [22, 38, 18], target: [1, 12, 35], dur: 1.6 }],
     actions: [
       { t: 0, dur: 2, type: 'install', part: 'cvtBackPlate', from: 'rear' },
       { t: 2, dur: 3, type: 'bolt', fasteners: ['fast.backPlate'], dir: 'in' },
@@ -182,7 +182,7 @@ export const phase5: Step[] = [
     id: 'dt-throttle', number: '5.6', phase: 5, title: 'Throttle: gas pedal to the governor',
     summary: 'Cable to the speed-control lever (not the carb), two return springs, idle below engagement.',
     durationSec: 18,
-    camera: [{ t: 0, preset: 'driver' }, { t: 5, preset: 'engineBay' }, { t: 14, position: [44, 34, 34], target: [7, 16, 34], dur: 1.2 }],
+    camera: [{ t: 0, preset: 'driver' }, { t: 5, preset: 'engineBay' }, { t: 14, position: [28, 40, 14], target: [6, 16, 32], dur: 1.2 }],
     actions: [
       { t: 0, dur: 2.5, type: 'install', part: 'throttlePedal', from: 'above' },
       { t: 5, dur: 4, type: 'trace', path: 'path.throttleCable', color: '#1a1a1a', radius: 0.16, keep: true },
