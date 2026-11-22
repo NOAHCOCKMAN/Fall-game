@@ -120,7 +120,7 @@ engine.on('step', () => {
   list.refresh(engine.index);
   refreshToggles(); updateResume();
   const h = `#step=${s.number}`;
-  if (location.hash !== h) history.replaceState(null, '', h);
+  if (location.hash !== h) { try { history.replaceState(null, '', h); } catch { /* sandboxed frames may refuse */ } }
   timeEl.textContent = `0:00 / ${fmtTime(s.durationSec)}`; scrub.value = '0';
 });
 
