@@ -28,7 +28,7 @@ export class Particles {
   private next = 0;
   private live = 0;
 
-  constructor(public cap = 2000, additive = true, size = 0.7) {
+  constructor(public cap = 2000, private additive = true, size = 0.7) {
     const g = new BufferGeometry();
     this.pos = new Float32Array(cap * 3).fill(-9999);
     this.col = new Float32Array(cap * 3);
@@ -80,7 +80,7 @@ export class Particles {
         if (this.bounce[i]) { this.vel[k + 1] *= -0.35; this.vel[k] *= 0.6; this.vel[k + 2] *= 0.6; this.bounce[i] = 0; }
         else { this.vel[k] = this.vel[k + 1] = this.vel[k + 2] = 0; }
       }
-      const f = 1 - this.life[i] / this.maxLife[i]; const fade = 1 - f * f;
+      const f = 1 - this.life[i] / this.maxLife[i]; const fade = this.additive ? 1 - f * f : 1;
       this.col[k] = (this.cA[k] + (this.cB[k] - this.cA[k]) * f) * fade;
       this.col[k + 1] = (this.cA[k + 1] + (this.cB[k + 1] - this.cA[k + 1]) * f) * fade;
       this.col[k + 2] = (this.cA[k + 2] + (this.cB[k + 2] - this.cA[k + 2]) * f) * fade;

@@ -3,7 +3,7 @@ import { Vector3 } from 'three';
 import type { Model } from '../model/registry';
 import type { Fx } from '../fx/fx';
 import type { Step } from '../steps/types';
-import { anchorCenter, hasAnchor } from '../model/anchors';
+import { anchorLocal, centerOf, hasAnchor } from '../model/anchors';
 import { CameraRig, resolveCameraKey } from '../scene/cameras';
 import { easeInOut, track, type Ctx } from './context';
 import { handlerFor } from './actions';
@@ -54,6 +54,8 @@ export class StepEngine {
     this.index = i;
     this.rig.override = false;
     this.tl = this.build(this.steps[i]);
+    // render frame 0 once so every action shows its own start state
+    this.tl.progress(0.0001, true).progress(0, true);
     this.playing = false;
     this.emit('step');
     if (autoplay) this.play(); else this.emit('state');
@@ -113,7 +115,7 @@ export class StepEngine {
         const top = new Vector3((b.min.x + b.max.x) / 2, b.max.y + 0.5, (b.min.z + b.max.z) / 2);
         label = this.fx.callout(r.obj, r.obj.worldToLocal(top), c.title, c.sub);
       } else if (hasAnchor(c.anchor)) {
-        label = this.fx.callout(this.fx.transient, anchorCenter(c.anchor), c.title, c.sub);
+        label = this.fx.callout(this.model.anchorSpace(c.anchor), centerOf(anchorLocal(c.anchor)), c.title, c.sub);
       } else { console.warn(`callout anchor ${c.anchor} not found`); continue; }
       const end = c.hideAt ?? step.durationSec;
       const len = end - c.showAt;

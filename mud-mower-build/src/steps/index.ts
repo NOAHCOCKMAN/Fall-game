@@ -1,4 +1,5 @@
 import type { Step } from './types';
-import { demoSteps } from './data/demo';
+import { phase0 } from './data/phase0';
+import { phase1 } from './data/phase1';
 
-export const STEPS: Step[] = [...demoSteps];
+export const STEPS: Step[] = [...phase0, ...phase1];

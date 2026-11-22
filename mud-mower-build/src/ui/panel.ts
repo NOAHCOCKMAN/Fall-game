@@ -27,7 +27,7 @@ export class Panel {
 
   private list(items: string[], ordered = false) {
     const l = el(ordered ? 'ol' : 'ul');
-    for (const t of items) l.appendChild(el('li', '', t));
+    for (const t of items.length ? items : ['—']) l.appendChild(el('li', '', t));
     return l;
   }
 

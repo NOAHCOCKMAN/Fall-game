@@ -20,9 +20,10 @@ export const PALETTES: Record<DonorId, Palette> = {
 export const DONOR_IDS = Object.keys(PALETTES) as DonorId[];
 
 /** Material that takes its color from the active donor palette. */
-export function painted(slot: PaintSlot, opts: { roughness?: number; metalness?: number } = {}) {
+export function painted(slot: PaintSlot, opts: { roughness?: number; metalness?: number; weathered?: boolean } = {}) {
   const m = new MeshStandardMaterial({ color: '#888', roughness: opts.roughness ?? 0.55, metalness: opts.metalness ?? 0.2 });
   m.userData.paintSlot = slot;
+  m.userData.weathered = opts.weathered ?? true;   // stock parts start faded + a little rusty (B1)
   return m;
 }
 
@@ -39,6 +40,12 @@ export const mats = {
   red: () => new MeshStandardMaterial({ color: '#b5281f', metalness: 0.3, roughness: 0.5 }),
   toolRed: () => new MeshStandardMaterial({ color: '#a82a20', metalness: 0.4, roughness: 0.45 }),
 };
+
+/** Plain fixed-color material (not tied to the donor palette). */
+export function solid(color: string, roughness = 0.55, metalness = 0.2) {
+  return new MeshStandardMaterial({ color, roughness, metalness });
+}
+export function weathered<T extends MeshStandardMaterial>(m: T): T { m.userData.weathered = true; return m; }
 
 export const GHOST_COLOR = new Color('#9fd3ff');
 export const HIGHLIGHT_COLOR = new Color('#ffb020');

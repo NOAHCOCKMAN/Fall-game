@@ -65,6 +65,9 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .co-line { position: absolute; left: 0; bottom: 0; width: 1px; height: 34px; background: rgba(255,255,255,.75); box-shadow: 0 0 2px #000; }
 .co-line::after { content: ""; position: absolute; left: -2.5px; bottom: -2.5px; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
 .co-pill { position: absolute; left: 0; bottom: 34px; transform: translateX(-50%); background: rgba(16,18,20,.9); color: #fff; padding: 5px 10px; border-radius: 999px; white-space: nowrap; font-size: 12.5px; border: 1px solid rgba(255,255,255,.18); }
+.co.tag .co-pill, .co.measure .co-pill { bottom: auto; top: 0; transform: translate(-50%, -50%); }
+.co.measure .co-pill { background: rgba(30,26,0,.85); color: #ffd23f; border-color: rgba(255,210,63,.5); padding: 2px 8px; font-size: 12px; }
+.co.tag .co-pill { background: rgba(255,255,255,.92); color: #111; }
 .co-title { font-weight: 600; }
 .co-sub { font-size: 11px; color: #c9ccd0; }
 

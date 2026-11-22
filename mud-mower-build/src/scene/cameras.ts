@@ -33,14 +33,25 @@ export class CameraRig {
 
   get scripted() { return !this.override && !this.freeCam; }
 
+  /** Presets are framed for a ~16:10 viewport; pull back on narrower ones (sidebar + panel, phones). */
+  framing() { return Math.min(2.3, Math.max(1, 1.5 / this.camera.aspect)); }
+
   set(pos: Vector3, target: Vector3) {
     if (!this.scripted) return;
-    this.camera.position.copy(pos);
+    this.lastPos.copy(pos); this.lastTarget.copy(target);
+    const off = pos.clone().sub(target);
+    let k = this.framing();
+    // never pull back through the pegboard wall / props along it (Z ≈ -70)
+    if (off.z < 0) k = Math.min(k, Math.max(1, (-50 - target.z) / off.z));
+    this.camera.position.copy(target).addScaledVector(off, k);
     this.controls.target.copy(target);
     this.camera.lookAt(target);
   }
 
-  current() { return { position: this.camera.position.clone(), target: this.controls.target.clone() }; }
+  private lastPos = new Vector3(80, 55, 110);
+  private lastTarget = new Vector3(0, 16, 24);
+  /** Unscaled scripted pose (so the next tween starts from the preset, not the pulled-back camera). */
+  current() { return { position: this.lastPos.clone(), target: this.lastTarget.clone() }; }
 }
 
 export function resolveCameraKey(k: { preset?: string; position?: Vec3; target?: Vec3 }) {

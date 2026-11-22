@@ -1,4 +1,3 @@
-import { gsap } from 'gsap';
 import { Quaternion, Vector3 } from 'three';
 import { SCRAP_BIN } from '../../model/registry';
 import type { Action } from '../../steps/types';
@@ -17,8 +16,11 @@ function removeTarget(ctx: Ctx, a: RemoveA): { place: Place; hidden: boolean } {
   if (to === 'shelf') return { place: shelfPlace(m, r), hidden: false };
   const w = worldOf(currentPlace(r.obj));
   if (to === 'scrap') return { place: worldPlace(m, SCRAP_BIN.clone().setY(6), w.quat, w.scale.multiplyScalar(0.6)), hidden: true };
-  // TODO(Noah): `to: <anchor>` destinations land in M2 with the real anchor set.
-  return { place: shelfPlace(m, r), hidden: false };
+  // anchor destination (e.g. 'bench.top'): full size, bottom-center resting on the anchor point
+  const at = m.anchorWorldCenter(to);
+  const b = m.bounds(a.part);
+  const pos = new Vector3(at.x - ((b.min.x + b.max.x) / 2 - w.pos.x), at.y + (w.pos.y - b.min.y), at.z - ((b.min.z + b.max.z) / 2 - w.pos.z));
+  return { place: worldPlace(m, pos, w.quat, w.scale), hidden: false };
 }
 
 export const remove: Handler<RemoveA> = {
@@ -41,8 +43,10 @@ export const remove: Handler<RemoveA> = {
     track(tl, a.t, a.dur, (_s, u) => {
       if (u <= 0) { setPlace(r.obj, start); r.obj.visible = startVis; r.look = { ...startLook }; m.applyLook(r); return; }
       // first 15%: rise/slide clear of the vehicle; rest: arc to destination
-      const k1 = seg(u, 0, 0.15), k2 = easeInOut(seg(u, 0.15, toScrap ? 0.8 : 1));
-      const off = via === 'slide' ? new Vector3(sw.pos.x < 0 ? -12 : 12, 0, 0) : via === 'drop' ? new Vector3(0, -2, 0) : new Vector3(0, 6, 0);
+      const split = via === 'slide' || (a.liftBy ?? 0) > 10 ? 0.35 : 0.15;
+      const k1 = seg(u, 0, split), k2 = easeInOut(seg(u, split, toScrap ? 0.8 : 1));
+      const lift = a.liftBy ?? 6;
+      const off = via === 'slide' ? new Vector3(sw.pos.x > 0.5 ? 30 : -30, 0, 0) : via === 'drop' ? new Vector3(0, -(a.liftBy ?? 2), 0) : new Vector3(0, lift, 0);
       const p0 = sw.pos.clone().addScaledVector(off, easeInOut(k1));
       const lifted = sw.pos.clone().add(off);
       let pos = k2 > 0 ? arc(lifted, ew.pos.clone().add(new Vector3(0, toScrap ? 18 : 0, 0)), k2, 24) : p0;
@@ -107,13 +111,19 @@ export const stateAction: Handler<StateA> = {
   },
   play(tl, a, ctx) {
     const m = ctx.model, r = m.get(a.part);
-    const vis = r.obj.visible, look = { ...r.look };
+    const vis = r.obj.visible, look = { ...r.look }, baseScale = r.obj.scale.clone();
     track(tl, a.t, a.dur, (s, u) => {
-      if (u <= 0) { r.obj.visible = vis; r.look = { ...look }; m.applyLook(r); return; }
+      if (u <= 0) { r.obj.visible = vis; r.look = { ...look }; r.obj.scale.copy(baseScale); m.applyLook(r); return; }
       if (a.type === 'highlight') {
         // emissive pulse, ~1.4 Hz, back to normal at the end
         r.look.glow = u >= 1 ? look.glow : 0.5 + 0.5 * Math.sin(s * Math.PI * 2.8 - Math.PI / 2);
-      } else if (a.type === 'show') { r.obj.visible = true; r.look.ghost = look.ghost * (1 - clamp01(u * 3)); r.look.opacity = clamp01(u * 3); }
+      } else if (a.type === 'show') {
+        // pop in with a small bounce (scale 0 -> 1.12 -> 1) over the first 0.5 s
+        const k = clamp01(s / Math.min(0.5, a.dur));
+        const sc = k < 0.7 ? (k / 0.7) * 1.12 : 1.12 - 0.12 * ((k - 0.7) / 0.3);
+        r.obj.visible = true; r.look.ghost = look.ghost * (1 - k);
+        r.obj.scale.copy(baseScale).multiplyScalar(Math.max(0.001, u >= 1 ? 1 : sc));
+      }
       else if (a.type === 'hide') { r.look.opacity = 1 - clamp01(u * 3); r.obj.visible = u < 1 / 3; if (u >= 1 / 3) r.look.opacity = 1; }
       else if (a.type === 'ghost') { r.obj.visible = true; r.look.ghost = clamp01(u * 3); }
       m.applyLook(r);
@@ -121,4 +131,3 @@ export const stateAction: Handler<StateA> = {
   },
 };
 
-void gsap;

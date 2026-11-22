@@ -12,14 +12,14 @@ export interface Callout {
 }
 
 export type Action =
-  | { t: number; dur: number; type: 'remove'; part: string; via?: 'lift' | 'slide' | 'drop'; to?: 'shelf' | 'scrap' | string }
+  | { t: number; dur: number; type: 'remove'; part: string; via?: 'lift' | 'slide' | 'drop'; to?: 'shelf' | 'scrap' | string; liftBy?: number }
   | { t: number; dur: number; type: 'install'; part: string; from?: 'above' | 'side' | 'below' | 'shelf' | Vec3; ghostFirst?: boolean }
   | { t: number; dur: number; type: 'bolt'; fasteners: string[]; dir: 'out' | 'in'; torqueLabel?: string }
   | { t: number; dur: number; type: 'weld'; seam: string; tack?: boolean }
   | { t: number; dur: number; type: 'grindCut'; cut: string; dropPart?: string }
   | { t: number; dur: number; type: 'grind' | 'wireWheel'; target: string }
   | { t: number; dur: number; type: 'drill'; anchor: string; dia: number }
-  | { t: number; dur: number; type: 'measure'; a: string; b: string; label: string; keep?: boolean }
+  | { t: number; dur: number; type: 'measure'; a: string; b?: string; label: string; keep?: boolean }   // b omitted: a is a 2-point anchor
   | { t: number; dur: number; type: 'laser'; a: string; b: string }
   | { t: number; dur: number; type: 'angleGauge'; anchor: string; deg: number; label: string }
   | { t: number; dur: number; type: 'paint'; parts: string[]; color: string }
@@ -33,7 +33,15 @@ export type Action =
   | { t: number; dur: number; type: 'drive'; path: string; speed: number }
   | { t: number; dur: number; type: 'highlight' | 'ghost' | 'show' | 'hide'; part: string }
   | { t: number; dur: number; type: 'note'; text: string }
-  | { t: number; dur: number; type: 'lighting'; mode: 'normal' | 'dusk' };
+  | { t: number; dur: number; type: 'lighting'; mode: 'normal' | 'dusk' }
+  // ---- implementation extensions (not in Appendix F; needed to script Part E literally) ----
+  | { t: number; dur: number; type: 'move'; part: string; by?: Vec3; to?: string }          // translate (parent space) or to an anchor
+  | { t: number; dur: number; type: 'rotate'; part: string; axis: 'x' | 'y' | 'z'; deg: number } // about the part's pivot
+  | { t: number; dur: number; type: 'trace'; path: string; color?: string; radius?: number; keep?: boolean } // line draws itself
+  | { t: number; dur: number; type: 'mist'; at: string; label?: string }                      // spray puffs at each anchor point
+  | { t: number; dur: number; type: 'xray' }                                                 // body X-ray during [t, t+dur]
+  | { t: number; dur: number; type: 'wrap'; part: string; color: string | null }             // moving blanket on / off
+  | { t: number; dur: number; type: 'donorLineup' };                                         // 0.1 turntable lineup
 
 export type ActionType = Action['type'];
 

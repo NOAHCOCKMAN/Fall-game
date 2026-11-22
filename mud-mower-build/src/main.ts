@@ -14,7 +14,7 @@ import { store } from './ui/store';
 
 const stage = createStage($('canvasHost'));
 const model = new Model(ALL_PARTS);
-stage.scene.add(model.root, model.shelfRoot, model.persist);
+stage.scene.add(model.root, model.shelfRoot);
 const fx = new Fx(stage.scene, $('note'));
 const rig = new CameraRig(stage.camera, stage.controls);
 const engine = new StepEngine(STEPS, model, fx, rig);
@@ -28,7 +28,10 @@ picker.value = donor;
 model.setDonor(donor);
 picker.onchange = () => {
   donor = picker.value as DonorId; store.set('mm.donor', donor);
-  model.setDonor(donor); panel.show(engine.step, donor);
+  model.setDonor(donor);
+  // re-open the step at the same time so donor-dependent animation (0.1 lineup) is rebuilt
+  const t = engine.time, playing = engine.playing;
+  engine.open(engine.index, false); engine.seek(t); if (playing) engine.play();
 };
 
 // ---------- step list + panel ----------
@@ -38,7 +41,7 @@ const list = new StepList(STEPS, i => { closeDrawer(); engine.open(i); });
 // ---------- toggles ----------
 type Toggle = { id: string; label: string; on: boolean; set(v: boolean): void; enabled?: () => boolean };
 const toggles: Toggle[] = [
-  { id: 'labels', label: 'Labels', on: true, set: v => { fx.labelsOn = v; stage.labelRenderer.domElement.classList.toggle('hide-labels', !v); } },
+  { id: 'labels', label: 'Labels', on: true, set: v => { stage.labelRenderer.domElement.classList.toggle('hide-labels', !v); } },
   { id: 'xray', label: 'X-ray', on: false, set: v => model.setXray(v) },
   { id: 'exploded', label: 'Exploded', on: false, set: () => { /* M4: explode step's group */ }, enabled: () => !!engine.step?.explodable },
   { id: 'measure', label: 'Measurements', on: true, set: v => stage.labelRenderer.domElement.classList.toggle('hide-measure', !v) },
@@ -94,6 +97,7 @@ scrub.addEventListener('change', endScrub);
 engine.on('time', () => {
   if (!engine.scrubbing) scrub.value = String(Math.round((engine.time / engine.duration) * 1000));
   timeEl.textContent = `${fmtTime(engine.time)} / ${fmtTime(engine.duration)}`;
+  if (!completeEl.hidden && engine.time < engine.duration - 0.05) completeEl.hidden = true;
 });
 engine.on('state', () => {
   btnPlay.textContent = engine.playing ? '❚❚' : '▶';

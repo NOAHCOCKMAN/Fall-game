@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import { anchorPoints } from '../../model/anchors';
+import { anchorLocal } from '../../model/anchors';
 import { makeBead, setBead } from '../../fx/weld';
 import type { Action } from '../../steps/types';
 import { seg, track } from '../context';
@@ -9,14 +9,14 @@ type WeldA = Extract<Action, { type: 'weld' }>;
 
 export const weld: Handler<WeldA> = {
   apply(a, ctx) {
-    const b = makeBead(anchorPoints(a.seam), a.tack);
+    const b = makeBead(anchorLocal(a.seam), a.tack);
     setBead(b, 1, 0);
-    ctx.model.persist.add(b.obj);
+    ctx.model.addPersist(b.obj, ctx.model.anchorSpace(a.seam));
   },
   play(tl, a, ctx) {
     const fx = ctx.fx;
     if (!fx) return;
-    const b = makeBead(anchorPoints(a.seam), a.tack);
+    const b = makeBead(ctx.model.anchorWorld(a.seam), a.tack);
     setBead(b, 0, 0);
     fx.transient.add(b.obj);
     const cool = Math.min(2, a.dur * 0.35);          // bead glows then cools over ~2 s
