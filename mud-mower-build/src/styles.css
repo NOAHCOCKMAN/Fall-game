@@ -193,3 +193,19 @@ button:active:not(:disabled) { transform: translateY(1px); }
 @media (prefers-reduced-motion: reduce) { #app, #viewport, #panel { transition: none !important; } }
 @media (min-width: 1024px) { #sidebar { grid-column: 1; grid-row: 1; } #viewport { grid-column: 2; grid-row: 1; } #panel { grid-column: 3; grid-row: 1; } }
 #viewsMenu[hidden], #help[hidden], #hint[hidden], .sel-card[hidden] { display: none !important; }
+
+/* ---- full screen 3D ---- */
+#camFull { font-size: 18px; }
+#camFull[aria-pressed="true"] { background: var(--accent); color: #1a1a1a; border-color: var(--accent); }
+#app.full { --side-w: 0px; --panel-w: 0px; }
+#app.full #sidebar, #app.full #panel, #app.full #topLeft, #app.full #topRight, #app.full #viewMenu, #app.full .sel-card .sel-meta { display: none !important; }
+#app.full #viewport { position: fixed; inset: 0; height: auto; z-index: 30; }
+#app.full #bottombar { background: linear-gradient(to top, rgba(12,13,15,.75), rgba(12,13,15,0)); border-top: none; padding-top: 18px; padding-bottom: max(10px, env(safe-area-inset-bottom, 0px)); }
+#app.full .transport .speeds, #app.full .transport .auto { display: none; }
+#app.full #camDock { top: max(12px, env(safe-area-inset-top, 0px)); bottom: auto; transform: none; }
+#app.full #viewsMenu { top: max(12px, env(safe-area-inset-top, 0px)); bottom: auto; transform: none; }
+#app.full .sel-card { bottom: 130px; }
+@media (max-width: 1023px) {
+  #app.full .transport button { min-height: 44px; }
+  #app.full #note { top: 16px; }
+}

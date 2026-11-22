@@ -182,9 +182,11 @@ window.addEventListener('keydown', e => {
   else if (k === 'l' || k === 'L') togBtns.get('labels')!.click();
   else if (k === 'x' || k === 'X') togBtns.get('xray')!.click();
   else if (k === 'e' || k === 'E') { const b = togBtns.get('exploded')!; if (!b.disabled) b.click(); }
+  else if (k === 'v' || k === 'V') camFull.click();
   else if (k === '[') toggleSide();
   else if (k === ']') togglePanel();
   else if (k === '?' || k === 'h' || k === 'H') toggleHelp();
+  else if (k === 'Escape' && appEl.classList.contains('full') && helpEl.hidden && viewsMenu.hidden) setFull(false);
   else if (k === 'Escape') { if (!helpEl.hidden) toggleHelp(false); else if (!viewsMenu.hidden) setViewsMenu(false); else picker.select(null); }
   else if ((k === 'c' || k === 'C') && picker.selected) picker.focus();
 });
@@ -267,6 +269,31 @@ $('camOut').onclick = () => tools.zoom(1.33);
 $('camFit').onclick = () => (picker.selected ? picker.focus() : tools.fitTractor());
 viewport.addEventListener('pointerdown', e => { if (!(e.target as HTMLElement).closest('#viewsMenu, #camViews')) setViewsMenu(false); });
 
+// ---------- full screen: the 3D view fills the screen (in-app), plus the browser's fullscreen where it's allowed ----------
+const camFull = $<HTMLButtonElement>('camFull');
+function setFull(on: boolean) {
+  appEl.classList.toggle('full', on);
+  camFull.setAttribute('aria-pressed', String(on));
+  camFull.textContent = on ? '✕' : '⛶';
+  camFull.setAttribute('aria-label', on ? 'Exit full screen' : 'Full screen');
+  camFull.title = on ? 'Exit full screen  (V)' : 'Full screen  (V)';
+  setViewMenu(false); setViewsMenu(false); closeDrawer();
+  const d = document as Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void };
+  const root = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void };
+  try {
+    if (on && !document.fullscreenElement && !d.webkitFullscreenElement) {
+      const p = root.requestFullscreen?.({ navigationUI: 'hide' }) ?? root.webkitRequestFullscreen?.();
+      (p as Promise<void> | undefined)?.catch?.(() => { /* not allowed here: the in-app mode still applies */ });
+    } else if (!on && (document.fullscreenElement || d.webkitFullscreenElement)) {
+      const p = document.exitFullscreen?.() ?? d.webkitExitFullscreen?.();
+      (p as Promise<void> | undefined)?.catch?.(() => {});
+    }
+  } catch { /* ignore */ }
+  invalidate(3);
+}
+camFull.onclick = () => setFull(!appEl.classList.contains('full'));
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && appEl.classList.contains('full')) setFull(false); });
+
 // ---------- help + first-visit hint ----------
 const helpEl = $('help');
 const touch = matchMedia('(pointer: coarse)').matches;
@@ -280,13 +307,14 @@ helpEl.innerHTML = `
       <dt>Tap a part</dt><dd>Select it — then Focus or jump to its step</dd>
       <dt>Double-${touch ? 'tap' : 'click'}</dt><dd>Select + fly to it</dd>
       <dt>Auto</dt><dd>Give the camera back to the step's scripted moves</dd>
+      <dt>⛶</dt><dd>Full screen 3D (✕ to leave)</dd>
     </dl>
     ${touch ? '' : `<h3>Keys</h3>
     <dl class="keys">
       <dt>← →</dt><dd>Previous / next step</dd><dt>Space</dt><dd>Play / pause</dd><dt>R</dt><dd>Restart step</dd>
       <dt>A</dt><dd>Auto camera</dd><dt>+ −</dt><dd>Zoom</dd><dt>0</dt><dd>Fit the tractor</dd><dt>1–9</dt><dd>Quick views</dd>
       <dt>C</dt><dd>Focus the selected part</dd><dt>Esc</dt><dd>Clear selection</dd>
-      <dt>L · X · E</dt><dd>Labels · X-ray · Exploded</dd><dt>F</dt><dd>Free camera</dd><dt>[ ]</dt><dd>Hide / show side panels</dd>
+      <dt>V</dt><dd>Full screen</dd><dt>L · X · E</dt><dd>Labels · X-ray · Exploded</dd><dt>F</dt><dd>Free camera</dd><dt>[ ]</dt><dd>Hide / show side panels</dd>
     </dl>`}
   </div>`;
 function toggleHelp(force?: boolean) { helpEl.hidden = !(force ?? helpEl.hidden === true); }
