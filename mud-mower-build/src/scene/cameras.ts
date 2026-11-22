@@ -34,7 +34,7 @@ export class CameraRig {
   get scripted() { return !this.override && !this.freeCam; }
 
   /** Presets are framed for a ~16:10 viewport; pull back on narrower ones (sidebar + panel, phones). */
-  framing() { return Math.min(2.3, Math.max(1, 1.5 / this.camera.aspect)); }
+  framing() { return Math.min(2.1, Math.max(1, 1.25 / this.camera.aspect)); }
 
   set(pos: Vector3, target: Vector3) {
     if (!this.scripted) return;

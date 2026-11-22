@@ -13,9 +13,9 @@ export interface Callout {
 
 export type Action =
   | { t: number; dur: number; type: 'remove'; part: string; via?: 'lift' | 'slide' | 'drop'; to?: 'shelf' | 'scrap' | string; liftBy?: number }
-  | { t: number; dur: number; type: 'install'; part: string; from?: 'above' | 'side' | 'below' | 'shelf' | Vec3; ghostFirst?: boolean }
+  | { t: number; dur: number; type: 'install'; part: string; from?: 'above' | 'side' | 'below' | 'front' | 'rear' | 'shelf' | Vec3; ghostFirst?: boolean }
   | { t: number; dur: number; type: 'bolt'; fasteners: string[]; dir: 'out' | 'in'; torqueLabel?: string }
-  | { t: number; dur: number; type: 'weld'; seam: string; tack?: boolean }
+  | { t: number; dur: number; type: 'weld'; seam: string; tack?: boolean; stitch?: [number, number] }  // stitch: [length, pitch] (extension)
   | { t: number; dur: number; type: 'grindCut'; cut: string; dropPart?: string }
   | { t: number; dur: number; type: 'grind' | 'wireWheel'; target: string }
   | { t: number; dur: number; type: 'drill'; anchor: string; dia: number }
@@ -31,7 +31,7 @@ export type Action =
   | { t: number; dur: number; type: 'fluid'; part: string; mode: 'drain' | 'fill'; color: string }
   | { t: number; dur: number; type: 'mud'; at: string; amount: number }
   | { t: number; dur: number; type: 'drive'; path: string; speed: number }
-  | { t: number; dur: number; type: 'highlight' | 'ghost' | 'show' | 'hide'; part: string }
+  | { t: number; dur: number; type: 'highlight' | 'ghost' | 'show' | 'hide'; part: string; color?: string }  // color: highlight tint (extension)
   | { t: number; dur: number; type: 'note'; text: string }
   | { t: number; dur: number; type: 'lighting'; mode: 'normal' | 'dusk' }
   // ---- implementation extensions (not in Appendix F; needed to script Part E literally) ----

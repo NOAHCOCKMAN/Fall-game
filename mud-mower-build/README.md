@@ -17,7 +17,7 @@ Keys: ←/→ step · Space play/pause · R restart · F free cam. Deep link: `#
 
 - [x] **M1 — Skeleton:** scene, floor, lights, camera presets, step engine (random access, scrubber, speed, auto-advance, deep links), remove / install / weld (tack + full bead, sparks, cooling), highlight / ghost / show / hide / note, callouts, UI shell (step list, tabs with persisted Done-when checks, toggles, donor picker, mobile layout). Three demo steps use box placeholders.
 - [x] **M2 — Stock tractor + Phase 0–1:** full JD 112-style stock model (rounded/squared hood by donor, weathered paint), shop props, six-donor turntable lineup, steps 0.1–1.10 transcribed from Part E. New actions: measure, laser, angleGauge, bolt (socket + bag-and-tag tray), drill (persistent holes), grind / wireWheel (rust → bare steel), fluid drain/fill, plus extensions `move`, `rotate`, `trace`, `mist`, `xray`, `wrap`, `donorLineup` (listed in `src/steps/types.ts`). Anchors live in the space of a part (default the tractor), so they follow it onto jack stands.
-- [ ] M3 — Effects + Phase 2
+- [x] **M3 — Effects + Phase 2:** `grindCut` (cut-off disc, spark stream, glowing kerf, the cut piece drops and goes to scrap), `grind` on a part (sweep to bare steel) or on anchor spots (flush), weld beads with tack dots every ~6 in, 1-in stitch welds (`stitch: [1, 3]`), multi-segment seams, and a faint heat tint. Frame parts (box plates with drain holes, engine / front-suspension / rear crossmembers, double-shear apex bracket, panhard tab, front clip + plate + tow hole) and steps 2.1–2.5.
 - [ ] M4 — Front end (Phase 4)
 - [ ] M5 — Rear + drivetrain (Phases 3, 5)
 - [ ] M6 — Cage, body, brakes, electrical (Phases 6–8)

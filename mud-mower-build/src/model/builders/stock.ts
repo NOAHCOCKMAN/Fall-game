@@ -148,17 +148,20 @@ export const stockParts: PartDef[] = [
   { ...V, id: 'frameRailL', build: () => rail(-1) },
   { ...V, id: 'frameRailR', build: () => rail(1) },
   { ...V, id: 'frameXStock', build: () => group(...[2, 30, 56].map(z => boxAt(painted('body'), [-6.31, 10, z - 0.75], [6.31, 12.31, z + 0.75]))) },
+  // Tabs that get cut off in 2.1 — one part per tab so each piece can drop.
+  { ...V, id: 'deckHangers', build: () => new Group() },
+  ...[10, 28].flatMap(z => [-1, 1].map((sd, k): PartDef => ({
+    parent: 'deckHangers', id: `deckHangers.${z === 10 ? 1 + k : 3 + k}`,
+    build: () => group(boxAt(oldSteel(), [sd < 0 ? -6.9 : 6.5, 6.8, z - 0.9], [sd < 0 ? -6.5 : 6.9, 9.6, z + 0.9])),
+  }))),
+  { ...V, id: 'bracketsMisc', build: () => new Group() },
+  { parent: 'bracketsMisc', id: 'bracketsMisc.pedal', build: () => group(boxAt(oldSteel(), [-6.9, 7.5, 22], [-6.5, 9.6, 24])) },
+  { parent: 'bracketsMisc', id: 'bracketsMisc.liftShaft', build: () => group(boxAt(oldSteel(), [6.5, 7.8, 24], [6.9, 9.6, 26])) },
+  { parent: 'bracketsMisc', id: 'bracketsMisc.sector', build: () => group(boxAt(oldSteel(), [-6.4, 8.2, 39], [-4.6, 9.55, 42])) },
   {
-    ...V, id: 'deckHangers',
-    build: () => group(...[10, 28].flatMap(z => [-1, 1].map(s => boxAt(oldSteel(), [s < 0 ? -6.9 : 6.5, 6.8, z - 0.9], [s < 0 ? -6.5 : 6.9, 9.6, z + 0.9])))),
-  },
-  {
-    ...V, id: 'bracketsMisc',
-    build: () => group(
-      boxAt(oldSteel(), [-6.9, 7.5, 22], [-6.5, 9.6, 24]),        // pedal bracket
-      boxAt(oldSteel(), [6.5, 7.8, 24], [6.9, 9.6, 26]),          // lift-shaft bracket
-      boxAt(oldSteel(), [-2.5, 8.2, 39], [2.5, 9.5, 42]),         // old steering sector mount
-    ),
+    // hood hinge / grille locating tabs — KEEP (2.1)
+    ...V, id: 'hoodMountTabs',
+    build: () => group(...[-1, 1].map(sd => boxAt(painted('body'), [sd < 0 ? -6.5 : 5.9, 12.5, 58.6], [sd < 0 ? -5.9 : 6.5, 17.2, 60]))),
   },
   { ...V, id: 'rearHitch', build: () => group(boxAt(painted('body'), [-4, 7.5, -12], [4, 11, -10]), boxAt(oldSteel(), [-1.2, 7.5, -14], [1.2, 8, -12])) },
 

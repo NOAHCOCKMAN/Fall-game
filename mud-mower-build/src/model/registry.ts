@@ -16,7 +16,7 @@ export interface PartDef {
   tags?: string[];
 }
 
-export interface Look { opacity: number; ghost: number; glow: number; }
+export interface Look { opacity: number; ghost: number; glow: number; glowColor?: string; }
 
 interface MatRec { mat: MeshStandardMaterial; base: Color; baseOpacity: number; baseEmissive: Color; slot?: PaintSlot; weathered: boolean; }
 
@@ -179,7 +179,7 @@ export class Model {
       const transparent = op < 0.999;
       if (m.mat.transparent !== transparent) { m.mat.transparent = transparent; m.mat.needsUpdate = true; }
       m.mat.depthWrite = op > 0.6;
-      m.mat.emissive.copy(m.baseEmissive).lerp(HIGHLIGHT_COLOR, r.look.glow * 0.6);
+      m.mat.emissive.copy(m.baseEmissive).lerp(r.look.glowColor ? tmpC.set(r.look.glowColor) : HIGHLIGHT_COLOR, r.look.glow * 0.6);
     }
   }
 

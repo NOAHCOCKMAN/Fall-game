@@ -24,6 +24,7 @@ for (const s of STEPS) {
     if (!HANDLERS[a.type]) warns.push(`${where} action '${a.type}' not implemented yet`);
     for (const p of partsOf(a)) if (!model.has(p)) errors.push(`${where} ${a.type}: unknown part '${p}'`);
     for (const n of anchorsOf(a)) if (!hasAnchor(n) && !model.has(n)) errors.push(`${where} ${a.type}: unknown anchor '${n}'`);
+    if ((a.type === 'grind' || a.type === 'wireWheel') && !model.has(a.target) && !hasAnchor(a.target)) errors.push(`${where} ${a.type}: unknown part/anchor '${a.target}'`);
   }
   for (const c of s.callouts) {
     if (!hasAnchor(c.anchor) && !model.has(c.anchor)) errors.push(`${where} callout '${c.title}': unknown anchor '${c.anchor}'`);

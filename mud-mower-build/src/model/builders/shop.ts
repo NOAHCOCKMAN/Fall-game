@@ -7,12 +7,16 @@ import { boxAt, cylX, extrudeSide, group, rod, tube } from './util';
 const H: Pick<PartDef, 'defaultState' | 'tags'> = { defaultState: 'hidden', tags: ['prop'] };
 
 function jackStand() {
-  const m = solid('#b8321f', 0.5, 0.4), z = mats.zinc();
+  const m = solid('#b8321f', 0.5, 0.4);
   const g = group();
-  for (let i = 0; i < 3; i++) { const a = (i / 3) * Math.PI * 2; g.add(rod(m, [Math.cos(a) * 4.5, 0, Math.sin(a) * 4.5], [0, 6, 0], 0.35)); }
-  g.add(rod(z, [0, 5, 0], [0, 11.4, 0], 0.55));
-  g.add(boxAt(m, [-1.4, 11.4, -0.6], [1.4, 12.4, 0.6]));   // saddle: top at Y = 12.4
+  for (let i = 0; i < 3; i++) { const a = (i / 3) * Math.PI * 2; g.add(rod(m, [Math.cos(a) * 4.5, 0, Math.sin(a) * 4.5], [0, 7, 0], 0.35)); }
+  g.add(rod(m, [0, 5, 0], [0, 9, 0], 0.75));                // outer tube
   return g;
+}
+/** Ratchet post + saddle (moves up when the stand is extended). Pivot at Y = 5 in the stand. */
+function jackStandPost() {
+  const m = solid('#b8321f', 0.5, 0.4);
+  return group(rod(mats.zinc(), [0, 0, 0], [0, 6.4, 0], 0.55), boxAt(m, [-1.4, 6.4, -0.6], [1.4, 7.4, 0.6]));  // saddle top at Y = 12.4
 }
 
 function grinder() {
@@ -85,7 +89,10 @@ export const shopParts: PartDef[] = [
   },
   { ...H, id: 'grinder', pivot: [80, 34.6, 6], build: grinder },
   { ...H, id: 'grinder2', pivot: [119, 34.6, 6], build: () => { const g = grinder(); g.rotation.y = 0.4; return group(g); } },
-  ...[1, 2, 3, 4].map((i): PartDef => ({ ...H, id: `jackStand${i}`, pivot: [52 + (i - 1) * 9, 0, 34], build: jackStand })),
+  ...[1, 2, 3, 4].flatMap((i): PartDef[] => [
+    { ...H, id: `jackStand${i}`, pivot: [52 + (i - 1) * 9, 0, 34], build: jackStand },
+    { id: `jackStand${i}Post`, parent: `jackStand${i}`, pivot: [0, 5, 0], build: jackStandPost },
+  ]),
   {
     ...H, id: 'boltTrays', pivot: [114, 34, -5],
     build: () => group(...[-4, 0, 4].map(x => boxAt(solid('#8f9498', 0.5, 0.6), [x - 1.8, 0, -1.5], [x + 1.8, 0.8, 1.5]))),

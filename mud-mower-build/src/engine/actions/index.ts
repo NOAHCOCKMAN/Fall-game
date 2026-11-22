@@ -4,12 +4,13 @@ import { install, remove, stateAction } from './parts';
 import { weld } from './weld';
 import { note } from './misc';
 import { angleGauge, bolt, drill, fluid, laser, measure, mist, surface, trace } from './tools';
+import { grindCut } from './cut';
 import { donorLineup, move, rotate, wrap, xray } from './motion';
 
 /** Action library (A7). Types not yet implemented are flagged by validate. */
 export const HANDLERS: Partial<Record<ActionType, Handler<any>>> = {
   remove, install, weld, note, measure, laser, angleGauge, drill, bolt, fluid, mist, trace,
-  grind: surface, wireWheel: surface,
+  grind: surface, wireWheel: surface, grindCut,
   move, rotate, xray, wrap, donorLineup,
   highlight: stateAction, ghost: stateAction, show: stateAction, hide: stateAction,
 };
@@ -24,7 +25,6 @@ export function partsOf(a: Action): string[] {
     case 'remove': case 'install': case 'highlight': case 'ghost': case 'show': case 'hide': case 'fluid':
     case 'move': case 'rotate': case 'wrap': return [a.part];
     case 'paint': case 'spin': return a.parts;
-    case 'grind': case 'wireWheel': return [a.target];
     case 'grindCut': return a.dropPart ? [a.dropPart] : [];
     default: return [];
   }

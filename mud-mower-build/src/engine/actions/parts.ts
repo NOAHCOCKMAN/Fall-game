@@ -69,6 +69,8 @@ function installStart(ctx: Ctx, a: InstallA, home: { pos: Vector3; quat: Quatern
   const off = Array.isArray(from) ? new Vector3(...from).sub(home.pos)
     : from === 'side' ? new Vector3(home.pos.x < 0 ? -30 : 30, 4, 0)
     : from === 'below' ? new Vector3(0, -Math.min(20, home.pos.y), 0)
+    : from === 'front' ? new Vector3(0, 0, 24)
+    : from === 'rear' ? new Vector3(0, 0, -24)
     : new Vector3(0, 30, 0);
   return { pos: home.pos.clone().add(off), quat: home.quat.clone(), scale: home.scale.clone() };
 }
@@ -115,6 +117,7 @@ export const stateAction: Handler<StateA> = {
     track(tl, a.t, a.dur, (s, u) => {
       if (u <= 0) { r.obj.visible = vis; r.look = { ...look }; r.obj.scale.copy(baseScale); m.applyLook(r); return; }
       if (a.type === 'highlight') {
+        r.look.glowColor = u >= 1 ? look.glowColor : a.color;
         // emissive pulse, ~1.4 Hz, back to normal at the end
         r.look.glow = u >= 1 ? look.glow : 0.5 + 0.5 * Math.sin(s * Math.PI * 2.8 - Math.PI / 2);
       } else if (a.type === 'show') {

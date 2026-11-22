@@ -2,6 +2,7 @@ import type { PartDef } from './registry';
 import { shopParts } from './builders/shop';
 import { stockParts } from './builders/stock';
 import { lineupParts } from './builders/lineup';
+import { frameParts } from './builders/frame';
 
 /** Every part definition, in parent-before-child order. */
-export const ALL_PARTS: PartDef[] = [...stockParts, ...shopParts, ...lineupParts];
+export const ALL_PARTS: PartDef[] = [...stockParts, ...frameParts, ...shopParts, ...lineupParts];

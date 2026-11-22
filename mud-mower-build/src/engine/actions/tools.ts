@@ -7,6 +7,7 @@ import { anchorDef, anchorLocal, centerOf } from '../../model/anchors';
 import { makeDimension, makeGauge, makeLaser } from '../../fx/measure';
 import { clamp01, easeInOut, seg, track, type Ctx } from '../context';
 import type { Handler } from './types';
+import { grindSpots } from './cut';
 
 type A<T extends Action['type']> = Extract<Action, { type: T }>;
 const UP = new Vector3(0, 1, 0);
@@ -189,9 +190,14 @@ export const bolt: Handler<A<'bolt'>> = {
 
 // ---------------- grind / wire wheel ----------------
 const CLEAN = new Color('#a7abae');
+/** target = a part (sweep it end to end, rust/paint → clean steel) or an anchor (grind those spots flush). */
 export const surface: Handler<A<'grind' | 'wireWheel'>> = {
-  apply(a, ctx) { const r = ctx.model.get(a.target); r.paint = CLEAN.clone(); ctx.model.applyLook(r); },
+  apply(a, ctx) {
+    if (!ctx.model.has(a.target)) return;
+    const r = ctx.model.get(a.target); r.paint = CLEAN.clone(); ctx.model.applyLook(r);
+  },
   play(tl, a, ctx) {
+    if (!ctx.model.has(a.target)) { grindSpots(tl, a, ctx); return; }
     const fx = ctx.fx; if (!fx) return;
     const m = ctx.model, r = m.get(a.target);
     const b = m.bounds(a.target);

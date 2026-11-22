@@ -8,7 +8,8 @@ import type { Vec3 } from '../steps/types';
  * under the rear axle — so anchors follow the tractor when it is jacked up). `space: 'world'` = shop floor.
  * `normal` = approach direction for bolts / drills (default +Y).
  */
-export interface AnchorDef { pts: Vec3[]; space?: string; normal?: Vec3; }
+/** `segs`: pts are endpoint pairs of separate segments (e.g. both ends of a crossmember). */
+export interface AnchorDef { pts: Vec3[]; space?: string; normal?: Vec3; segs?: boolean; }
 
 const A = (pts: Vec3[], o: Omit<AnchorDef, 'pts'> = {}): AnchorDef => ({ pts, ...o });
 const W = (pts: Vec3[], o: Omit<AnchorDef, 'pts' | 'space'> = {}): AnchorDef => ({ pts, space: 'world', ...o });
@@ -68,6 +69,73 @@ export const anchors: Record<string, AnchorDef> = {
   'shop.jackRear': W([[0, 0, -12.5]]),
   'shop.jackTrans': W([[0, 0, 1]]),
 };
+
+// ---------------- Phase 2 (frame) — generated ----------------
+const S = (pairs: Vec3[][], o: Omit<AnchorDef, 'pts' | 'segs'> = {}): AnchorDef => ({ pts: pairs.flat() as Vec3[], segs: true, ...o });
+/** Weld seam around both ends of a crossmember (top + bottom edge where it meets each boxed rail). */
+function xEnds(z: number, size: number, hw: number, topY = 12.5): AnchorDef {
+  const pairs: Vec3[][] = [];
+  for (const x of [-hw, hw]) for (const y of [topY + 0.05, topY - size - 0.05]) pairs.push([[x, y, z - size / 2], [x, y, z + size / 2]]);
+  return S(pairs);
+}
+const P2: Record<string, AnchorDef> = {
+  // 2.1 cut lines (1/16 proud of the rail); normal = side the grinder works from
+  'cut.deckHangers.1': A([[-6.9, 9.45, 9.1], [-6.9, 9.45, 10.9]], { normal: [-1, 0, 0] }),
+  'cut.deckHangers.2': A([[6.9, 9.45, 9.1], [6.9, 9.45, 10.9]], { normal: [1, 0, 0] }),
+  'cut.deckHangers.3': A([[-6.9, 9.45, 27.1], [-6.9, 9.45, 28.9]], { normal: [-1, 0, 0] }),
+  'cut.deckHangers.4': A([[6.9, 9.45, 27.1], [6.9, 9.45, 28.9]], { normal: [1, 0, 0] }),
+  'cut.liftBrackets.1': A([[6.9, 9.45, 23.9], [6.9, 9.45, 26.1]], { normal: [1, 0, 0] }),
+  'cut.liftBrackets.pedal': A([[-6.9, 9.45, 21.9], [-6.9, 9.45, 24.1]], { normal: [-1, 0, 0] }),
+  'cut.liftBrackets.sector': A([[-5.5, 9.45, 38.9], [-5.5, 9.45, 42.1]], { normal: [0, -1, 0] }),
+  'grind.spotsL': A([[-6.6, 9.5, 10], [-6.6, 9.5, 23], [-6.6, 9.5, 28]], { normal: [-1, 0, 0] }),
+  'grind.spotsR': A([[6.6, 9.5, 10], [6.6, 9.5, 25], [6.6, 9.5, 28]], { normal: [1, 0, 0] }),
+
+  // 2.2 ride height + layout marks
+  'pt.frameBottomRear': A([[-7.5, 9.5, 0]]),
+  'pt.frameBottomFront': A([[-7.5, 9.5, 56]]),
+  'ground.rear': W([[-7.5, 0, 0]]),
+  'ground.front': W([[-7.5, 0, 56]]),
+  'pt.axleOld': A([[-9.5, 8.6, 44]]),
+  'pt.axleNew': A([[-9.5, 8.6, 47]]),
+  'line.axleOld': A([[-9, 8.6, 44], [9, 8.6, 44]]),
+  'line.axleNew': A([[-9, 8.6, 47], [9, 8.6, 47]]),
+  'mark.xEngineF': A([[-6.6, 12.56, 38], [6.6, 12.56, 38]]),
+  'mark.xEngineR': A([[-6.6, 12.56, 53], [6.6, 12.56, 53]]),
+  'mark.xFrontSusp': A([[-6.6, 12.56, 28], [6.6, 12.56, 28]]),
+  'mark.xRear': A([[-6.6, 12.56, 8], [6.6, 12.56, 8]]),
+  'mark.apex': A([[-1.5, 12.57, 27], [1.5, 12.57, 27]]),
+  'mark.rearLiftL': A([[-6.6, 12.56, -3], [-6.6, 12.56, 3]]),
+  'mark.rearLiftR': A([[6.6, 12.56, -3], [6.6, 12.56, 3]]),
+
+  // 2.3 box plates
+  'seam.boxL.top': A([[-5.12, 12.52, -4], [-5.12, 12.52, 52]]),
+  'seam.boxL.bottom': A([[-5.12, 9.48, -4], [-5.12, 9.48, 52]]),
+  'seam.boxR.top': A([[5.12, 12.52, -4], [5.12, 12.52, 52]]),
+  'seam.boxR.bottom': A([[5.12, 9.48, -4], [5.12, 9.48, 52]]),
+  'holes.boxL': A([2, 14, 26, 38, 50].map(z => [-5.05, 10.1, z] as Vec3), { normal: [1, 0, 0] }),
+  'holes.boxR': A([2, 14, 26, 38, 50].map(z => [5.05, 10.1, z] as Vec3), { normal: [-1, 0, 0] }),
+
+  // 2.4 crossmembers
+  'seam.xEngineF.ends': xEnds(38, 1.5, 5.06),
+  'seam.xEngineR.ends': xEnds(53, 1.5, 5.25),
+  'seam.xFrontSusp.ends': xEnds(28, 2, 5.06),
+  'seam.xRear.ends': xEnds(8, 1.5, 5.06),
+  'seam.apex': S([[[-0.95, 10.47, 25.8], [-0.95, 10.47, 28.4]], [[0.95, 10.47, 25.8], [0.95, 10.47, 28.4]]]),
+  'seam.panhardTab': A([[-6.92, 9.55, 47.4], [-6.92, 9.55, 49.6]]),
+  'pt.apex': A([[0, 8.6, 27]]),
+
+  // 2.5 front clip
+  'seam.frontClip': S([-1, 1].flatMap(sd => [
+    [[6.7 * sd, 9.5, 57], [6.7 * sd, 12.5, 57]], [[6.7 * sd, 9.5, 63], [6.7 * sd, 12.5, 63]],
+    [[6.5 * sd, 12.55, 60], [5.25 * sd, 12.55, 60]],
+  ] as Vec3[][])),
+  'seam.frontPlate': S([-1, 1].flatMap(sd => [
+    [[6.5 * sd, 9.5, 66.25], [6.5 * sd, 12.5, 66.25]], [[5.25 * sd, 9.5, 66.25], [5.25 * sd, 12.5, 66.25]],
+    [[6.5 * sd, 12.55, 66.25], [5.25 * sd, 12.55, 66.25]],
+  ] as Vec3[][])),
+  'pt.towHole': A([[0, 11, 66.19]], { normal: [0, 0, 1] }),
+};
+Object.assign(anchors, P2);
 
 export function hasAnchor(name: string): boolean { return name in anchors; }
 
