@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Mud Mower Build</title>
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar" aria-label="Build steps">
+      <div class="side-head">
+        <strong>Mud Mower Build</strong>
+        <button id="drawerClose" class="icon-btn mobile-only" aria-label="Close step list">✕</button>
+      </div>
+      <nav id="stepList"></nav>
+    </aside>
+    <main id="viewport">
+      <div id="canvasHost"></div>
+      <div id="topLeft">
+        <button id="drawerOpen" class="icon-btn mobile-only" aria-label="Open step list">☰</button>
+        <label class="donor">Donor
+          <select id="donorPicker"></select>
+        </label>
+      </div>
+      <div id="toggles"></div>
+      <div id="note" hidden></div>
+      <div id="complete" hidden>✓ Step complete</div>
+      <button id="resumeCam" hidden>Resume camera</button>
+      <div id="bottombar">
+        <div class="step-title"><span id="stepNum"></span> <span id="stepTitle"></span></div>
+        <div class="transport">
+          <button id="btnPrev" aria-label="Previous step">⏮</button>
+          <button id="btnRestart" aria-label="Restart step">↺</button>
+          <button id="btnPlay" class="primary" aria-label="Play">▶</button>
+          <button id="btnNext" aria-label="Next step">⏭</button>
+          <span id="time">0:00 / 0:00</span>
+          <span class="speeds" id="speeds"></span>
+          <label class="auto"><input type="checkbox" id="autoAdvance" /> Auto</label>
+        </div>
+        <input id="scrubber" type="range" min="0" max="1000" value="0" step="1" aria-label="Step timeline" />
+      </div>
+    </main>
+    <section id="panel" aria-label="Step details">
+      <div id="sheetHandle" class="mobile-only"><span></span></div>
+      <div id="tabs" role="tablist"></div>
+      <div id="tabBody"></div>
+    </section>
+    <div id="scrim" class="mobile-only" hidden></div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
