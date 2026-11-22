@@ -26,8 +26,8 @@ OUT_H = 640  # px height of each cutout
 # How far the crop extends around the detected face box (in face-box units).
 # The hat crop reaches higher so the whole cap fits inside the oval.
 CROP = {
-    'nohat': dict(side=0.80, top=0.50, bottom=0.18, head_top=0.86),
-    'hat':   dict(side=0.88, top=0.82, bottom=0.18, head_top=1.12),
+    'nohat': dict(side=0.74, top=0.72, bottom=0.2, head_top=1.08),
+    'hat':   dict(side=0.84, top=1.05, bottom=0.16, head_top=1.38),
 }
 
 
@@ -52,7 +52,8 @@ def load(path):
 def detect(img):
     try:
         import cv2, numpy as np
-    except ImportError:
+        cv2.CascadeClassifier
+    except (ImportError, AttributeError):
         return None
     g = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2GRAY)
     casc = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -153,6 +154,7 @@ def main():
         cut, m = cutout(img, box, key)
         m['source'] = src
         cut.save(os.path.join(OUT, key + '.png'), optimize=True)
+        if cfg.get('skin'): m['skin'] = cfg['skin']
         meta[key] = m
         print(f'{key}: {src}, face box {box}, skin {m["skin"]}')
     json.dump(meta, open(os.path.join(OUT, 'meta.json'), 'w'), indent=1)

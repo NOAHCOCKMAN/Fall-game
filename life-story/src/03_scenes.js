@@ -152,7 +152,7 @@ function gym(c, t) {
   const cols = ['#ff4d6d', '#ffd23f', '#3bceac', '#4d96ff'];
   for (let i = 0; i < 12; i++) { c.beginPath(); c.moveTo(i * 170, 0); c.quadraticCurveTo(i * 170 + 85, 110, i * 170 + 170, 0); c.strokeStyle = cols[i % 4]; c.lineWidth = 14; c.stroke(); }
   for (let i = 0; i < 26; i++) { const x = i * 76, y = 60 + Math.sin(i * .5) * 30; circ(c, x, y, 9, ['#fff2a8', '#ffd1f0', '#b8f3ff'][i % 3]); }
-  fillRR(c, 560, 140, 800, 90, 18, '#ff4d6d', '#fff', 6); text(c, 'SPRING DANCE', 960, 188, 60, '#fff');
+  fillRR(c, 1330, 300, 500, 80, 18, '#ff4d6d', '#fff', 6); text(c, 'SPRING DANCE', 1580, 343, 54, '#fff');
   // disco ball + light spots
   line(c, [960, 0, 960, 40], '#ccc', 4); circ(c, 960, 80, 42, '#cfd8e3');
   c.save(); c.beginPath(); c.arc(960, 80, 42, 0, TAU); c.clip(); for (let x = -3; x <= 3; x++) for (let y = -3; y <= 3; y++) { c.fillStyle = (x + y + Math.floor(t * 6)) % 2 ? '#ffffff' : '#8fa3b8'; c.fillRect(960 + x * 13 - 6, 80 + y * 13 - 6, 12, 12); } c.restore();
@@ -163,7 +163,7 @@ const S3 = { dur: 5.5, trans: 'star', cap: 'A few years later... his first girlf
   sfx: [[2.35, 'boing'], [2.45, 'sparkle']],
   draw(c, t) {
     gym(c, t);
-    const P = { x: 730, y: 905, s: 1.15, stage: 'teen2', shirt: '#cfe3ff', outfit: 'tie', tie: '#d62839', pants: '#2b3445', shoes: '#222' };
+    const P = { x: 730, y: 905, s: 1.05, stage: 'teen2', shirt: '#cfe3ff', outfit: 'tie', tie: '#d62839', pants: '#2b3445', shoes: '#222' };
     const G = Object.assign({ x: 1190, y: 905, H: 690, headFrac: .22, skin: '#8d5a3b', hair: '#2b1a12', style: 'puffs', top: '#ff6f91', skirt: '#ff6f91', shoes: '#fff', facing: -1, lashes: true }, {});
     const M = { x: 965, y: 705 };
     const kH = easeIO(seg(t, .5, 1.2)) * .55 - easeIO(seg(t, 1.2, 1.5)) * .25 + easeIO(seg(t, 1.6, 2.3)) * .7, kG = easeIO(seg(t, .7, 2.3));
@@ -210,7 +210,7 @@ function drawTruck(c, x, y, t, o = {}) {
   line(c, [150, -285, 170, -360, 210, -380], '#555', 4);
   // sign
   if (o.sign) { const k = o.sign; c.save(); c.translate(100, -132); c.rotate(-.04 + Math.sin(t * 9) * .03 * (1 - seg(t, 3.5, 4.5))); c.scale(k, k);
-    fillRR(c, -78, -46, 156, 92, 8, '#fffdf3', '#2f6b2f', 4); text(c, NAME + "'S", 0, -18, 24, '#2f6b2f'); text(c, 'LANDSCAPING', 0, 12, 20, '#2f6b2f');
+    fillRR(c, -78, -46, 156, 92, 8, '#fffdf3', '#2f6b2f', 4); text(c, SIGN[0], 0, -18, 22, '#2f6b2f'); text(c, SIGN[1], 0, 12, 22, '#2f6b2f');
     ell(c, 0, 34, 16, 7, '#4caf50', -.3); line(c, [-70, -44, -50, -38], '#c8c8c8', 8); line(c, [70, 44, 50, 38], '#c8c8c8', 8); c.restore(); }
   c.restore(); }
 function puff(c, x, y, r, a) { if (a <= 0) return; c.save(); c.globalAlpha *= a; c.fillStyle = '#9a9a9a'; for (const [dx, dy, s] of [[0, 0, 1], [-.6, .2, .7], [.6, .1, .75], [0, -.5, .7]]) circ(c, x + dx * r, y + dy * r, s * r); c.restore(); }
@@ -238,7 +238,7 @@ const S4 = { dur: 6, trans: 'heart', cap: 'He mowed one lawn... then started a w
     else line(c, [850 + 170, 840, 850 + 110, 650], '#333', 10);
     drawGuy(c, Object.assign(P, { handL: hL, handR: hR, bendL: proud ? -.9 * proud : .1, bendR: proud ? .9 * proud : .1, footL: moving ? wp.footL : [0, 0], footR: moving ? wp.footR : [0, 0], headDy: moving ? -wp.bob : 0 }));
     if (t > 2.75 && t < 3.42) { const k = seg(t, 2.75, 2.95); const hx = lerp(px + 120, 1430, easeOut(seg(t, 3.25, 3.42))); c.save(); c.translate(hx, lerp(700, 752, seg(t, 3.25, 3.42))); c.scale(k * .85, k * .85);
-      fillRR(c, -78, -46, 156, 92, 8, '#fffdf3', '#2f6b2f', 4); text(c, NAME + "'S", 0, -18, 24, '#2f6b2f'); text(c, 'LANDSCAPING', 0, 12, 20, '#2f6b2f'); c.restore(); }
+      fillRR(c, -78, -46, 156, 92, 8, '#fffdf3', '#2f6b2f', 4); text(c, SIGN[0], 0, -18, 22, '#2f6b2f'); text(c, SIGN[1], 0, 12, 22, '#2f6b2f'); c.restore(); }
     if (t < 2.6) for (let i = 0; i < 14; i++) { const k = (t * 3 + i / 14) % 1; c.fillStyle = '#4caf50'; c.fillRect(mx - 90 - k * 140 + Math.sin(i) * 20, 850 - Math.sin(k * PI) * 90 - i % 3 * 6, 8, 4); }
     comic(c, 'SLAP!', 1430, 640, 54, seg(t, 3.4, 4.3));
     comic(c, 'BANG!', 1800, 720, 46, seg(t, 4.6, 5.3), .15, '#ffb347');
@@ -275,7 +275,7 @@ const S5 = { dur: 6, trans: 'pageflip', cap: 'Then he met Leah. He married up. L
       c.save(); c.translate(960, cy); c.rotate(rot); c.scale(sc, sc);
       c.shadowColor = 'rgba(0,0,0,.4)'; c.shadowBlur = 30 * pol; fillRR(c, -W / 2 - 70 * pol, -H / 2 - 70 * pol, W + 140 * pol, H + 300 * pol, 8, '#fdfdf8'); c.shadowBlur = 0;
       c.save(); c.beginPath(); c.rect(-W / 2, -H / 2, W, H); c.clip(); c.translate(-W / 2, -H / 2); s5content(c, 3.3); c.restore();
-      text(c, NAME + ' + Leah ♥', 0, H / 2 + 115, 96, '#2a3d8f', { font: FONT2, weight: 600, rot: -.02 });
+      text(c, NAME ? NAME + ' + Leah ♥' : 'Just married! ♥', 0, H / 2 + 115, 96, '#2a3d8f', { font: FONT2, weight: 600, rot: -.02 });
       c.restore(); circ(c, 960, cy - H * sc / 2 - 20, 22, '#e63946'); circ(c, 953, cy - H * sc / 2 - 27, 7, '#ff8a8a'); }
     const fl = 1 - seg(t, 3.35, 3.75); if (t > 3.35 && fl > 0) { c.fillStyle = `rgba(255,255,255,${fl})`; c.fillRect(0, 0, W, H); }
     caption(c, this.cap, t);
@@ -454,11 +454,11 @@ function hospital(c) { sky(c, '#8ecbff', '#e9f6ff'); cloud(c, 260, 140, 90); clo
   fillRR(c, 260, 220, 1400, 560, 6, '#e9edf0', '#b7c0c8', 4); fillRR(c, 220, 200, 1480, 40, 6, '#cfd6dc');
   for (let r = 0; r < 4; r++) for (let q = 0; q < 12; q++) if (!(r > 1 && q > 2 && q < 5)) fillRR(c, 310 + q * 112, 340 + r * 100, 80, 64, 4, '#7fb3d5', '#5b8fb0', 2);
   fillRR(c, 300, 248, 900, 74, 10, '#1d4e89'); text(c, 'FRYE REGIONAL MEDICAL CENTER', 750, 287, 48, '#fff');
-  fillRR(c, 1520, 250, 90, 90, 10, '#fff'); c.fillStyle = '#d62839'; c.fillRect(1550, 262, 30, 66); c.fillRect(1532, 280, 66, 30);
+  fillRR(c, 1220, 240, 90, 90, 10, '#fff'); c.fillStyle = '#d62839'; c.fillRect(1250, 252, 30, 66); c.fillRect(1232, 270, 66, 30);
   fillRR(c, 610, 560, 280, 30, 6, '#1d4e89'); fillRR(c, 630, 590, 240, 190, 0, '#a7d3ef', '#5b8fb0', 4); line(c, [750, 590, 750, 780], '#5b8fb0', 4);
   ground(c, 780, '#cfcfcf', '#b5b5b5'); c.fillStyle = '#7cc45a'; c.fillRect(0, 780, 400, 40); c.fillRect(1520, 780, 400, 40);
   for (const x of [120, 300, 1620, 1800]) roundTree(c, x, 800, 200, '#4caf50'); }
-const S11 = { dur: 6.5, trans: 'iris', cap: 'Dr. ' + NAME + ', Cardiologist.',
+const S11 = { dur: 6.5, trans: 'iris', cap: DR + ', Cardiologist.',
   sfx: [[.45, 'beep'], [1.05, 'beep'], [1.65, 'beep'], [2.25, 'beep'], [2.6, 'tada', .16], [2.7, 'sparkle']],
   draw(c, t) {
     hospital(c);
@@ -622,7 +622,7 @@ const S15 = { dur: 9.5, trans: null, cap: 'And he lived happily ever after.',
     fillRR(c, -500, 210, 460, 290, 6, null, '#c4ad87', 4); fillRR(c, -500, 540, 460, 300, 6, null, '#c4ad87', 4); circ(c, -480, 520, 14, '#c9a43a'); c.restore();
     // him
     const walk = easeIO(seg(t, 0, .5)), buried = t > 1.2;
-    const P = { x: lerp(470, 640, walk), y: 885, stage: 'adult', face: 'hat', shirt: '#e07a5f', outfit: 'vest', vest: HAT, pants: '#4a5568', shoes: '#5a3d2b' };
+    const P = { x: lerp(470, 640, walk), y: 885, stage: 'adult', face: 'hat', shirt: '#e07a5f', outfit: 'vest', vest: '#1f3b5c', pants: '#4a5568', shoes: '#5a3d2b' };
     const scared = easeOut(seg(t, 1.0, 1.3));
     if (t < 3.6) drawGuy(c, Object.assign(P, { handR: mixHand(mixHand([.07, .44], aim(P, 1, 830, 520), easeIO(seg(t, .3, .55)) * (1 - easeIO(seg(t, .9, 1.1)))), [.35, -.6], scared), handL: mixHand([-.07, .44], [-.35, -.6], scared), headDy: buried ? Math.sin(t * 30) * 4 : 0 }));
     // avalanche
@@ -639,7 +639,7 @@ const S15 = { dur: 9.5, trans: null, cap: 'And he lived happily ever after.',
       for (let i = 0; i < 12; i++) sparkle(c, 960 + Math.cos(i / 12 * TAU + t * .4) * 720, 520 + Math.sin(i / 12 * TAU + t * .4) * 360, 16 + 8 * Math.sin(t * 4 + i), 1, t);
       c.restore();
       const k = backOut(seg(t, 7.0, 7.5)); if (k > 0) { c.save(); c.translate(960, 470); c.scale(k, k); c.rotate(-.03); text(c, 'THE END.', 0, 0, 230, '#d62839', { stroke: '#3a2614', sw: 18, shadow: 'rgba(0,0,0,.25)' }); c.restore(); }
-      const k2 = seg(t, 7.5, 7.9); if (k2 > 0) { c.save(); c.globalAlpha = k2; text(c, 'Starring Dr. ' + NAME + '  ·  and The Hat', 960, 690, 54, '#3a2614', { font: FONT2, weight: 600 }); c.restore(); }
+      const k2 = seg(t, 7.5, 7.9); if (k2 > 0) { c.save(); c.globalAlpha = k2; text(c, 'Starring ' + DR + '  ·  and The Hat', 960, 690, 54, '#3a2614', { font: FONT2, weight: 600 }); c.restore(); }
       const k3 = backOut(seg(t, 7.3, 7.7)); if (k3 > 0) { c.save(); c.translate(960, 215); c.scale(k3, k3); drawFace(c, 'hat', 0, 0, 120, Math.sin(t * 2) * .05); c.restore(); }
     }
   } };

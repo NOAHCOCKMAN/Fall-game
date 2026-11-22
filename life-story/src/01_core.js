@@ -3,7 +3,9 @@ const W = 1920, H = 1080;
 const CFG = window.STORY_CFG;
 const FACES = window.STORY_FACES;
 const IMG = {};
-const NAME = CFG.name;
+const NAME = (CFG.name || '').trim();
+const DR = NAME ? 'Dr. ' + NAME : 'The Doctor';  // no name set -> generic wording everywhere
+const SIGN = NAME ? [NAME.toUpperCase() + "'S", 'LANDSCAPING'] : ['LANDSCAPING', 'CO.'];
 const SKIN = FACES.nohat.meta.skin || '#e8b896';
 const HAT = CFG.hatColor || '#33473b';
 const PI = Math.PI, TAU = PI * 2;
@@ -133,7 +135,7 @@ function drawBody(c, o) {
     line(c, [x - tw * .2, ySh, x - tw * .02, ySh + B * .3], '#d5dbe2', 4); line(c, [x + tw * .2, ySh, x + tw * .02, ySh + B * .3], '#d5dbe2', 4);
     line(c, [x, ySh + B * .3, x, bot], '#d5dbe2', 3); fillRR(c, x + tw * .12, ySh + B * .2, tw * .22, B * .09, 4, '#e9eef3');
     line(c, [x + tw * .17, ySh + B * .2, x + tw * .17, ySh + B * .16], '#2a63d4', 5); line(c, [x + tw * .25, ySh + B * .2, x + tw * .25, ySh + B * .15], '#d42a2a', 5);
-    text(c, 'Dr. ' + NAME, x - tw * .22, ySh + B * .2, B * .035, '#2a4f8f', { font: FONT2, weight: 600 }); }
+    text(c, NAME ? 'Dr. ' + NAME : 'CARDIOLOGY', x - tw * .22, ySh + B * .2, B * .035, '#2a4f8f', { font: FONT2, weight: 600 }); }
   if (o.outfit === 'vest' || o.outfit === 'vestBelly') { c.fillStyle = o.vest || '#1f3b5c';
     c.fillRect(x - tw, ySh, tw * .92, bot - ySh + 4); c.fillRect(x + tw * .08, ySh, tw * .92, bot - ySh + 4);
     line(c, [x + tw * .04, ySh + 6, x + tw * .04, bot], '#cfd6dd', 3); c.fillStyle = 'rgba(255,255,255,.08)';
