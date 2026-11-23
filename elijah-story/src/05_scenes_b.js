@@ -51,6 +51,8 @@ const SC_GLIMMER = { id: 'glimmer',
         if (after('buzz') && !after('pack')) { sparkle(c, je.handR.x + 40, je.handR.y - 110, 40 * (.7 + .3 * Math.sin(t * 6)), 1, t); }
         if (after('pack')) { suitcase(c, 520, 940, .8, null); for (let i = 0; i < 10; i++) { const k = ((t - cu('pack')) * 3 + i / 10) % 1; c.save(); c.translate(lerp(900, 520, k), 600 - Math.sin(k * PI) * 260); c.rotate(k * 9 + i); fillRR(c, -25, -18, 50, 36, 4, ['#ff4d6d', '#4d96ff', '#ffd23f', '#3bceac'][i % 4]); c.restore(); } } }
       else { for (let i = 0; i < 6; i++) { c.save(); c.globalAlpha = 1 - zoom; line(c, [700 - i * 80, 600 + i * 40, 200 - i * 120, 600 + i * 40], '#fff', 10); c.restore(); } puff(c, 650, 880, 80 * zoom + 30, 1 - zoom); }
+      if (after('news') && !after('buzz')) { const k = S('news', 0, .4); c.save(); c.globalAlpha = k; fillRR(c, 0, 820, W, 120, 0, '#c4161c'); fillRR(c, 0, 820, 360, 120, 0, '#111'); text(c, 'BREAKING', 180, 880, 54, '#fff');
+        text(c, 'ADAM AND EMMA HAVE SPLIT', 1140, 880, 62, '#fff'); c.restore(); }
       bigText(c, 'ONE. SINGLE. GLIMMER.', 960, 200, 92, S('g3', 0, .5) * (1 - S('pack', 0, .3)), '#ffd23f');
     } else if (!after('reunite')) { sky(c, '#7ec8ff', '#e6f6ff'); for (let i = 0; i < 5; i++) cloud(c, ((i * 500 - (t * 300)) % 2400 + 2400) % 2400 - 250, 200 + i * 130, 150);
       airplane(c, lerp(-300, 2200, S('plane', 0, cd('g7') + .6)), 520, 1.4, 'elijah');
@@ -67,10 +69,10 @@ const SC_GLIMMER = { id: 'glimmer',
 /* ===== 10. THE DR PEPPER INCIDENT ===== */
 function shirtText(c, j, lines, col = '#fff', k = 1) { const x = j.chest.x, y = j.chest.y - j.B * .03; lines.forEach((l, i) => text(c, l, x, y + i * j.B * .05 * k, j.B * .042 * k, col, { font: FONT2, weight: 700 })); }
 const SC_DRPEPPER = { id: 'drpepper',
-  music: [['hum', 0, 'parents', .9], ['sneaky', 'parents', 'crack', .9], ['sad', 'crack', 'fizz', .9], ['romance', 'fizz', 'p11>', .9]],
-  sfx: [[.1, 'ding'], ['p3', 'whoosh'], [['p3', .3], 'thud', .3], ['shirts', 'zip'], ['flash', 'camera'], [['flash', .8], 'buzz'], ['crack', 'crack'], ['p8', 'trombone'], ['p10', 'stampF'], ['fizz', 'fizz', 2], [['fizz', 1], 'harp']],
+  music: [['hum', 0, 'parents', .9], ['sneaky', 'parents', 'crack', .9], ['sad', 'crack', 'p10>', .9]],
+  sfx: [[.1, 'ding'], ['p3', 'whoosh'], [['p3', .3], 'thud', .3], ['shirts', 'zip'], ['flash', 'camera'], [['flash', .8], 'buzz'], ['crack', 'crack'], ['p8', 'trombone'], ['p10', 'stampF']],
   draw(c, t) {
-    const shirts = after('shirts'), broken = after('crack') && !after('fizz'), back = easeOut(S('fizz', .8, 2));
+    const shirts = after('shirts'), broken = after('crack'), back = 0;
     if (!after('parents')) { c.fillStyle = '#2a0a10'; c.fillRect(0, 0, W, H); for (let i = 0; i < 12; i++) { c.save(); c.translate(960, -100); c.rotate((i - 6) * .13 + Math.sin(t * .6) * .03); poly(c, [-20, 0, 20, 0, 80, 1300, -80, 1300], 'rgba(255,220,180,.12)'); c.restore(); }
       fillRR(c, 860, 640, 200, 300, 10, '#e9e2d0', '#a99', 4); drPepper(c, 960, 640, 2.2, 0, 1); bigText(c, 'THE SACRED FOUNDATION', 960, 150, 70, S('p1', 0, .5), '#ffd23f');
       if (after('p2')) person(c, { who: 'emma', x: 1420, y: 960, age: 'woman', shirt: '#f4a6b8', skirt: '#7a4a9a', handL: [-.3, -.2] });
@@ -79,8 +81,8 @@ const SC_DRPEPPER = { id: 'drpepper',
     c.fillStyle = '#f2e6d4'; c.fillRect(0, 0, W, H); c.fillStyle = '#c9a77c'; c.fillRect(0, 780, W, 300); fillRR(c, 100, 140, 400, 300, 8, '#fff', '#8a5a2b', 10);
     const sep = broken ? easeOut(S('crack', 0, .8)) * 300 : (after('crack') ? (1 - back) * 300 : 0);
     const ex = 800 - sep, mx = 1120 + sep;
-    const je = person(c, { who: 'elijah', x: ex, y: 950, age: 'adult', shirt: shirts ? '#7a1424' : '#6f8fb0', pants: '#2b2b2b', red: after('flash') && !after('crack') ? .35 : 0, handR: shirts && !broken ? [.35, -.05] : [.1, .35], hearts: after('fizz', 1) ? 1 : 0 });
-    const jm = person(c, { who: 'emma', x: mx, y: 950, age: 'woman', shirt: shirts ? '#7a1424' : '#f4a6b8', skirt: '#2b2b2b', red: after('flash') && !after('crack') ? .35 : 0, handL: shirts && !broken ? [-.35, -.05] : [-.1, .35], tears: broken ? .7 : 0, hearts: after('fizz', 1) ? 1 : 0 });
+    const je = person(c, { who: 'elijah', x: ex, y: 950, age: 'adult', shirt: shirts ? '#7a1424' : '#6f8fb0', pants: '#2b2b2b', red: after('flash') && !after('crack') ? .35 : 0, handR: shirts && !broken ? [.35, -.05] : [.1, .35] });
+    const jm = person(c, { who: 'emma', x: mx, y: 950, age: 'woman', shirt: shirts ? '#7a1424' : '#f4a6b8', skirt: '#2b2b2b', red: after('flash') && !after('crack') ? .35 : 0, handL: shirts && !broken ? [-.35, -.05] : [-.1, .35], tears: broken ? .7 : 0 });
     if (shirts) { shirtText(c, je, ["I'M A", 'DR PEPPER']); shirtText(c, jm, ['BRING ME A', 'DR PEPPER &', "I'LL LOVE YOU", 'FOREVER'], '#fff', .78); }
     if (!after('crack')) { const sh = after('shirts');
       person(c, { who: 'stephanie', x: sh ? 380 : 1500, y: 980, age: 'woman', s: .9, shirt: '#e07a5f', skirt: '#3d405b', handL: [-.3, -.4], handR: sh ? [.45, -.25] : [.3, -.4], jaw: null });
@@ -91,10 +93,9 @@ const SC_DRPEPPER = { id: 'drpepper',
     if (after('flash') && !after('crack')) { const k = S('flash', .4, 1.6); fillRR(c, 1460, 120, 380, 90, 12, '#222'); text(c, 'CRINGE LEVEL', 1650, 145, 30, '#fff'); fillRR(c, 1480, 170, 340 * k, 26, 8, k > .8 ? '#ff2a2a' : '#ffb21a');
       if (k > .9 && Math.sin(t * 20) > 0) text(c, 'CRITICAL', 1650, 250, 54, '#ff2a2a', { stroke: '#fff' }); }
     if (broken) { const k = S('crack', 0, .4); line(c, [960, 0, 930, 250, 990, 420, 940, 650, 980, 1080], '#3a2614', 10 * k); }
-    if (after('p9') && !after('fizz')) { const k = S('p9', 0, .6); c.save(); c.translate(960, 420); c.scale(k, k); fillRR(c, -250, -200, 500, 360, 10, 'rgba(200,230,255,.4)', '#88a', 6);
+    if (after('p9')) { const k = S('p9', 0, .6); c.save(); c.translate(960, 420); c.scale(k, k); fillRR(c, -250, -200, 500, 360, 10, 'rgba(200,230,255,.4)', '#88a', 6);
       fillRR(c, -200, -150, 180, 220, 10, '#7a1424'); fillRR(c, 20, -150, 180, 220, 10, '#7a1424'); text(c, "I'M A DR PEPPER", -110, -40, 20, '#fff', { font: FONT2, weight: 700 }); text(c, 'LOVE YOU FOREVER', 110, -40, 18, '#fff', { font: FONT2, weight: 700 });
       fillRR(c, -150, 120, 300, 50, 8, '#f6efdc'); text(c, 'EXHIBIT A', 0, 146, 30, '#5a4020'); c.restore(); stamp(c, 'CONFIRMED', 960, 760, 80, S('p10', 0, .4)); }
-    if (after('fizz')) { drPepper(c, 960, 520, 1.6, 0, 1); for (let i = 0; i < 30; i++) { const k = ((t - cu('fizz')) * 1.5 + i / 30) % 1; circ(c, 960 + Math.sin(i * 7) * 30 * k, 360 - k * 300, 4 + (i % 3), 'rgba(255,255,255,.8)'); } }
   } };
 
 /* ===== 11. NORTH CAROLINA AND TREX LAWN CARE ===== */
@@ -248,5 +249,4 @@ const SC_FINALE = { id: 'finale',
     if (!after('bigfoot')) floatingRing(c, 1780, 160, 1);
   } };
 
-const SCENES = [SC_SIN, SC_SISTERS, SC_BIGFOOT, SC_TRIANGLE, SC_EMMA, SC_ELI, SC_ADAM, SC_ARIZONA, SC_GLIMMER, SC_DRPEPPER, SC_TREX, SC_HANDS, SC_RING, SC_FINALE];
-const TRANS = ['pageflip', 'wipe', 'iris', 'star', 'heart', 'diag', 'slide', 'pageflip', 'blinds', 'wipe', 'iris', 'spin', 'pageflip'];
+

@@ -112,9 +112,18 @@ def tts(text, mdl, spk, semis, scale, fx, tempo=1.0, tag=''):
     return a
 
 
+SPOKEN = [(r"\bEli\b", "E-lie"), (r"\bLevi's\b", "Lee-vye's"), (r"\bLevi\b", "Lee-vye")]  # how names are said (subtitles keep the spelling)
+
+
+def spoken(text):
+    import re
+    for a, b in SPOKEN: text = re.sub(a, b, text)
+    return text
+
+
 def say(who, text, tempo=1.0):
     mdl, spk, semis, scale, fx = VOICES[who]
-    return tts(text, mdl, spk, semis, scale, fx, tempo)
+    return tts(spoken(text), mdl, spk, semis, scale, fx, tempo)
 
 
 def envelope(a, fps=30):

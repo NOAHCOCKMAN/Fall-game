@@ -289,9 +289,20 @@ const SC_EMMA = { id: 'emma',
 
 /* ===== 6. THE ELI PROBLEM ===== */
 const SC_ELI = { id: 'eli',
-  music: [['villain', 0, 'noble', .9], ['sad', 'noble', 'i8>', .8]],
-  sfx: [['eli', 'thunder'], [['i4', 0], 'zap'], [['i4', .5], 'zap'], [['i4', 1], 'zap'], [['i4', 1.5], 'zap'], ['zone', 'stampF'], [['zone', .1], 'sting']],
+  music: [['villain', 0, 'noble', .9], ['sad', 'noble', 'split', .8], ['triumph', 'i10', 'yes', .7], ['romance', 'yes', 'end', .9, { bpm: 66 }]],
+  sfx: [['eli', 'thunder'], [['i4', 0], 'zap'], [['i4', .5], 'zap'], [['i4', 1], 'zap'], [['i4', 1.5], 'zap'], ['zone', 'stampF'], [['zone', .1], 'sting'],
+    ['i9', 'crack'], ['i10', 'fireworks'], [['i11', 0], 'thud', .4], [['i11', .5], 'thud', .4], [['i11', 1], 'thud', .4], ['yes', 'harp'], [['yes', .3], 'sparkle']],
   draw(c, t) {
+    if (after('split')) { const yes = after('yes'); sky(c, yes ? '#ffb36b' : '#1b1f4a', yes ? '#ffe3b0' : '#4b3f8a'); c.fillStyle = '#7ab55c'; c.fillRect(0, 780, W, 300);
+      if (!after('i10')) { const k = S('i9', 0, 1); person(c, { who: 'emma', x: 1000 - k * 150, y: 930, age: 'woman', shirt: '#f4a6b8', skirt: '#7a4a9a' }); person(c, { who: 'eli', x: 1250 + k * 900, y: 930, age: 'adult', shirt: '#2b2d42', outfit: 'hoodie', pants: '#111' });
+        if (k > 0) line(c, [1120, 0, 1100, 300, 1140, 500, 1110, 1080], '#222', 8 * Math.sin(k * PI)); person(c, { who: 'elijah', x: 420, y: 930, age: 'adult', shirt: '#6f8fb0', pants: '#2b2b2b', shoes: '#eee', bigEyes: S('i9', .5, 1) }); return; }
+      for (let i = 0; i < 5; i++) { const k = ((t - cu('i10')) * .7 + i * .2) % 1; burstSparkles(c, 300 + i * 340, 280 - i % 2 * 80, 160, k, 12, i); }
+      const run = easeOut(S('yes', 0, 1.2));
+      person(c, { who: 'elijah', x: lerp(420, 820, run), y: 930, age: 'adult', shirt: '#6f8fb0', pants: '#2b2b2b', shoes: '#eee', bigEyes: yes ? 0 : 1, hearts: yes ? 1 : 0, handL: yes ? [-.3, -.6] : [-.1, .35], handR: yes ? [.3, -.6] : [.1, .35], headDy: yes ? -Math.abs(Math.sin(t * 7)) * 20 : 0 });
+      person(c, { who: 'emma', x: 1100, y: 930, age: 'woman', shirt: '#f4a6b8', skirt: '#7a4a9a', hearts: yes ? .8 : 0 });
+      if (!yes) ['THIS.', 'WAS.', 'IT.'].forEach((w, i) => bigText(c, w, 1100 + i * 300 - 300, 300, 100, S('i11', i * .45, i * .45 + .3), '#ffd23f'));
+      else { bigText(c, 'SHE SAID YES!', 960, 200, 110, S('i12', .4, 1), '#ff4d6d', { stroke: '#fff' }); confetti(c, t - cu('yes'), 90, 7); for (let i = 0; i < 6; i++) { const k = (t * .5 + i / 6) % 1; heart(c, 960 + Math.sin(i * 2 + t) * 160, 600 - k * 400, 30, '#ff4d6d', 1 - k); } }
+      return; }
     const bench = after('bench');
     if (!bench) { sky(c, '#3a3f5a', '#7a7f9a'); c.fillStyle = '#5a6a4a'; c.fillRect(0, 760, W, 320);
       for (let i = 0; i < 5; i++) { c.save(); c.globalAlpha = .9; cloud(c, 200 + i * 400 + Math.sin(t + i) * 30, 120, 260, .9); c.restore(); } c.fillStyle = 'rgba(30,30,50,.35)'; c.fillRect(0, 0, W, H);
@@ -320,18 +331,14 @@ const SC_ELI = { id: 'eli',
 
 /* ===== 7. ADAM STEALS THE SHOW ===== */
 const SC_ADAM = { id: 'adam',
-  music: [['triumph', 'a2', 'tux', .7], ['romance', 'tux', 'swoop', .8, { bpm: 96 }], ['villain', 'swoop', 'a10>', 1]],
-  sfx: [['a1', 'crack'], ['a2', 'fireworks'], [['a3', 0], 'thud', .4], [['a3', .5], 'thud', .4], [['a3', 1], 'thud', .4], [['a4', .4], 'zip'], [['a4', 1.6], 'sparkle'], ['swoop', 'flyby'], [['a6', 0], 'sting'], [['a7', 1.6], 'flyby'], ['fire', 'fire', 6], ['a9', 'stampF']],
+  music: [['romance', 'tux', 'swoop', .8, { bpm: 96 }], ['villain', 'swoop', 'a10>', 1]],
+  sfx: [[['a4', 1.4], 'zip'], [['a4', 2.6], 'sparkle'], ['swoop', 'flyby'], [['a6', 0], 'sting'], [['a7', 1.6], 'flyby'], ['fire', 'fire', 6], ['a9', 'stampF']],
   draw(c, t) {
-    sky(c, after('a2') && !after('swoop') ? '#1b1f4a' : '#8fd3ff', after('a2') && !after('swoop') ? '#4b3f8a' : '#eaf8ff'); c.fillStyle = '#7ab55c'; c.fillRect(0, 780, W, 300);
-    if (after('a2') && !after('swoop')) for (let i = 0; i < 5; i++) { const k = ((t - cu('a2')) * .7 + i * .2) % 1; burstSparkles(c, 300 + i * 340, 300 - i % 2 * 80, 160, k, 12, i); }
-    if (!after('a2')) { // the breakup
-      const k = S('a1', 0, 1); person(c, { who: 'emma', x: 900 - k * 200, y: 930, age: 'woman', shirt: '#f4a6b8', skirt: '#7a4a9a' }); person(c, { who: 'eli', x: 1100 + k * 900, y: 930, age: 'adult', shirt: '#2b2d42', outfit: 'hoodie', pants: '#111' });
-      if (k > 0) line(c, [1000, 0, 980, 300, 1020, 500, 990, 1080], '#222', 8 * Math.sin(k * PI)); }
-    const tux = after('tux'), fire = after('fire');
+    sky(c, '#8fd3ff', '#eaf8ff'); c.fillStyle = '#7ab55c'; c.fillRect(0, 780, W, 300);
+    const tux = after('a4', .8), fire = after('fire');
     const ad = easeInOutSwoop(S('swoop', 0, 1.4)), carry = after('a7', 1.4) ? easeIn(S('a7', 1.4, 2.4)) : 0;
-    if (after('a2')) { const jx = 760;
-      const j = person(c, { who: 'elijah', x: jx, y: 930, age: 'adult', shirt: tux ? '#111' : '#6f8fb0', outfit: tux ? 'tie' : null, tie: '#111', pants: tux ? '#111' : '#2b2b2b', shoes: '#111', bigEyes: S('a2', 0, .3) * (1 - S('tux', 0, .3)),
+    if (true) { const jx = 760;
+      const j = person(c, { who: 'elijah', x: jx, y: 930, age: 'adult', shirt: tux ? '#111' : '#6f8fb0', outfit: tux ? 'tie' : null, tie: '#111', pants: tux ? '#111' : '#2b2b2b', shoes: '#111',
         handR: tux && !after('swoop') ? [.15, -.55] : [.1, .35], handL: [-.1, .35], jaw: after('swoop', .5) ? .8 : null });
       if (tux && !after('swoop')) { c.save(); c.translate(j.handR.x, j.handR.y - 10); c.rotate(Math.sin(t * 10) * .4); fillRR(c, -50, -8, 100, 16, 4, '#333'); c.restore(); }
       if (tux) { c.save(); c.globalCompositeOperation = 'source-over'; } if (tux) c.restore();
@@ -343,7 +350,6 @@ const SC_ADAM = { id: 'adam',
       c.save(); c.translate(x, y); c.rotate(-.5 + ad * .5);
       poly(c, [-40, -300, 40, -300, 180, 120, -140, 100], '#d62839'); person(c, { who: 'adam', x: 0, y: 260, age: 'adult', s: .95, shirt: '#3a86ff', pants: '#3a86ff', shoes: '#d62839', handR: [.3, -.6], handL: [-.25, -.1] }); c.restore();
       text(c, 'A', x, y - 30, 70, '#ffd23f', { stroke: '#d62839' }); bigText(c, 'ADAM.', 1300, 180, 140, S('a6', 0, .5) * (1 - S('a7', 0, .4)), '#ffd23f', { stroke: '#d62839' }); }
-    if (after('a3') && !after('tux')) ['THIS.', 'WAS.', 'IT.'].forEach((s, i) => bigText(c, s, 1100 + i * 300, 360, 100, S('a3', i * .45, i * .45 + .3), '#ffd23f'));
     if (after('a9')) parentsCringe(c, 1650, 300, S('a9', 0, cd('a9') + .4));
     if (after('a10')) stamp(c, 'NARRATOR: CONCERNED', 1360, 820, 52, S('a10', .3, .8), '#2a6fdb');
   } };
