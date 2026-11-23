@@ -28,8 +28,8 @@ const CAST = {
   adam:      { skin: '#e3a98d' },
   mia:       { skin: '#ebbda5', hair: '#7d5b45', hairLen: .8 },
   // no photos yet: cartoon stand-ins (drawToon)
-  levi:      { toon: { skin: '#f0c8a8', hair: '#7a5230', style: 'boy2', headFrac: .26 } },
-  vivian:    { toon: { skin: '#f3cfb3', hair: '#5a3a26', style: 'long', headFrac: .26, lashes: true } },
+  levi:      { skin: '#f0c4a8' },
+  vivian:    { skin: '#f0c0a6', hair: '#3a2a22', hairLen: .75 },
 };
 const AGE = { baby: [330, 230], tod: [390, 175], kid: [470, 165], teen: [600, 158], adult: [700, 150], woman: [672, 145] };
 

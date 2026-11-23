@@ -24,7 +24,7 @@ const run = (cmd, a) => new Promise((res, rej) => { const p = spawn(cmd, a, { st
   // frames: several pages render in parallel, frames are written in order
   const pages = [page]; for (let i = 1; i < WORKERS; i++) pages.push(await open());
   const n = Math.round((end - FROM) * FPS), dst = path.join(out, TO || FROM ? 'preview.mp4' : 'elijah-1080p.mp4');
-  const mix = `[1:a]atrim=start=${FROM}:end=${end},asetpts=PTS-STARTPTS,volume=0.85[m];[2:a]atrim=start=${FROM}:end=${end},asetpts=PTS-STARTPTS,volume=1.25[v];[m][v]amix=inputs=2:normalize=0,alimiter=limit=0.95,loudnorm=I=-15:TP=-1.5:LRA=11[a]`;
+  const mix = `[1:a]atrim=start=${FROM}:end=${end},asetpts=PTS-STARTPTS,volume=0.6[m];[2:a]atrim=start=${FROM}:end=${end},asetpts=PTS-STARTPTS,volume=1.4[v];[m][v]amix=inputs=2:normalize=0,alimiter=limit=0.95,loudnorm=I=-15:TP=-1.5:LRA=11[a]`;
   const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-', '-i', music, '-i', path.join(build, 'voice.wav'),
     '-filter_complex', mix, '-map', '0:v', '-map', '[a]', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-ar', '44100', '-shortest', '-movflags', '+faststart', dst],
     { stdio: ['pipe', 'inherit', 'inherit'] });

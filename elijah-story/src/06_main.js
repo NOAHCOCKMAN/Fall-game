@@ -72,7 +72,7 @@ function schedule(ac, out, w0, w1, state) {   // schedule everything that starts
     chirp: t => { for (let i = 0; i < 3; i++) { const g = A.gain(out, 0); A.env(g, t + i * .12, .005, .05, .08); const o = A.osc('sine', 3200, t + i * .12, .1, g); o.frequency.exponentialRampToValueAtTime(4400, t + i * .12 + .07); } },
     stampF: t => { A.fx.thud(t, .5); A.fx.camera(t); }, harp: t => A.harpGliss(out, t, 'C5', true) };
   if (!state.bus) { state.bus = A.gain(out, 1); const g = state.bus.gain; g.setValueAtTime(1, Math.max(0, toAc(w0)));
-    for (const [a, b] of PLAN.duck) { if (b < w0) continue; g.setTargetAtTime(.34, Math.max(0, toAc(a - .08)), .05); g.setTargetAtTime(1, Math.max(0, toAc(b + .1)), .12); }
+    for (const [a, b] of PLAN.duck) { if (b < w0) continue; g.setTargetAtTime(.22, Math.max(0, toAc(a - .08)), .05); g.setTargetAtTime(1, Math.max(0, toAc(b + .1)), .12); }
     state.segs = PLAN.music.map(s => null); }
   PLAN.music.forEach((s, k) => { if (s.t1 <= w0 || s.t0 >= w1) return; let g = state.segs[k];
     if (!g) { g = state.segs[k] = A.gain(state.bus, 0); const a = Math.max(s.t0, w0); g.gain.setValueAtTime(0, Math.max(0, toAc(a))); g.gain.linearRampToValueAtTime(s.level, Math.max(0, toAc(a)) + .15);
@@ -80,11 +80,15 @@ function schedule(ac, out, w0, w1, state) {   // schedule everything that starts
     const shifted = Object.assign({}, s, { t0: toAc(s.t0), t1: toAc(s.t1) }); MUSIC[s.style](A, g, shifted, toAc(w0), toAc(w1)); });
   for (const [T, name, arg] of PLAN.sfx) { if (T < w0 || T >= w1) continue; const f = A.fx[name] || extra[name]; if (f) f(Math.max(0, toAc(T)), arg); else console.warn('no sfx', name); }
 }
-window.renderMusicWav = async () => { const sr = 44100, ac = new OfflineAudioContext(1, Math.ceil(sr * (TOTAL + 1)), sr);
-  const comp = ac.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 3; comp.connect(ac.destination); const out = ac.createGain(); out.gain.value = .9; out.connect(comp);
-  schedule(ac, out, -1, TOTAL + 1, { off: 0 }); const buf = await ac.startRendering(); const ch = buf.getChannelData(0), n = ch.length, dv = new DataView(new ArrayBuffer(44 + n * 2));
+window.renderMusicWav = async (from = 0, to = TOTAL + 1) => {   // rendered in chunks so the graph stays small
+  const sr = 44100, CH = 20, PRE = 8, n = Math.ceil(sr * (to - from)), all = new Float32Array(n);
+  for (let T0 = from; T0 < to; T0 += CH) { const len = Math.min(CH, to - T0), ac = new OfflineAudioContext(1, Math.ceil(sr * (len + PRE)), sr);
+    const comp = ac.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 3; comp.connect(ac.destination); const out = ac.createGain(); out.gain.value = .9; out.connect(comp);
+    schedule(ac, out, T0 - PRE, T0 + len, { off: -(T0 - PRE) }); const ch = (await ac.startRendering()).getChannelData(0), o = Math.round((T0 - from) * sr);
+    for (let i = 0, k = PRE * sr; i < len * sr && o + i < n; i++, k++) all[o + i] = ch[k]; }
+  const dv = new DataView(new ArrayBuffer(44 + n * 2));
   const ws = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); }; ws(0, 'RIFF'); dv.setUint32(4, 36 + n * 2, true); ws(8, 'WAVE'); ws(12, 'fmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
-  dv.setUint32(24, sr, true); dv.setUint32(28, sr * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true); ws(36, 'data'); dv.setUint32(40, n * 2, true); for (let i = 0; i < n; i++) dv.setInt16(44 + i * 2, clamp(ch[i], -1, 1) * 32767, true);
+  dv.setUint32(24, sr, true); dv.setUint32(28, sr * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true); ws(36, 'data'); dv.setUint32(40, n * 2, true); for (let i = 0; i < n; i++) dv.setInt16(44 + i * 2, clamp(all[i], -1, 1) * 32767, true);
   const bytes = new Uint8Array(dv.buffer); let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); };
 
 // ---------- live player ----------
@@ -94,8 +98,8 @@ function clock() { return live ? ac.currentTime - live.off : paused ? pausedAt :
 function stopSound() { if (live) { try { live.out.disconnect(); } catch (e) { } if (live.src) try { live.src.stop(); } catch (e) { } clearInterval(live.timer); live = null; } }
 async function startSound(from) { try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); await ac.resume();
     if (!voiceBuf) { const b64 = window.STORY_VOICE, bin = atob(b64.split(',')[1]), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); voiceBuf = await ac.decodeAudioData(u.buffer); }
-    stopSound(); const st = ac.currentTime + .12, out = ac.createGain(); out.gain.value = .9; const comp = ac.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 3; out.connect(comp); comp.connect(ac.destination);
-    const vg = ac.createGain(); vg.gain.value = 1.15; vg.connect(ac.destination); const src = ac.createBufferSource(); src.buffer = voiceBuf; src.connect(vg); src.start(st, from);
+    stopSound(); const st = ac.currentTime + .12, out = ac.createGain(); out.gain.value = .6; const comp = ac.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 3; out.connect(comp); comp.connect(ac.destination);
+    const vg = ac.createGain(); vg.gain.value = 1.35; vg.connect(ac.destination); const src = ac.createBufferSource(); src.buffer = voiceBuf; src.connect(vg); src.start(st, from);
     live = { off: st - from, out, src, state: { off: st - from }, next: from }; live.state.off = live.off;
     const pump = () => { if (!live) return; const now = ac.currentTime - live.off; while (live.next < now + 3 && live.next < TOTAL + 1) { schedule(ac, out, live.next, live.next + 1, live.state); live.next += 1; } };
     pump(); live.timer = setInterval(pump, 400); } catch (e) { console.warn(e); } }

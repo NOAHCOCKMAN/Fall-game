@@ -189,7 +189,7 @@ const SC_BIGFOOT = { id: 'bigfoot',
       if (wb > 0 && wb < 1) bigfoot(c, lerp(-200, 2100, wb), 820, 1.05, { walk: wb * 5, wave: wb > .42 && wb < .58, armUp: wb > .42 && wb < .58 });
       const fl = turned ? -1 : 1;
       const je = person(c, { who: 'elijah', look: 'kid', x: 720, y: 930, age: 'kid', shirt: '#4b6b3a', pants: '#5a4a2a', shoes: '#3a2a1a', handR: [.25 * fl, .05], facing: fl, sweat: after('b8') && !turned ? .5 : 0 });
-      const jl = person(c, { who: 'levi', x: 1180, y: 930, age: 'kid', shirt: '#c8553d', pants: '#2f3e5c', shoes: '#333', handL: [-.25 * fl, .05], facing: -fl, eyes: after('b7') && !after('b8') ? 'closed' : null });
+      const jl = person(c, { who: 'levi', x: 1180, y: 930, age: 'kid', shirt: '#c8553d', pants: '#2f3e5c', shoes: '#333', handL: [-.25 * fl, .05], facing: -fl });
       flashlight(c, je.handR.x, je.handR.y, fl > 0 ? -.2 : PI + .2); flashlight(c, jl.handL.x, jl.handL.y, fl > 0 ? PI + .2 : -.2);
       if (after('b6')) { const k = S('b6', 0, .4) * (1 - S('b7', 0, .3)); if (k > 0) { fillRR(c, 1010, 420, 340, 90, 14, `rgba(255,210,63,${k})`); text(c, 'LEVI', 1180, 452, 44, `rgba(43,45,66,${k})`); text(c, 'loyal companion', 1180, 490, 26, `rgba(43,45,66,${k})`, { font: FONT2, weight: 600 }); } }
       if (turned) { exclaim(c, 720, 380, .8, S('walkby', 3.3, 3.8)); exclaim(c, 1180, 380, .8, S('walkby', 3.3, 3.8)); }
@@ -214,10 +214,9 @@ const SC_TRIANGLE = { id: 'triangle',
       const grab = easeOut(S('t7', .2, .7));
       const je = person(c, { who: 'elijah', look: 'kid', x: lerp(860, 1180, grab), y: 930 - grab * 40, age: 'kid', shirt: '#4d96ff', pants: '#3b4a6b', shoes: '#333', bigEyes: grab, handL: grab ? [-.3, -.3] : [-.1, .35], handR: grab ? [.3, -.3] : [.1, .35] });
       c.save(); c.translate(420, 930); c.rotate(-faint * 1.3); c.translate(-420, -930);
-      person(c, { who: 'vivian', x: 420, y: 930, age: 'kid', shirt: '#b36bff', skirt: '#6a4c93', shoes: '#fff', eyes: after('hearts') ? 'happy' : null, handL: [-.2, -.2], handR: [.2, -.2] }); c.restore();
+      person(c, { who: 'vivian', x: 420, y: 930, age: 'kid', shirt: '#b36bff', skirt: '#6a4c93', shoes: '#fff', hearts: S('hearts', 0, .4), handL: [-.2, -.2], handR: [.2, -.2] }); c.restore();
       if (after('hearts')) { for (let i = 0; i < 8; i++) { const k = (t * .5 + i / 8) % 1; heart(c, 420 + Math.sin(i * 2.4 + t * 2) * 140, 520 - k * 400, 28, '#ff4d6d', 1 - k); } }
-      const jl = person(c, { who: 'levi', x: 1450, y: 930, age: 'kid', shirt: '#c8553d', pants: '#2f3e5c', shoes: '#333', handL: grab ? [-.45, -.15] : [-.1, .35], handR: rage ? [.25, -.4] : [.1, .35] });
-      if (rage) { steam(c, jl.head.x, jl.head.y - 40, 140, 1, t); c.save(); c.globalCompositeOperation = 'multiply'; c.globalAlpha = .55; circ(c, jl.head.x, jl.head.y - 50, 100, '#ff2a2a'); c.restore(); }
+      const jl = person(c, { who: 'levi', x: 1450, y: 930, age: 'kid', shirt: '#c8553d', pants: '#2f3e5c', shoes: '#333', handL: grab ? [-.45, -.15] : [-.1, .35], handR: rage ? [.25, -.4] : [.1, .35], red: rage ? .7 * S('rage', 0, .6) : 0, steam: rage, bigEyes: rage ? .8 : 0 });
       c.restore(); void je;
       // notebook
       const nb = S('t3', 0, .5) * (1 - S('cut', 0, .3)); if (nb > 0) { c.save(); c.translate(960, 380); c.scale(backOut(nb), backOut(nb)); c.rotate(-.04); fillRR(c, -330, -210, 660, 420, 10, '#fffdf4', '#3a86ff', 6);
@@ -236,7 +235,7 @@ const SC_TRIANGLE = { id: 'triangle',
       const point = after('t9') ? 1 : 0;
       person(c, { who: 'levi', x: 1230, y: 900, age: 'kid', shirt: '#c8553d', pants: '#2f3e5c', handL: point ? [-.6, -.15] : [-.1, .3], red: point && !after('t10') ? .5 : 0, steam: point && !after('t10') ? .6 : 0 });
       const vivBreak = after('shatter');
-      person(c, { who: 'vivian', x: 1000, y: 900, age: 'kid', shirt: '#b36bff', skirt: '#6a4c93', eyes: vivBreak ? 'closed' : 'happy', handL: [-.15, .1], handR: [.15, .1] });
+      person(c, { who: 'vivian', x: 1000, y: 900, age: 'kid', shirt: '#b36bff', skirt: '#6a4c93', hearts: vivBreak ? 0 : 1, tears: vivBreak ? 1 : 0, handL: [-.15, .1], handR: [.15, .1] });
       const je = person(c, { who: 'elijah', look: 'kid', x: 720, y: 900, age: 'kid', shirt: '#4d96ff', pants: '#3b4a6b', handR: [.05, .05], handL: [-.12, .25] });
       // muffin
       c.save(); c.translate(je.handR.x + 10, je.handR.y - 20); ell(c, 0, 0, 40, 26, '#c8823c'); fillRR(c, -30, 0, 60, 40, 6, '#e3b87a'); c.restore();
