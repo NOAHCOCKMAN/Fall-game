@@ -1,0 +1,8 @@
+photos/*
+!photos/.gitkeep
+faces/
+elijah.html
+out/
+build/
+voices/
+__pycache__/

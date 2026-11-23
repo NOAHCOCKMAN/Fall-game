@@ -1,13 +1,8 @@
-// ---------- core helpers, characters and props ----------
+// ---------- core helpers ----------
 const W = 1920, H = 1080;
-const CFG = window.STORY_CFG;
 const FACES = window.STORY_FACES;
+const TL = window.STORY_TL;
 const IMG = {};
-const NAME = (CFG.name || '').trim();
-const DR = NAME ? 'Dr. ' + NAME : 'The Doctor';  // no name set -> generic wording everywhere
-const SIGN = NAME ? [NAME.toUpperCase() + "'S", 'LANDSCAPING'] : ['LANDSCAPING', 'CO.'];
-const SKIN = FACES.nohat.meta.skin || '#e8b896';
-const HAT = CFG.hatColor || '#33473b';
 const PI = Math.PI, TAU = PI * 2;
 
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
@@ -103,7 +98,7 @@ function drawBody(c, o) {
   const fL = o.footL || [0, 0], fR = o.footR || [0, 0];
   const hipL = { x: X(x - hw * .24), y: yHip }, hipR = { x: X(x + hw * .24), y: yHip };
   const footL = { x: X(x - hw * .26) + fL[0] * B, y: y + fL[1] * B }, footR = { x: X(x + hw * .26) + fR[0] * B, y: y + fR[1] * B };
-  const skin = o.skin || SKIN;
+  const skin = o.skin || '#e9b49a';
   // neck
   fillRR(c, x - o.neckW / 2, yNeck - o.neckUp, o.neckW, o.neckUp + B * .12, o.neckW * .3, skin);
   c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(x - o.neckW / 2, yNeck - B * .01, o.neckW, B * .04);
@@ -135,7 +130,7 @@ function drawBody(c, o) {
     line(c, [x - tw * .2, ySh, x - tw * .02, ySh + B * .3], '#d5dbe2', 4); line(c, [x + tw * .2, ySh, x + tw * .02, ySh + B * .3], '#d5dbe2', 4);
     line(c, [x, ySh + B * .3, x, bot], '#d5dbe2', 3); fillRR(c, x + tw * .12, ySh + B * .2, tw * .22, B * .09, 4, '#e9eef3');
     line(c, [x + tw * .17, ySh + B * .2, x + tw * .17, ySh + B * .16], '#2a63d4', 5); line(c, [x + tw * .25, ySh + B * .2, x + tw * .25, ySh + B * .15], '#d42a2a', 5);
-    text(c, NAME ? 'Dr. ' + NAME : 'CARDIOLOGY', x - tw * .22, ySh + B * .2, B * .035, '#2a4f8f', { font: FONT2, weight: 600 }); }
+    if (o.badge) text(c, o.badge, x - tw * .22, ySh + B * .2, B * .035, '#2a4f8f', { font: FONT2, weight: 600 }); }
   if (o.outfit === 'vest' || o.outfit === 'vestBelly') { c.fillStyle = o.vest || '#1f3b5c';
     c.fillRect(x - tw, ySh, tw * .92, bot - ySh + 4); c.fillRect(x + tw * .08, ySh, tw * .92, bot - ySh + 4);
     line(c, [x + tw * .04, ySh + 6, x + tw * .04, bot], '#cfd6dd', 3); c.fillStyle = 'rgba(255,255,255,.08)';
@@ -176,51 +171,8 @@ function drawCross(c, x, yTop, B, a = 1, sparkleP = 0) {
   c.restore(); if (sparkleP) sparkle(c, x + s, cy - s, B * .07, sparkleP, sparkleP * 3);
 }
 
-// ---------- our guy (photo head) ----------
-const STAGE = { kid: [430, 185], teen1: [560, 160], teen2: [615, 156], teen3: [665, 152], adult: [705, 150] };
-function guyHead(p) { const [Hh, fh0] = p.stage ? STAGE[p.stage] : [p.H, p.fh]; const s = p.s || 1, Ht = Hh * s, fh = fh0 * s;
-  const B = Ht - 1.38 * fh, cx = p.x + (p.headDx || 0) * s, cy = p.y - B - fh * .42 + (p.headDy || 0) * s;
-  const m = FACES[p.face || 'nohat'].meta; return { x: cx, y: cy, fh, B, top: cy + FACES.nohat.meta.headTop * fh, rot: p.headRot || 0, mtop: m.headTop }; }
-function headPoint(h, dx, dy) { const c = Math.cos(h.rot), s = Math.sin(h.rot); return { x: h.x + dx * c - dy * s, y: h.y + dx * s + dy * c }; }
-function yarmOnHead(h) { const p = headPoint(h, 0, (FACES.nohat.meta.headTop + .1) * h.fh); return { x: p.x, y: p.y, w: h.fh * .74, rot: h.rot - .06 }; }
-function drawFace(c, key, cx, cy, fh, rot = 0, a = 1) { const im = IMG[key], m = FACES[key].meta, dh = fh / m.fh, dw = dh * m.w / m.h;
-  c.save(); c.globalAlpha *= a; c.translate(cx, cy); c.rotate(rot); c.drawImage(im, -m.fcx * dw, -m.fcy * dh, dw, dh); c.restore(); }
-function drawGuy(c, p) {
-  const h = guyHead(p), s = p.s || 1;
-  c.save();
-  if (p.squash) { c.translate(p.x, p.y); c.scale(1 + p.squash, 1 - p.squash); c.translate(-p.x, -p.y); }
-  const j = drawBody(c, Object.assign({ shirt: '#3d7dd8', pants: '#2f3e5c', shoes: '#2b2b2b', skin: SKIN }, p,
-    { B: h.B, neckW: h.fh * .34, neckUp: h.fh * .3, x: p.x, y: p.y }));
-  drawFace(c, p.face || 'nohat', h.x, h.y, h.fh, h.rot);
-  if (p.sweat) sweat(c, h, p.sweat, p.t || 0);
-  c.restore(); j.head = h; j.s = s; return j;
-}
-function sweat(c, h, k, t) { for (let i = 0; i < 6; i++) { const ph = (t * 1.6 + i / 6) % 1, side = i % 2 ? 1 : -1;
-  const x = h.x + side * (h.fh * .55 + ph * h.fh * .5), y = h.y - h.fh * .3 + ph * ph * h.fh * .9 - Math.sin(ph * PI) * h.fh * .3;
-  c.save(); c.globalAlpha = k * (1 - ph); c.fillStyle = '#7cc4ff'; c.beginPath(); c.moveTo(x, y - 14); c.quadraticCurveTo(x + 9, y + 2, x, y + 7);
-  c.quadraticCurveTo(x - 9, y + 2, x, y - 14); c.fill(); c.restore(); } }
-
-// ---------- the yarmulke (its own layer) ----------
-function drawYarmulke(c, x, y, w, rot = 0, fold = 0, a = 1) {
-  if (a <= 0) return; c.save(); c.globalAlpha *= a; c.translate(x, y); c.rotate(rot); c.scale(1 - fold * .5, 1);
-  const h = w * .42;
-  c.shadowColor = 'rgba(0,0,0,.25)'; c.shadowBlur = 8; c.shadowOffsetY = 4;
-  c.beginPath(); c.moveTo(-w / 2, 0); c.bezierCurveTo(-w / 2, -h * 1.25, w / 2, -h * 1.25, w / 2, 0); c.quadraticCurveTo(0, h * .22, -w / 2, 0); c.closePath();
-  const g = c.createLinearGradient(0, -h, 0, h * .2); g.addColorStop(0, '#2f5be0'); g.addColorStop(1, '#173a9e'); c.fillStyle = g; c.fill();
-  c.shadowColor = 'transparent'; c.lineWidth = 3; c.strokeStyle = '#0f2a78'; c.stroke();
-  // embroidered rim
-  c.save(); c.clip(); c.fillStyle = '#e9eef8'; c.beginPath(); c.moveTo(-w / 2, -h * .14); c.quadraticCurveTo(0, h * .1, w / 2, -h * .14);
-  c.lineTo(w / 2, 0); c.quadraticCurveTo(0, h * .24, -w / 2, 0); c.fill(); c.fillStyle = '#c9a43a';
-  for (let i = -5; i <= 5; i++) { const xx = i * w * .085, yy = -h * .045 + Math.abs(i) * Math.abs(i) * h * .003; c.save(); c.translate(xx, yy + h * .03); c.rotate(PI / 4); c.fillRect(-w * .016, -w * .016, w * .032, w * .032); c.restore(); }
-  c.restore();
-  // shine
-  c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = w * .045; c.lineCap = 'round'; c.beginPath(); c.arc(-w * .05, -h * .05, h * .78, PI * 1.18, PI * 1.42); c.stroke();
-  circ(c, -w * .25, -h * .72, w * .022, 'rgba(255,255,255,.85)');
-  if (fold > .05) { c.globalAlpha *= fold; line(c, [0, -h * .9, 0, h * .1], 'rgba(10,20,60,.6)', 3); }
-  c.restore(); }
-
 // ---------- caps ----------
-function drawCap(c, x, y, w, rot = 0, color = HAT, spin = 1, grad = false) {
+function drawCap(c, x, y, w, rot = 0, color = '#c8102e', spin = 1, grad = false) {
   c.save(); c.translate(x, y); c.rotate(rot); c.scale(spin, 1); const h = w * .5;
   c.beginPath(); c.moveTo(-w / 2, 0); c.bezierCurveTo(-w / 2, -h * 1.3, w / 2, -h * 1.3, w / 2, 0); c.closePath();
   c.fillStyle = color; c.fill(); c.strokeStyle = shade(color, -.35); c.lineWidth = Math.max(2, w * .02); c.stroke();
@@ -294,32 +246,6 @@ function frontHair(c, p, hh) {
     c.quadraticCurveTo(hh * .2, -hh * .26, 0, -hh * .3); c.quadraticCurveTo(-hh * .2, -hh * .26, -hh * .46, 0); c.fill(); }
   if (p.cap) drawCap(c, 0, -hh * .3, hh * .95, 0, p.cap);
 }
-const LEAH = { skin: '#f3cfb3', hair: '#c9a46a', style: 'long', top: '#f2e4cc', skirt: '#4f78c9', shoes: '#a8484a', lashes: true };
-const KID1 = { skin: '#f0c8a8', hair: '#6b4a2e', style: 'boy', top: '#2e9e6a', bottom: '#2f3e5c', shoes: '#333' };
-const KID2 = { skin: '#f0c8a8', hair: '#a47b4b', style: 'boy2', top: '#f08c2e', bottom: '#405070', shoes: '#c33' };
-const KID3 = { skin: '#f3cfb3', hair: '#b8935f', style: 'pigtails', top: '#ff7fb0', skirt: '#9b6bd6', shoes: '#e05090', lashes: true };
-
-function drawBundle(c, x, y, s, col = '#7fb8ff', rot = 0) {
-  c.save(); c.translate(x, y); c.rotate(rot);
-  ell(c, 0, s * .15, s * .55, s * .42, col); ell(c, -s * .05, -s * .05, s * .5, s * .38, shade(col, .2));
-  circ(c, -s * .08, -s * .12, s * .26, '#f6d2b8'); c.strokeStyle = '#2b1d10'; c.lineWidth = s * .025; c.lineCap = 'round';
-  for (const sx of [-1, 1]) { c.beginPath(); c.arc(-s * .08 + sx * s * .09, -s * .12, s * .035, PI * .1, PI * .9); c.stroke(); }
-  c.beginPath(); c.arc(-s * .08, -s * .05, s * .04, PI * .1, PI * .9); c.stroke();
-  c.beginPath(); c.arc(-s * .08, -s * .38, s * .06, PI * .2, PI * 1.6); c.strokeStyle = '#8a6040'; c.stroke();
-  ell(c, s * .3, s * .1, s * .26, s * .1, shade(col, -.1), -.5); c.restore(); }
-function drawStork(c, x, y, s, t, bundleCol) {
-  c.save(); c.translate(x, y); const flap = Math.sin(t * 10);
-  line(c, [-s * .2, s * .2, -s * .55, s * .45], '#f08a2e', s * .04); line(c, [-s * .1, s * .22, -s * .48, s * .52], '#f08a2e', s * .04);
-  ell(c, 0, 0, s * .45, s * .24, '#fafafa'); c.strokeStyle = '#ccd'; c.lineWidth = 2; c.stroke();
-  c.save(); c.translate(-s * .05, -s * .05); c.rotate(-.3 + flap * .7); poly(c, [0, 0, -s * .3, -s * .7, s * .25, -s * .55], '#fff', '#ccd', 2);
-  poly(c, [-s * .3, -s * .7, -s * .2, -s * .82, -s * .05, -s * .66], '#222'); c.restore();
-  c.beginPath(); c.moveTo(s * .35, -s * .05); c.quadraticCurveTo(s * .55, -s * .1, s * .55, -s * .4); c.strokeStyle = '#fafafa'; c.lineWidth = s * .09; c.stroke();
-  circ(c, s * .56, -s * .44, s * .11, '#fafafa'); circ(c, s * .6, -s * .47, s * .02, '#222');
-  poly(c, [s * .64, -s * .46, s * .95, -s * .36, s * .64, -s * .4], '#f08a2e');
-  ell(c, s * .55, -s * .54, s * .1, s * .045, '#4a6fd6');
-  if (bundleCol) { line(c, [s * .8, -s * .38, s * .8, -s * .2], '#eee', s * .03); drawBundle(c, s * .8, s * .02, s * .42, bundleCol, Math.sin(t * 5) * .15); }
-  c.restore(); }
-
 // ---------- scenery ----------
 function sky(c, top = '#7cc8ff', bot = '#d9f1ff', h = H) { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, top); g.addColorStop(1, bot); c.fillStyle = g; c.fillRect(-200, -2000, W + 400, h + 2000); }
 function cloud(c, x, y, s, a = 1) { c.save(); c.globalAlpha *= a; c.fillStyle = '#fff';
