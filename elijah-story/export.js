@@ -34,7 +34,7 @@ const run = (cmd, a) => new Promise((res, rej) => { const p = spawn(cmd, a, { st
     while (buf.has(written)) { if (ffDead) throw new Error('ffmpeg stopped early'); const b = Buffer.from(buf.get(written), 'base64'); buf.delete(written); written++;
       if (!ff.stdin.write(b)) await new Promise(r => ff.stdin.once('drain', r)); }
     writing = false; }
-  await Promise.all(pages.map(async pg => { while (true) { while (next - written > 90) await new Promise(r => setTimeout(r, 10)); const i = next++; if (i >= n) break;
+  await Promise.all(pages.map(async pg => { while (true) { while (next - written > 90) { await flush(); await new Promise(r => setTimeout(r, 10)); } const i = next++; if (i >= n) break;
     buf.set(i, await grab(pg, i)); if (i % (FPS * 10) === 0) console.log(`frame ${i}/${n}  ${((Date.now() - t0) / 1000).toFixed(0)}s`); await flush(); } }));
   while (written < n) { await flush(); await new Promise(r => setTimeout(r, 10)); }
   ff.stdin.end(); await done; await browser.close();
