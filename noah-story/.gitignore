@@ -1,0 +1,6 @@
+# Personal photos and anything built from them stay out of this public repo
+photos/*
+!photos/.gitkeep
+faces/
+life-story.html
+out/
