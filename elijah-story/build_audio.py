@@ -22,30 +22,32 @@ PAUSE_K = .72  # tighten every between-line pause
 LT = 'en-us-libritts-high'
 
 # who: (model, speaker, semitones, length_scale, effect)
+K = 'kokoro'  # Kokoro neural TTS (natural voices); speaker = Kokoro voice name, length_scale = 1/speed
 VOICES = {
-    'N':          ('en-us-ryan-high', None, 0, .95, 'narrator'),
-    'elijah':     (LT, 648, 0, 1.0, 'dry'),
-    'elijah_kid': (LT, 648, 3.5, .97, 'dry'),
-    'baby':       (LT, 552, 6, .9, 'evil'),
-    'luke':       (LT, 186, 0, 1.0, 'dry'),
-    'stephanie':  (LT, 348, 0, 1.05, 'dry'),
-    'alyssa_kid': (LT, 552, 2.5, .95, 'dry'),
-    'naomi_kid':  (LT, 378, 3.5, .95, 'dry'),
-    'levi':       (LT, 828, 1.5, .98, 'dry'),
-    'vivian':     (LT, 108, 1.5, 1.05, 'dry'),
-    'joseph':     (LT, 342, 0, 1.05, 'dry'),
-    'noah':       (LT, 738, 0, 1.0, 'dry'),
-    'emma':       (LT, 210, 0, 1.0, 'dry'),
-    'adam':       (LT, 42, -1, 1.05, 'dry'),
-    'mia':        (LT, 192, .5, 1.0, 'dry'),
-    'p1':         (LT, 120, 0, 1.0, 'dry'),
-    'p2':         (LT, 246, 0, 1.0, 'dry'),
-    'p3':         (LT, 444, 0, 1.0, 'dry'),
-    'jeweler':    ('en-gb-alan-low', None, -1.5, 1.08, 'dry'),
-    'therapist':  ('en-gb-alan-low', None, -3, 1.15, 'dry'),
-    'hand':       (LT, 552, 9, 1.0, 'dry'),
+    'N':          (K, 'am_michael', 0, 1.04, 'narrator'),
+    'elijah':     (K, 'am_liam', 0, 1.0, 'dry'),
+    'elijah_kid': (K, 'am_liam', 3, .95, 'dry'),
+    'baby':       (K, 'am_puck', 5, .9, 'evil'),
+    'luke':       (K, 'am_eric', 0, 1.0, 'dry'),
+    'stephanie':  (K, 'af_sarah', 0, 1.0, 'dry'),
+    'alyssa_kid': (K, 'af_sky', 2, .95, 'dry'),
+    'naomi_kid':  (K, 'af_nova', 3, .95, 'dry'),
+    'levi':       (K, 'am_puck', 0, .97, 'dry'),
+    'vivian':     (K, 'af_bella', 0, 1.0, 'dry'),
+    'joseph':     (K, 'am_adam', 0, 1.02, 'dry'),
+    'noah':       (K, 'am_fenrir', 0, 1.0, 'dry'),
+    'emma':       (K, 'af_heart', 0, 1.0, 'dry'),
+    'eli':        (K, 'am_echo', 0, 1.0, 'dry'),
+    'adam':       (K, 'am_onyx', 0, 1.0, 'dry'),
+    'mia':        (K, 'af_jessica', 0, 1.0, 'dry'),
+    'p1':         (K, 'af_river', 0, 1.0, 'dry'),
+    'p2':         (K, 'bm_lewis', 0, 1.0, 'dry'),
+    'p3':         (K, 'af_kore', 0, 1.0, 'dry'),
+    'jeweler':    (K, 'bm_george', 0, 1.05, 'dry'),
+    'therapist':  (K, 'bm_fable', -1, 1.1, 'dry'),
+    'hand':       (K, 'af_sky', 7, 1.0, 'dry'),
 }
-CHOIR = [(LT, 210, 0), (LT, 108, 3), (LT, 186, -5), (LT, 342, -7), (LT, 552, 5), (LT, 648, -2)]
+CHOIR = [(K, 'af_heart', 0), (K, 'af_bella', 2), (K, 'af_sarah', 0), (K, 'am_michael', -3), (K, 'am_adam', -2), (K, 'am_eric', -4)]
 FX = {
     'narrator': 'highpass=f=70,equalizer=f=160:t=q:w=1:g=2,equalizer=f=3200:t=q:w=1.2:g=3,acompressor=threshold=-20dB:ratio=2.5:attack=8:release=150',
     'dry': 'highpass=f=80,equalizer=f=3000:t=q:w=1.2:g=2,acompressor=threshold=-20dB:ratio=2.5',
@@ -56,6 +58,15 @@ FX = {
     'crowd': 'lowpass=f=3500,aecho=0.8:0.6:50|110:0.3|0.2',
 }
 _models = {}
+_kok = []
+
+
+def kokoro():
+    if not _kok:
+        from kokoro_onnx import Kokoro
+        kd = os.environ.get('KOKORO_DIR', os.path.join(R, 'voices'))
+        _kok.append(Kokoro(os.path.join(kd, 'kokoro-v1.0.onnx'), os.path.join(kd, 'voices-v1.0.bin')))
+    return _kok[0]
 
 
 def model(name):
@@ -77,9 +88,14 @@ def tts(text, mdl, spk, semis, scale, fx, tempo=1.0, tag=''):
     out = os.path.join(CACHE, key + '.wav')
     if not os.path.exists(out):
         raw = os.path.join(CACHE, key + '_raw.wav')
-        v = model(mdl); cfg = SynthesisConfig(speaker_id=spk, length_scale=scale, noise_scale=ns[0], noise_w_scale=ns[1])
-        with wave.open(raw, 'wb') as w:
-            v.synthesize_wav(text, w, syn_config=cfg)
+        if mdl == K:
+            a, sr = kokoro().create(text, voice=spk, speed=1 / scale, lang='en-gb' if spk.startswith('b') else 'en-us')
+            with wave.open(raw, 'wb') as w:
+                w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr); w.writeframes((np.clip(a, -1, 1) * 32767).astype(np.int16).tobytes())
+        else:
+            v = model(mdl); cfg = SynthesisConfig(speaker_id=spk, length_scale=scale, noise_scale=ns[0], noise_w_scale=ns[1])
+            with wave.open(raw, 'wb') as w:
+                v.synthesize_wav(text, w, syn_config=cfg)
         chain = []
         if abs(semis) > .01: chain.append(f'rubberband=pitch={2 ** (semis / 12):.4f}:formant=preserved')
         t = tempo
@@ -137,10 +153,10 @@ def crowd(kind, dur=None):
         return out * fade * .55
     lines = {'laugh': ['Ha ha ha ha!', 'Ha ha ha ha ha!', 'Hah! Ha ha ha!', 'Ha ha ha!'], 'aww': ['Awwww.', 'Aww, no.', 'Awwwww.'],
              'ooh': ['Ooooh.', 'Ooooooh!', 'Ohhhh.'], 'hallelujah': ['Hallelujah!', 'Hallelujah!', 'Amen!'], 'cheer': ['Yeah!', 'Woo!', 'Yeah! Woo hoo!', 'Whoo!']}[kind]
-    spks = [210, 108, 186, 342, 552, 648, 42, 828, 192, 246, 444, 876]
+    spks = ['af_heart', 'am_michael', 'af_bella', 'am_adam', 'af_sarah', 'am_eric', 'af_nova', 'am_liam', 'af_sky', 'am_fenrir', 'af_river', 'am_echo']
     parts = []
     for i, spk in enumerate(spks):
-        a = tts(lines[i % len(lines)], LT, spk, float(rng.uniform(-2, 2)), float(rng.uniform(.85, 1.15)), 'crowd', 1.0, 'crowd')
+        a = tts(lines[i % len(lines)], K, spk, float(rng.uniform(-2, 2)), float(rng.uniform(.85, 1.15)), 'crowd', 1.0, 'crowd')
         parts.append((int(rng.uniform(0, .35) * SR), a * rng.uniform(.5, .9)))
     n = max(o + len(a) for o, a in parts); mix = np.zeros(n, np.float32)
     for o, a in parts: mix[o:o + len(a)] += a
