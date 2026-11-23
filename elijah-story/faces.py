@@ -16,6 +16,7 @@ FACES = {
     'elijah_kid':  ('elijah_sisters.jpg', 1030, (690, 420, 255, 190), (.72, 1.1, .16, 1.5), dict(my=.70, ey=.10, ex=.2)),
     'elijah':      ('emma_elijah.jpg', None, (308, 405, 312, 258), (.74, 1.02, .16, 1.37), dict(my=.59, ey=.08, ex=.2)),
     'elijah_trex': ('elijah_trex.jpg', 542, (213, 198, 155, 136), (.8, 1.0, .18, 1.36), dict(my=.68, ey=.10, ex=.2)),
+    'elijah_sleep': ('elijah_sleep.jpg', 1179, (318, 330, 250, 230), (.8, .7, .25, 1.1), dict(my=.78, ey=.42, ex=.18)),
     'luke':        ('parents.jpg', 1179, (662, 292, 280, 195), (.72, .85, .12, 1.3), dict(my=.64, ey=.12, ex=.22)),
     'stephanie':   ('parents.jpg', 1179, (190, 448, 205, 240), (.74, .7, .12, 1.12), dict(my=.68, ey=.18, ex=.22)),
     'alyssa_kid':  ('elijah_sisters.jpg', 1030, (88, 725, 210, 168), (.72, 1.25, .16, 1.5), dict(my=.69, ey=.10, ex=.2)),

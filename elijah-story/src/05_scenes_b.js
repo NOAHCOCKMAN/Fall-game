@@ -124,7 +124,7 @@ const SC_TREX = { id: 'trex',
       person(c, { who: 'elijah', look: 'trex', x: 960, y: 950, age: 'adult', shirt: '#f2c230', pants: '#222', handL: [-.3, -.3], handR: [.3, -.3] });
       trexLogo(c, 960, 260, .8 * backOut(S('logo', 0, .5)), S('logo', 0, .2)); }
     else { const k = S('montage', 0, cd('r7') + cd('r8') + 1.5), panel = Math.min(3, Math.floor(k * 4));
-      if (panel === 0 || panel === 2) { const x = 300 + ((t - cu('montage')) * 200) % 1500; zeroTurn(c, x, 930, 1, t); person(c, { who: 'elijah', look: 'trex', x: x + 10, y: 820, age: 'adult', s: .8, shirt: '#f2c230', pants: '#222', footL: [.15, -.25], footR: [.2, -.25], handL: [-.15, .1], handR: [.15, .1] });
+      if (panel === 0 || panel === 2) { const x = 1050 + Math.sin((t - cu('montage')) * .9) * 380; zeroTurn(c, x, 930, 1, t); person(c, { who: 'elijah', look: 'trex', x: x + 10, y: 820, age: 'adult', s: .8, shirt: '#f2c230', pants: '#222', footL: [.15, -.25], footR: [.2, -.25], handL: [-.15, .1], handR: [.15, .1] });
         for (let i = 0; i < 20; i++) { const kk = (t * 3 + i / 20) % 1; c.fillStyle = '#3f9a32'; c.fillRect(x - 200 - kk * 200, 900 - Math.sin(kk * PI) * 80, 8, 4); } }
       if (panel === 1) { const j = person(c, { who: 'elijah', look: 'trex', x: 800, y: 950, age: 'adult', shirt: '#f2c230', pants: '#222', handR: [.45, .05], handL: [.2, .1] });
         fillRR(c, j.handR.x - 10, j.handR.y - 10, 160, 26, 10, '#ff7b00'); for (let i = 0; i < 30; i++) { const kk = (t * 1.5 + i / 30) % 1; c.save(); c.translate(j.handR.x + 160 + kk * 900, 900 - kk * 300 + Math.sin(i + t * 5) * 60); c.rotate(t * 5 + i); ell(c, 0, 0, 16, 8, ['#e76f51', '#f4a261', '#e9c46a'][i % 3]); c.restore(); } }
@@ -132,6 +132,9 @@ const SC_TREX = { id: 'trex',
         text(c, '104°F', 1500, 300, 120, '#d62828', { stroke: '#fff' }); void j; }
       if (panel !== 3) { c.save(); c.globalAlpha = .9; fillRR(c, 1500, 820, 360, 160, 10, '#fff'); drawTruckSmall(c, 1680, 960, .5); c.restore(); }
       bigfoot(c, 1700, 700, .45, { hold: c => { fillRR(c, -6, 0, 12, 150, 4, '#ff7b00'); } }); }
+    if (mont && after('r8') && !after('r9')) { const k = S('r8', .3, .8) * (1 - S('r9', -.3, 0)); c.save(); c.translate(400, 360); c.rotate(-.06); c.scale(backOut(k), backOut(k));
+      fillRR(c, -230, -250, 460, 500, 10, '#fff', '#222', 4); c.save(); rr(c, -210, -230, 420, 360, 4); c.clip(); c.fillStyle = '#d8c79a'; c.fillRect(-210, -230, 420, 360); drawFace(c, 'elijah_sleep', 0, -40, 230); c.restore();
+      text(c, 'Z z z', 150, -190, 46, '#2b2d42', { stroke: '#fff' }); text(c, 'ARCHIVAL FOOTAGE', 0, 165, 30, '#d62828'); text(c, 'What Elijah does to get out of work', 0, 210, 22, '#2b2d42', { font: FONT2, weight: 600 }); c.restore(); }
     if (mont) { const r = after('r9') ? S('r9', 0, .5) : 0; if (r > 0) { c.save(); c.globalAlpha = r; text(c, 'LIFE WAS GOOD.', 960, 160, 100, '#fff', { stroke: '#2b2d42', sw: 14 }); c.restore(); } floatingRing(c, 1820, 120, .9); }
   } };
 function drawTruckSmall(c, x, y, s) { c.save(); c.translate(x, y); c.scale(s, s); fillRR(c, -300, -170, 360, 130, 12, '#f6f6f6', '#999', 4); fillRR(c, 60, -200, 200, 160, 20, '#f6f6f6', '#999', 4); fillRR(c, 90, -185, 120, 70, 8, '#a9d6ef');
