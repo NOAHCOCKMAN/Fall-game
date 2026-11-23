@@ -23,7 +23,7 @@ LT = 'en-us-libritts-high'
 
 # who: (model, speaker, semitones, length_scale, effect)
 VOICES = {
-    'N':          ('en-us-ryan-high', None, -2.6, .93, 'narrator'),
+    'N':          ('en-us-ryan-high', None, 0, .95, 'narrator'),
     'elijah':     (LT, 648, 0, 1.0, 'dry'),
     'elijah_kid': (LT, 648, 3.5, .97, 'dry'),
     'baby':       (LT, 552, 6, .9, 'evil'),
@@ -47,8 +47,8 @@ VOICES = {
 }
 CHOIR = [(LT, 210, 0), (LT, 108, 3), (LT, 186, -5), (LT, 342, -7), (LT, 552, 5), (LT, 648, -2)]
 FX = {
-    'narrator': 'bass=g=5:f=140,acompressor=threshold=-18dB:ratio=3:attack=5:release=120,aecho=0.8:0.55:38|67:0.16|0.09',
-    'dry': 'acompressor=threshold=-20dB:ratio=2.5,aecho=0.8:0.3:22:0.08',
+    'narrator': 'highpass=f=70,equalizer=f=160:t=q:w=1:g=2,equalizer=f=3200:t=q:w=1.2:g=3,acompressor=threshold=-20dB:ratio=2.5:attack=8:release=150',
+    'dry': 'highpass=f=80,equalizer=f=3000:t=q:w=1.2:g=2,acompressor=threshold=-20dB:ratio=2.5',
     'evil': 'aecho=0.8:0.6:60|120:0.35|0.25',
     'choir': 'aecho=0.8:0.75:70|140|260:0.45|0.32|0.22',
     'sing': 'aecho=0.8:0.6:90|180:0.3|0.18',
@@ -72,11 +72,12 @@ def read_wav(p):
 
 def tts(text, mdl, spk, semis, scale, fx, tempo=1.0, tag=''):
     """Speak one line and return float32 mono at SR. Cached."""
-    key = hashlib.md5(repr((text, mdl, spk, semis, scale, fx, round(tempo, 3), tag, 3)).encode()).hexdigest()[:16]
+    ns = (.45, .6) if fx == 'narrator' else (.6, .75)
+    key = hashlib.md5(repr((text, mdl, spk, semis, scale, FX[fx], ns, round(tempo, 3), tag, 3)).encode()).hexdigest()[:16]
     out = os.path.join(CACHE, key + '.wav')
     if not os.path.exists(out):
         raw = os.path.join(CACHE, key + '_raw.wav')
-        v = model(mdl); cfg = SynthesisConfig(speaker_id=spk, length_scale=scale, noise_scale=.6, noise_w_scale=.75)
+        v = model(mdl); cfg = SynthesisConfig(speaker_id=spk, length_scale=scale, noise_scale=ns[0], noise_w_scale=ns[1])
         with wave.open(raw, 'wb') as w:
             v.synthesize_wav(text, w, syn_config=cfg)
         chain = []
