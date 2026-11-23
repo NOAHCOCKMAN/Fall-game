@@ -4,3 +4,4 @@ photos/*
 faces/
 life-story.html
 out/
+__pycache__/
