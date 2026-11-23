@@ -24,7 +24,7 @@ LT = 'en-us-libritts-high'
 # who: (model, speaker, semitones, length_scale, effect)
 K = 'kokoro'  # Kokoro neural TTS (natural voices); speaker = Kokoro voice name, length_scale = 1/speed
 VOICES = {
-    'N':          (K, 'am_michael', 0, 1.04, 'narrator'),
+    'N':          (K, 'am_michael', 0, .88, 'narrator'),
     'elijah':     (K, 'am_liam', 0, 1.0, 'dry'),
     'elijah_kid': (K, 'am_liam', 3, .95, 'dry'),
     'baby':       (K, 'am_puck', 5, .9, 'evil'),
