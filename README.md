@@ -27,3 +27,7 @@ A first-person, fully interactive 3D recreation of my apartment, built from a wa
 ## Development
 
 Source lives in `src/` (`01_util.js` textures and synthesized audio, `02_catalog.js` furniture and decor, `03_apartment.js` the building, built-ins and outdoors, `04_main.js` engine, UI and saving, `template.html` the page shell). Run `python3 build.py` to bundle everything into `index.html`.
+
+## Cocoa Slide
+
+`cocoa-slide/index.html` is a separate little game for a 3-year-old: an endless ride down a glowing hot chocolate slide through a snowy candy village at night, seen from the rider's seat (heart pajamas, fuzzy slippers and a mug of cocoa in hand). Touch the screen and move left or right to steer. Stars, marshmallows, presents and candy canes fly into the mug, and every 10 brings a "Yay!". Jingle Bells, We Wish You a Merry Christmas and Deck the Halls play on a loop, all synthesized in the browser. There is no way to lose. Open the file in a browser (it loads three.js from a CDN).
