@@ -58,7 +58,22 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night)
 #play svg { width: 46%; height: 46%; margin-left: 9%; }
 @keyframes breathe { 50% { transform: scale(1.08); } }
 #start p { margin: 0; max-width: 34ch; font-weight: 500; font-size: 15px; line-height: 1.4; color: rgba(255, 246, 230, .85); }
-@media (prefers-reduced-motion: reduce) { #play, #hint { animation: none; } }
+#choc { position: fixed; z-index: 4; inset: 0; width: 100%; height: 100%; pointer-events: none; transition: opacity .7s ease; }
+#choc.out { opacity: 0; }
+#done { position: fixed; z-index: 6; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3vh; text-align: center;
+  padding: calc(24px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+#done h2 { margin: 0; font-weight: 700; font-size: min(16vw, 110px); line-height: 1; color: var(--cream); text-wrap: balance;
+  text-shadow: 0 5px 0 var(--cocoa-2), 0 0 40px rgba(255, 200, 120, .45); animation: popin .6s cubic-bezier(.2, 1.6, .4, 1) both; }
+#done .got { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: min(12vw, 64px); color: var(--gold); text-shadow: 0 4px 0 var(--cocoa-2);
+  animation: popin .6s .15s cubic-bezier(.2, 1.6, .4, 1) both; font-variant-numeric: tabular-nums; }
+#done .got svg { width: 1.1em; height: 1.1em; }
+#again { width: min(46vmin, 230px); height: min(46vmin, 230px); border-radius: 50%; border: 8px solid var(--cream); cursor: pointer; padding: 0;
+  background: radial-gradient(circle at 35% 30%, #ffe08a, var(--gold) 45%, #e08a1e); box-shadow: 0 10px 0 #8a3b0e, 0 0 60px rgba(255, 200, 90, .6);
+  display: grid; place-items: center; animation: popin .6s .3s cubic-bezier(.2, 1.6, .4, 1) both, breathe 1.4s 1s ease-in-out infinite; }
+#again svg { width: 55%; height: 55%; }
+#again:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+@keyframes popin { from { opacity: 0; transform: scale(.3); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { #play, #hint, #again { animation: none; } }
 </style>
 <script type="importmap">{ "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
@@ -81,6 +96,14 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night)
 
 <div id="yay">Yay!</div>
 <div id="fade"></div>
+<canvas id="choc" hidden></canvas>
+<div id="done" hidden>
+  <h2>Good game!</h2>
+  <div class="got"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 3l6.2 13.2 14.3 1.7-10.6 9.9 2.8 14.2L24 34.9 11.3 42l2.8-14.2L3.5 17.9l14.3-1.7z" fill="#ffc94a" stroke="#8a3b0e" stroke-width="3" stroke-linejoin="round"/></svg><span id="rideStars">0</span></div>
+  <button id="again" type="button" aria-label="Play again">
+    <svg viewBox="0 0 48 48" fill="none" stroke="#4a2412" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M38 24a14 14 0 1 1-4.1-9.9"/><path d="M36 6v10H26" /></svg>
+  </button>
+</div>
 
 <div id="hint" hidden><svg viewBox="0 0 100 100" aria-hidden="true">
   <circle cx="44" cy="20" r="16" fill="rgba(255,201,74,.35)"/>
@@ -749,7 +772,7 @@ function computeLake() {
 const lakeMat = new THREE.MeshPhysicalMaterial({ color: 0x4a2010, roughness: 0.1, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.6 });
 const shoreMat = new THREE.MeshStandardMaterial({ color: 0xf1e9e0, roughness: 0.92 });
 const rippleMat = new THREE.MeshBasicMaterial({ color: 0xb87848, transparent: true, opacity: 0.4, depthWrite: false, side: THREE.DoubleSide });
-const lakeGlowMat = new THREE.MeshBasicMaterial({ map: streakTex, color: hdr(0xffa050, 1.0), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+const lakeGlowMat = new THREE.MeshBasicMaterial({ map: streakTex, color: hdr(0xffa050, 0.3), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
 function buildFinale(ch, r) {
   const L = lake;
   const flat = (geo, mat, y) => { const m = new THREE.Mesh(geo, mat); m.rotation.x = -Math.PI / 2; m.position.set(L.x, y, L.z); scene.add(m); ch.meshes.push(m); return m; };
@@ -775,7 +798,7 @@ function buildFinale(ch, r) {
   for (let k = 0; k < 24; k++) {                // lanterns around the lake, reflected in the cocoa
     const a = entry + (k + 0.5) / 24 * Math.PI * 2; if (near(a)) continue;
     const [x, z] = at(a, L.r + 4);
-    put('lamp', M(x, gy, z, 0, a)); glow(x, gy + 4.03, z);
+    put('lamp', M(x, gy, z, 0, a));
     put('pool', M(x, gy + 0.05, z));
     const [sx, sz] = at(a, L.r - 7);
     streaks.push([new THREE.PlaneGeometry(2.2, 15), '#ffffff', M(sx, L.y + 0.04, sz, -Math.PI / 2, 0, a)]);
@@ -783,7 +806,7 @@ function buildFinale(ch, r) {
   for (let k = 0; k < 18; k++) {                // log cabins around the lake
     const a = entry + Math.PI + (k / 17 - 0.5) * 4.6 + (r() - 0.5) * 0.12; if (near(a)) continue;
     const d = L.r + 12 + r() * 22, [x, z] = at(a, d), yaw = Math.atan2(L.x - x, L.z - z), sc = 1.3 + r() * 0.6;
-    put('cabin', M(x, gy, z, 0, yaw, 0, sc)); glow(x + Math.sin(yaw) * 1.7 * sc, gy + 1.4 * sc, z + Math.cos(yaw) * 1.7 * sc);
+    put('cabin', M(x, gy, z, 0, yaw, 0, sc));
   }
   for (let k = 0; k < 90; k++) {                // forest behind the village
     const a = r() * Math.PI * 2; if (near(a)) continue;
@@ -871,7 +894,7 @@ const sky = new THREE.Group(); scene.add(sky);
     const r2 = rng(13); g.fillStyle = 'rgba(170,165,150,.35)';
     for (let i = 0; i < 16; i++) { const a = r2() * 7, d = r2() * 60; g.beginPath(); g.arc(256 + Math.cos(a) * d, 256 + Math.sin(a) * d, 4 + r2() * 12, 0, 7); g.fill(); }
   });
-  const moon = new THREE.Sprite(new THREE.SpriteMaterial({ map: moonTex, fog: false, depthWrite: false, transparent: true, color: hdr(0xffffff, 1.6) }));
+  const moon = new THREE.Sprite(new THREE.SpriteMaterial({ map: moonTex, fog: false, depthWrite: false, transparent: true, color: hdr(0xffffff, 1.05) }));
   moon.position.set(300, 360, -700); moon.scale.setScalar(300); sky.add(moon);
   // far chocolate mountains with snowy caps and a twinkly town with a castle
   const mtTex = canvasTex(2048, 512, (g, w, h) => {
@@ -1340,7 +1363,7 @@ function collect(it) {
   sfxGrab(); flyToMug(it);
 }
 function addPoint() {
-  score++; scoreEl.textContent = score;
+  score++; rideScore++; scoreEl.textContent = score;
   hudEl.classList.remove('pop'); void hudEl.offsetWidth; hudEl.classList.add('pop');
   sfxPlop();
   mug.userData.bump = 1;
@@ -1352,6 +1375,76 @@ function addPoint() {
   }
 }
 const _right = new THREE.Vector3(), _tp = new THREE.Vector3();
+// ---------------------------------------------------------------- the plunge: chocolate washes over the screen, then "Good game!"
+const chocCv = document.getElementById('choc'), cg = chocCv.getContext('2d');
+const doneEl = document.getElementById('done'), rideStarsEl = document.getElementById('rideStars');
+let rideScore = 0;
+const cover = { t: -1, drops: [], spikes: [], shown: false };
+function startCover() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2), W = chocCv.width = Math.round(innerWidth * dpr), H = chocCv.height = Math.round(innerHeight * dpr);
+  cover.t = 0; cover.shown = false; cover.dpr = dpr;
+  cover.drops = []; for (let i = 0; i < 70; i++) cover.drops.push({ x: Math.random() * W, y: H * (0.95 + Math.random() * 0.1), vx: (Math.random() - 0.5) * W * 0.7, vy: -H * (0.9 + Math.random() * 1.1), r: (5 + Math.random() * 20) * dpr, delay: Math.random() * 0.35 });
+  cover.spikes = []; for (let i = 0; i < 16; i++) cover.spikes.push({ x: (i + 0.5 + (Math.random() - 0.5) * 0.6) / 16, w: 0.025 + Math.random() * 0.03, h: 0.08 + Math.random() * 0.16 });
+  chocCv.classList.remove('out'); chocCv.hidden = false;
+}
+function chocFill(y0, H) {
+  const g = cg.createLinearGradient(0, y0, 0, y0 + H * 0.9);
+  g.addColorStop(0, '#8a4a22'); g.addColorStop(0.035, '#5e2c11'); g.addColorStop(0.3, '#43200c'); g.addColorStop(1, '#2a1207');
+  return g;
+}
+function drawCover(dt) {
+  if (cover.t < 0) return;
+  cover.t += dt; const t = cover.t, W = chocCv.width, H = chocCv.height, dpr = cover.dpr;
+  cg.clearRect(0, 0, W, H);
+  const rise = Math.min(1, t / 0.75), e = 1 - Math.pow(1 - rise, 3);
+  const level = H * (1.02 - e * 1.2);
+  const edge = x => level + Math.sin(x / W * 9 + t * 6) * H * 0.022 * (1 - e * 0.6) + Math.sin(x / W * 23 - t * 10) * H * 0.008;
+  // the rising surface with its splash crown
+  cg.beginPath(); cg.moveTo(0, H);
+  for (let x = 0; x <= W + 1; x += W / 48) cg.lineTo(x, edge(x));
+  cg.lineTo(W, H); cg.closePath(); cg.fillStyle = chocFill(Math.max(0, level), H); cg.fill();
+  const crownH = Math.sin(Math.PI * Math.min(1, t / 0.9));
+  for (const sp of cover.spikes) {
+    const cx = sp.x * W, y0 = edge(cx), h = sp.h * H * crownH, w = sp.w * W;
+    if (h < 2) continue;
+    cg.beginPath(); cg.moveTo(cx - w, y0 + 4); cg.quadraticCurveTo(cx - w * 0.25, y0 - h * 0.55, cx, y0 - h); cg.quadraticCurveTo(cx + w * 0.25, y0 - h * 0.55, cx + w, y0 + 4); cg.closePath();
+    cg.fillStyle = '#6a3315'; cg.fill();
+    cg.beginPath(); cg.arc(cx, y0 - h - w * 0.35, w * 0.45, 0, 7); cg.fillStyle = '#6a3315'; cg.fill();
+    cg.beginPath(); cg.ellipse(cx - w * 0.3, y0 - h * 0.5, w * 0.12, h * 0.25, 0.15, 0, 7); cg.fillStyle = 'rgba(255,215,170,.35)'; cg.fill();
+  }
+  // glossy highlight along the surface
+  cg.beginPath(); for (let x = 0; x <= W + 1; x += W / 48) { const y = edge(x) + 7 * dpr; x ? cg.lineTo(x, y) : cg.moveTo(x, y); }
+  cg.strokeStyle = 'rgba(255,205,150,.45)'; cg.lineWidth = 5 * dpr; cg.stroke();
+  // flying droplets, round and shiny
+  for (const d of cover.drops) {
+    if (t < d.delay) continue; const tt = Math.min(dt, t - d.delay);
+    d.vy += H * 2.4 * tt; d.x += d.vx * tt; d.y += d.vy * tt;
+    if (d.y - d.r > H) continue;
+    const gr = cg.createRadialGradient(d.x - d.r * 0.35, d.y - d.r * 0.35, d.r * 0.1, d.x, d.y, d.r);
+    gr.addColorStop(0, '#9a5a30'); gr.addColorStop(0.5, '#5a2a10'); gr.addColorStop(1, '#2e1408');
+    cg.beginPath(); cg.ellipse(d.x, d.y, d.r * 0.85, d.r * (1 + Math.min(0.6, Math.abs(d.vy) / H * 0.25)), 0, 0, 7); cg.fillStyle = gr; cg.fill();
+    cg.beginPath(); cg.arc(d.x - d.r * 0.3, d.y - d.r * 0.4, d.r * 0.22, 0, 7); cg.fillStyle = 'rgba(255,235,210,.7)'; cg.fill();
+  }
+  // once covered: slow shiny ripples in the chocolate
+  if (e >= 1) {
+    for (let k = 0; k < 5; k++) {
+      const y = ((t * 0.08 + k / 5) % 1) * H;
+      cg.beginPath(); for (let x = 0; x <= W + 1; x += W / 32) { const yy = y + Math.sin(x / W * 7 + t * 1.5 + k) * H * 0.012; x ? cg.lineTo(x, yy) : cg.moveTo(x, yy); }
+      cg.strokeStyle = 'rgba(180,110,60,.18)'; cg.lineWidth = 10 * dpr; cg.stroke();
+    }
+  }
+  if (t > 1.0 && !cover.shown && started) {
+    cover.shown = true; rideStarsEl.textContent = rideScore; doneEl.hidden = false; sfxFanfare();
+  }
+}
+function restartRide() {
+  doneEl.hidden = true;
+  if (cover.t >= 0) { chocCv.classList.add('out'); setTimeout(() => { cover.t = -1; chocCv.hidden = true; }, 700); }
+  newRide(false); rideScore = 0;
+  if (started) sfxWhee();
+}
+document.getElementById('again').addEventListener('click', () => { startAudio(); restartRide(); });
+
 function updateSanta(dt) {
   const s = santa;
   if (s.t < 0) {
@@ -1418,16 +1511,13 @@ function tick(now) {
     if (phase === 'fly') {
       flyVel.y -= 13 * dt;
       if (flyPos.y <= lake.y + 1.3 && flyVel.y < 0) {
-        phase = 'float'; phaseT = 0; flyVel.y = 0; flyPos.y = lake.y + 1.3;
-        startSplash(); sfxSplash(); mug.userData.bump = 1;
-        sparks.burst(flyPos.clone().addScaledVector(_v.set(lake.fx, 0, lake.fz), 3).setY(lake.y + 0.5), 110, ['#c8793a', '#fff1d6', '#a0562a', '#ffd9a8'], 6);
-        if (started) setTimeout(() => { yayEl.classList.remove('go'); void yayEl.offsetWidth; yayEl.classList.add('go'); sfxFanfare(); }, 350);
+        phase = 'float'; phaseT = 0; flyVel.y = -3; flyPos.y = lake.y + 1.3;
+        sfxSplash(); startCover();
       }
     } else {
-      const k = Math.exp(-dt * 0.7); flyVel.x *= k; flyVel.z *= k;
-      flyPos.y = lake.y + 1.3 + Math.sin(phaseT * 2.2) * 0.08;
-      if (phaseT > 6) fadeEl.classList.add('on');
-      if (phaseT > 7.7) { newRide(false); fadeEl.classList.remove('on'); if (started) sfxWhee(); }
+      const k = Math.exp(-dt * 3); flyVel.x *= k; flyVel.z *= k; flyVel.y *= k;
+      flyPos.y = Math.max(lake.y + 0.35, flyPos.y);
+      if (!started && phaseT > 2.5) restartRide();
     }
     if (phase !== 'ride') {
       eye.copy(flyPos);
@@ -1465,6 +1555,7 @@ function tick(now) {
   }
   updateSanta(dt);
   updateSplash(dt);
+  drawCover(dt);
   sparks.update(dt); trail.update(dt);
   updateSnow(dt, time, camera.position);
   if (wind) wind.gain.value = 0.035 + Math.abs(playerV) * 0.005;
