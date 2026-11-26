@@ -625,7 +625,7 @@ function clearOfTrack(x, z, i, rad) {
 }
 let lake = { x: 0, y: 0, z: 1e9, r: 75, ex: 0, ez: 0, fx: 0, fz: -1 };
 const glowPointMat = new THREE.PointsMaterial({ map: glowTex, size: 1.1, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true });
-const glowBigMat = glowPointMat.clone(); glowBigMat.size = 3.2;
+const glowBigMat = glowPointMat.clone(); glowBigMat.size = 1.8;
 
 function buildChunk(c) {
   const i0 = c * CH, i1 = i0 + CH; ensure(i1 + 140);
