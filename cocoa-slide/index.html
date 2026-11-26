@@ -32,6 +32,8 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night)
 #mute svg { width: 22px; height: 22px; }
 #mute:focus-visible, #play:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
 
+#fade { position: fixed; z-index: 4; inset: 0; background: #04050e; opacity: 0; pointer-events: none; transition: opacity 1.4s ease; }
+#fade.on { opacity: 1; }
 #yay { position: fixed; z-index: 2; left: 0; right: 0; top: 26%; text-align: center; pointer-events: none;
   font-size: min(26vw, 190px); font-weight: 700; color: var(--gold); letter-spacing: .02em;
   text-shadow: 0 6px 0 #8a3b0e, 0 0 40px rgba(255, 190, 80, .8); opacity: 0; }
@@ -75,6 +77,7 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night)
 </button>
 
 <div id="yay">Yay!</div>
+<div id="fade"></div>
 
 <div id="hint" hidden><svg viewBox="0 0 100 100" aria-hidden="true">
   <circle cx="44" cy="20" r="16" fill="rgba(255,201,74,.35)"/>
@@ -106,7 +109,11 @@ const MAXX = W * 0.78;
 
 const hProf = x => HC * Math.pow(Math.min(1, Math.abs(x) / W), CPOW);
 const yawAt = s => 0.42 * Math.sin(s / 61) + 0.30 * Math.sin(s / 37 + 1.3) + 0.16 * Math.sin(s / 23 + 4.1);
-const dYaw = s => 0.42 / 61 * Math.cos(s / 61) + 0.30 / 37 * Math.cos(s / 37 + 1.3) + 0.16 / 23 * Math.cos(s / 23 + 4.1);
+const RIDE_CHUNKS = 26, END = RIDE_CHUNKS * CH;   // about 70 seconds of sliding, then the splash
+let rideOff = 0;
+const settle = s => { const t = clamp((s - (END - 170)) / 110, 0, 1); return 1 - t * t * (3 - 2 * t); };
+const yawE = s => yawAt(s + rideOff) * settle(s);
+const bumpE = s => bumpAt(s + rideOff) * settle(s);
 const bumpAt = s => 0.9 * (0.5 + 0.5 * Math.sin(s / 27)) + 0.4 * (0.5 + 0.5 * Math.sin(s / 11 + 2));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
@@ -398,8 +405,8 @@ const S = [];
 function ensure(n) {
   while (S.length <= n) {
     const i = S.length; let x = 0, z = 0;
-    if (i > 0) { const p = S[i - 1], yaw = yawAt(i - 0.5); x = p.x + Math.sin(yaw); z = p.z - Math.cos(yaw); }
-    S.push({ x, z, y: K * z + BASE + bumpAt(i), f: null });
+    if (i > 0) { const p = S[i - 1], yaw = yawE(i - 0.5); x = p.x + Math.sin(yaw); z = p.z - Math.cos(yaw); }
+    S.push({ x, z, y: K * z + BASE + bumpE(i), f: null });
   }
 }
 const UP = new THREE.Vector3(0, 1, 0);
@@ -410,7 +417,7 @@ function frame(i) {
   const T = new THREE.Vector3(b.x - a.x, b.y - a.y, b.z - a.z).normalize();
   const Rh = new THREE.Vector3().crossVectors(T, UP).normalize();
   const U0 = new THREE.Vector3().crossVectors(Rh, T);
-  const bank = clamp(-dYaw(i) * 12, -0.3, 0.3);
+  const bank = clamp(-(yawE(i + 0.5) - yawE(i - 0.5)) * 12, -0.3, 0.3);
   const R = Rh.clone().multiplyScalar(Math.cos(bank)).addScaledVector(U0, Math.sin(bank));
   const U = new THREE.Vector3().crossVectors(R, T);
   s.f = { P: new THREE.Vector3(s.x, s.y, s.z), T, R, U, Rh };
@@ -509,6 +516,7 @@ function buildChunk(c) {
       const f = frame(Math.floor(s));
       const x = f.P.x + f.Rh.x * side * d, z = f.P.z + f.Rh.z * side * d;
       if (!clearOfTrack(x, z, Math.floor(s), W + 3.5 + rad)) continue;
+      if (Math.hypot(x - lake.x, z - lake.z) < lake.r + 6 + rad) continue;
       const y = groundY(x, z);
       const yaw = faceTrack ? Math.atan2(f.P.x - x, f.P.z - z) : r() * Math.PI * 2;
       return { x, y, z, yaw, side, s, f };
@@ -529,6 +537,10 @@ function buildChunk(c) {
   for (let k = n(2, 5); k > 0; k--) { const p = placeDeco('gum', 6.5, 20, 0.6); if (p) put('gum', M(p.x, p.y, p.z, 0, 0, 0, 0.6 + r() * 0.7), C(r(), 0.8, 0.55)); }
   if (r() < 0.6) { const p = placeDeco('pop', 7, 14, 1, true); if (p) put('pop', M(p.x, p.y, p.z, 0, p.yaw, 0, 0.9 + r() * 0.5)); }
   // a marshmallow friend waving at you
+  if (c >= RIDE_CHUNKS - 2) for (let k = 0; k < 4; k++) {
+    const p = placeDeco('friend', 6.2, 8.5, 1, true);
+    if (p) { const g = makeMallow(1.3 + r() * 0.4); g.position.set(p.x, p.y, p.z); g.rotation.y = p.yaw; g.userData.phase = r() * 6; scene.add(g); ch.friends.push(g); friends.push(g); }
+  }
   if (c > 0 && r() < 0.8) {
     const p = placeDeco('friend', 6.2, 9, 1, true);
     if (p) { const g = makeMallow(1.2 + r() * 0.5); g.position.set(p.x, p.y, p.z); g.rotation.y = p.yaw; g.userData.phase = r() * 6; scene.add(g); ch.friends.push(g); friends.push(g); }
@@ -548,7 +560,7 @@ function buildChunk(c) {
     }
   }
   // things to grab
-  if (c > 0) {
+  if (c > 0 && c < RIDE_CHUNKS - 1) {
     const groups = n(1, 2), types = ['star', 'mallow', 'present', 'cane', 'star'];
     for (let gIdx = 0; gIdx < groups; gIdx++) {
       const type = types[n(0, types.length - 1)], count = n(3, 5), s0 = i0 + 3 + gIdx * 14 + r() * 4;
@@ -569,16 +581,108 @@ function buildChunk(c) {
     gg.setAttribute('color', new THREE.Float32BufferAttribute(glowCol[k], 3));
     const pts = new THREE.Points(gg, k ? glowBigMat : glowPointMat); pts.frustumCulled = false; scene.add(pts); return pts;
   });
+  ch.floaters = [];
+  if (c === RIDE_CHUNKS - 1) buildFinale(ch, r, put);
   chunks.set(c, ch);
 }
 const glowPointMat = new THREE.PointsMaterial({ map: glowTex, size: 0.85, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true, toneMapped: false });
 const glowBigMat = glowPointMat.clone(); glowBigMat.size = 3;
+
+// ---------------------------------------------------------------- the end of the slide: a hot cocoa lake
+let lake = { x: 0, y: 0, z: 0, r: 58, ex: 0, ez: 0, fx: 0, fz: -1 };
+function computeLake() {
+  ensure(END + 3);
+  const e = frame(END), fl = Math.hypot(e.T.x, e.T.z);
+  const L = { r: 58, ex: e.P.x, ez: e.P.z, fx: e.T.x / fl, fz: e.T.z / fl };
+  L.x = L.ex + L.fx * 50; L.z = L.ez + L.fz * 50; L.y = K * L.ez + 0.1;
+  return L;
+}
+const floaters = [];
+const lakeMat = new THREE.MeshPhongMaterial({ color: 0x5c2a10, specular: 0xb07a50, shininess: 110, emissive: 0x1e0803 });
+const shoreMat = new THREE.MeshLambertMaterial({ color: 0xf1f0fa, emissive: 0x1c2038 });
+const rippleMat = new THREE.MeshBasicMaterial({ color: 0xc08050, transparent: true, opacity: 0.45, depthWrite: false, side: THREE.DoubleSide });
+const cupMat = new THREE.MeshLambertMaterial({ color: 0xfbf6ee });
+const cocoaTopMat = new THREE.MeshPhongMaterial({ color: 0x4a2010, shininess: 90 });
+const foilMat = new THREE.MeshPhongMaterial({ color: 0xd9dde8, specular: 0xffffff, shininess: 140, emissive: 0x20242c });
+function makeMugFriend(scale) {
+  const g = new THREE.Group();
+  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.62, 1.3, 28), cupMat); cup.position.y = 0.35; g.add(cup);
+  const top = new THREE.Mesh(new THREE.CircleGeometry(0.72, 28), cocoaTopMat); top.rotation.x = -Math.PI / 2; top.position.y = 1.005; g.add(top);
+  const mm = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 0.2, 4, 12), mallowMat); mm.position.set(0.15, 1.08, -0.1); mm.rotation.z = 1.2; g.add(mm);
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.08, 8, 16), cupMat); handle.position.set(0.78, 0.45, 0); g.add(handle);
+  for (const sx of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), blackMat); eye.position.set(sx * 0.22, 0.62, 0.72); eye.scale.y = 1.3; g.add(eye);
+    const ck = new THREE.Mesh(new THREE.CircleGeometry(0.09, 12), pinkMat); ck.position.set(sx * 0.4, 0.45, 0.69); ck.rotation.y = sx * 0.5; g.add(ck);
+  }
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.03, 6, 16, Math.PI), blackMat); smile.position.set(0, 0.47, 0.73); smile.rotation.z = Math.PI; g.add(smile);
+  g.scale.setScalar(scale); return g;
+}
+function makeDrop(scale) {
+  const pts = []; for (let i = 0; i <= 12; i++) { const t = i / 12; pts.push(new THREE.Vector2(Math.max(0.001, 0.75 * Math.pow(1 - t, 0.9) * (t < 0.15 ? 0.8 + t * 1.3 : 1)), t * 1.3)); }
+  const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.LatheGeometry(pts, 24), foilMat); m.position.y = -0.2; g.add(m);
+  const tag = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.5), new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide })); tag.position.set(0.05, 1.3, 0); tag.rotation.z = -0.4; g.add(tag);
+  g.scale.setScalar(scale); return g;
+}
+function buildFinale(ch, r, put) {
+  const L = lake;
+  const water = new THREE.Mesh(new THREE.CircleGeometry(L.r, 80), lakeMat); water.rotation.x = -Math.PI / 2; water.position.set(L.x, L.y, L.z);
+  const shore = new THREE.Mesh(new THREE.RingGeometry(L.r, 460, 80, 1), shoreMat); shore.rotation.x = -Math.PI / 2; shore.position.set(L.x, L.y + 0.35, L.z);
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(L.r + 0.4, 0.8, 8, 120), shoreMat); lip.rotation.x = Math.PI / 2; lip.position.set(L.x, L.y + 0.1, L.z); lip.scale.z = 0.5;
+  for (const m of [water, shore, lip]) { scene.add(m); ch.meshes.push(m); }
+  const entry = Math.atan2(L.ex - L.x, L.ez - L.z);
+  const near = a => Math.abs(Math.atan2(Math.sin(a - entry), Math.cos(a - entry))) < 0.45;
+  const gy = L.y + 0.35, gp = [], gc = [];
+  const glow = (x, y, z, col) => { gp.push(x, y, z); const c = new THREE.Color(col).multiplyScalar(1.2); gc.push(c.r, c.g, c.b); };
+  for (let k = 0; k < 16; k++) {        // gingerbread village around the lake
+    const a = entry + Math.PI + (k / 15 - 0.5) * 4.4 + (r() - 0.5) * 0.15; if (near(a)) continue;
+    const d = L.r + 9 + r() * 16, x = L.x + Math.sin(a) * d, z = L.z + Math.cos(a) * d, yaw = Math.atan2(L.x - x, L.z - z), sc = 1.2 + r() * 0.6;
+    put('house', M(x, gy, z, 0, yaw, 0, sc)); glow(x + Math.sin(yaw) * 1.6 * sc, gy + 1.25 * sc, z + Math.cos(yaw) * 1.6 * sc, 0xffa040);
+  }
+  for (let k = 0; k < 22; k++) {        // lamps along the shore
+    const a = entry + (k + 0.5) / 22 * Math.PI * 2; if (near(a)) continue;
+    const d = L.r + 3, x = L.x + Math.sin(a) * d, z = L.z + Math.cos(a) * d;
+    put('lamp', M(x, gy, z, 0, a)); glow(x, gy + 3.15, z, 0xffc060);
+  }
+  for (let k = 0; k < 70; k++) {        // forest behind the village
+    const a = r() * Math.PI * 2; if (near(a)) continue;
+    const d = L.r + 28 + r() * 80, x = L.x + Math.sin(a) * d, z = L.z + Math.cos(a) * d;
+    put(r() < 0.3 ? 'litTree' : 'tree', M(x, gy, z, 0, r() * 6, 0, 1 + r() * 1.2));
+  }
+  for (let k = 0; k < 6; k++) { const a = entry + Math.PI + (r() - 0.5) * 3; const d = L.r + 6, x = L.x + Math.sin(a) * d, z = L.z + Math.cos(a) * d; put('cane', M(x, gy, z, 0, r() * 6, 0, 1.4 + r() * 0.6)); }
+  // friends floating in the cocoa, kept out of the rider's way
+  const rx = -L.fz, rz = L.fx;
+  for (let k = 0; k < 20; k++) {
+    let along, side;
+    for (let t = 0; t < 10; t++) { along = 8 + r() * 55; side = (r() * 2 - 1) * 24; if (Math.abs(side) > 4.5 || along > 30) break; }
+    const x = L.ex + L.fx * along + rx * side, z = L.ez + L.fz * along + rz * side;
+    if (Math.hypot(x - L.x, z - L.z) > L.r - 4) continue;
+    const kind = k % 5, sc = 0.9 + r() * 0.6;
+    const g = kind < 3 ? makeMugFriend(sc) : kind === 3 ? makeDrop(sc * 1.2) : itemTemplates.mallow.clone();
+    if (kind === 4) g.scale.setScalar(2.6 * sc);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.05, 32), rippleMat); ring.rotation.x = -Math.PI / 2;
+    const holder = new THREE.Group(); holder.add(g); holder.add(ring);
+    holder.position.set(x, L.y, z); g.rotation.y = Math.atan2(L.ex - x, L.ez - z) + (r() - 0.5) * 0.8;
+    holder.userData = { phase: r() * 6, g, ring, kind };
+    scene.add(holder); ch.floaters.push(holder); floaters.push(holder);
+  }
+  const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(gp, 3)); gg.setAttribute('color', new THREE.Float32BufferAttribute(gc, 3));
+  const pts = new THREE.Points(gg, glowBigMat); pts.frustumCulled = false; scene.add(pts); ch.glows.push(pts);
+}
+function newRide(first) {
+  for (const c of [...chunks.keys()]) dropChunk(c);
+  S.length = 0;
+  rideOff = first ? 0 : 400 + Math.floor(Math.random() * 6000);
+  lake = computeLake();
+  dist = 3; speed = first ? 0 : 5; phase = 'ride'; phaseT = 0;
+  ensure(400); buildChunk(0); buildChunk(1);
+}
 
 function dropChunk(c) {
   const ch = chunks.get(c); if (!ch) return;
   for (const m of ch.meshes) { scene.remove(m); m.geometry.dispose(); }
   for (const [k, id] of ch.inst) kinds[k].remove(id);
   for (const g of ch.friends) { scene.remove(g); friends.splice(friends.indexOf(g), 1); }
+  for (const g of ch.floaters) { scene.remove(g); floaters.splice(floaters.indexOf(g), 1); }
   for (const g of ch.items) { scene.remove(g); const i = items.indexOf(g); if (i >= 0) items.splice(i, 1); }
   for (const p of ch.glows) { scene.remove(p); p.geometry.dispose(); }
   chunks.delete(c);
@@ -683,7 +787,7 @@ function updateSnow(dt, t, cam) {
   for (let i = 0; i < N; i++) {
     const k = i * 3;
     pos[k] += Math.sin(t * 0.7 + i) * 0.4 * dt; pos[k + 1] -= vel[i] * dt;
-    for (let a = 0; a < 3; a++) { const d = pos[k + a] - cam.getComponent(a); if (d > B) pos[k + a] -= 2 * B; else if (d < -B) pos[k + a] += 2 * B; }
+    for (let a = 0; a < 3; a++) { const c = cam.getComponent(a), d = pos[k + a] - c; if (d > B || d < -B) pos[k + a] = c + (((d + B) % (2 * B)) + 2 * B) % (2 * B) - B; }
   }
   snowfall.pts.geometry.attributes.position.needsUpdate = true;
 }
@@ -781,6 +885,35 @@ function layoutRig() {
   rig.add(sleeve);
 }
 // little items that fly into the cocoa
+// the chocolate splash crown around the rider's feet
+const splash = new THREE.Group(); fgScene.add(splash); splash.visible = false;
+const splashMat = new THREE.MeshPhongMaterial({ color: 0x6a3214, specular: 0xc08a60, shininess: 100, emissive: 0x1a0702 });
+const crown = [], drops = [];
+for (let k = 0; k < 22; k++) {
+  const a = (k / 22) * Math.PI * 2, piv = new THREE.Group();
+  piv.position.set(Math.cos(a) * 0.62, 0, Math.sin(a) * 0.45); piv.rotation.set(Math.sin(a) * 0.55, 0, -Math.cos(a) * 0.55);
+  const spike = new THREE.Mesh(new THREE.ConeGeometry(0.075 + (k % 3) * 0.02, 0.5 + (k % 4) * 0.12, 8), splashMat); spike.position.y = 0.25; piv.add(spike);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), splashMat); tip.position.y = 0.55 + (k % 4) * 0.12; piv.add(tip);
+  splash.add(piv); crown.push(piv);
+}
+for (let k = 0; k < 26; k++) { const d = new THREE.Mesh(new THREE.SphereGeometry(0.02 + Math.random() * 0.025, 8, 6), splashMat); splash.add(d); drops.push({ m: d, v: new THREE.Vector3() }); }
+const sheet = new THREE.Mesh(new THREE.CircleGeometry(0.9, 32), splashMat); sheet.rotation.x = -Math.PI / 2; splash.add(sheet);
+splash.position.set(0, -0.66, -2.6); splash.scale.setScalar(0.85);
+let splashT = -1;
+function startSplash() {
+  splashT = 0; splash.visible = true;
+  for (const d of drops) { const a = Math.random() * Math.PI * 2; d.m.position.set(Math.cos(a) * 0.4, 0.1, Math.sin(a) * 0.3); d.v.set(Math.cos(a) * (0.4 + Math.random()), 2 + Math.random() * 1.6, Math.sin(a) * 0.5); }
+}
+function updateSplash(dt) {
+  if (splashT < 0) return;
+  splashT += dt; const t = splashT;
+  const h = t < 0.25 ? t / 0.25 : Math.max(0, 1 - (t - 0.25) / 0.9);
+  for (const p of crown) p.scale.set(1, Math.max(0.001, h), 1);
+  sheet.scale.setScalar(0.6 + Math.min(1, t * 3) * 0.6);
+  for (const d of drops) { d.v.y -= 6 * dt; d.m.position.addScaledVector(d.v, dt); d.m.visible = d.m.position.y > -0.1; }
+  if (t > 1.6) { splashT = -1; splash.visible = false; }
+}
+
 const flyers = [];
 function flyToMug(item) {
   const g = itemTemplates[item.userData.type].clone();
@@ -895,6 +1028,20 @@ function sfxFanfare() {
   if (!ctx) return; const t = ctx.currentTime;
   ['C5', 'E5', 'G5', 'C6', 'G5', 'C6', 'E6'].forEach((n, i) => chime(freq(n), t + i * 0.09, 0.2, 0.8, sfxBus));
 }
+function sfxSplash() {
+  if (!ctx) return; const t = ctx.currentTime;
+  const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(2600, t); lp.frequency.exponentialRampToValueAtTime(250, t + 0.8);
+  const g = ctx.createGain(); env(g, t, 0.6, 0.01, 0.8); src.connect(lp).connect(g).connect(sfxBus); src.start(t, 0, 0.9);
+  const o = ctx.createOscillator(), og = ctx.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.35);
+  env(og, t, 0.4, 0.005, 0.4); o.connect(og).connect(sfxBus); o.start(t); o.stop(t + 0.5);
+  for (let i = 0; i < 4; i++) {
+    const b = ctx.createOscillator(), bg = ctx.createGain(), tt = t + 0.25 + i * 0.13 + Math.random() * 0.05;
+    b.type = 'sine'; b.frequency.setValueAtTime(300 + Math.random() * 200, tt); b.frequency.exponentialRampToValueAtTime(900 + Math.random() * 400, tt + 0.07);
+    env(bg, tt, 0.08, 0.004, 0.08); b.connect(bg).connect(sfxBus); b.start(tt); b.stop(tt + 0.12);
+  }
+}
+
 function sfxWhee() {
   if (!ctx) return; const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
   o.type = 'triangle'; o.frequency.setValueAtTime(500, t); o.frequency.exponentialRampToValueAtTime(1300, t + 0.25); o.frequency.exponentialRampToValueAtTime(800, t + 0.5);
@@ -932,7 +1079,8 @@ muteEl.addEventListener('click', () => {
 });
 
 // ---------------------------------------------------------------- loop
-let score = 0, dist = 3, speed = 0, last = performance.now(), time = 0;
+let score = 0, dist = 3, speed = 0, last = performance.now(), time = 0, phase = 'ride', phaseT = 0;
+const flyPos = new THREE.Vector3(), flyVel = new THREE.Vector3(), flyR = new THREE.Vector3(), fadeEl = document.getElementById('fade');
 const camF = mkF(), lookF = mkF(), eye = new THREE.Vector3(), look = new THREE.Vector3();
 const mugTarget = new THREE.Vector3();
 function resize() {
@@ -972,21 +1120,54 @@ function tick(now) {
   playerX += (targetX - playerX) * Math.min(1, dt * 4);
   playerV = (playerX - prevX) / Math.max(dt, 1e-4);
   speed += (SPEED - speed) * Math.min(1, dt * 0.8);
-  dist += speed * dt;
+  if (phase === 'ride') dist += speed * dt;
 
   // keep chunks around us
-  const cNow = Math.floor(dist / CH);
-  for (let c = Math.max(0, cNow - 1); c <= cNow + AHEAD; c++) if (!chunks.has(c)) { buildChunk(c); break; }
+  const cNow = Math.floor(Math.min(dist, END - 1) / CH);
+  for (let c = Math.max(0, cNow - 1); c <= Math.min(cNow + AHEAD, RIDE_CHUNKS - 1); c++) if (!chunks.has(c)) { buildChunk(c); break; }
   for (const c of [...chunks.keys()]) if (c < cNow - 1) dropChunk(c);
 
-  // camera rides the slide
-  frameAt(dist, camF);
-  const lift = 1.3 + Math.sin(time * 9) * 0.012;
-  eye.copy(camF.P).addScaledVector(camF.R, playerX).addScaledVector(camF.U, hProf(playerX) + lift);
-  frameAt(dist + 11, lookF);
-  look.copy(lookF.P).addScaledVector(lookF.R, playerX * 0.6).addScaledVector(lookF.U, 0.5);
-  camera.position.copy(eye); camera.up.copy(camF.U); camera.lookAt(look);
+  if (phase === 'ride' && dist >= END) {
+    // off the end of the slide and into the cocoa lake
+    phase = 'fly'; phaseT = 0; dist = END;
+    flyPos.copy(eye); flyVel.copy(camF.T).multiplyScalar(speed); flyVel.y = Math.max(flyVel.y, 0) + 2.2;
+    flyR.set(-lake.fz, 0, lake.fx);
+  }
+  if (phase === 'ride') {
+    // camera rides the slide
+    frameAt(dist, camF);
+    const lift = 1.3 + Math.sin(time * 9) * 0.012;
+    eye.copy(camF.P).addScaledVector(camF.R, playerX).addScaledVector(camF.U, hProf(playerX) + lift);
+    frameAt(dist + 11, lookF);
+    look.copy(lookF.P).addScaledVector(lookF.R, playerX * 0.6).addScaledVector(lookF.U, 0.5);
+    camera.up.copy(camF.U);
+  } else {
+    phaseT += dt;
+    flyPos.addScaledVector(flyVel, dt).addScaledVector(flyR, playerX - prevX);
+    if (phase === 'fly') {
+      flyVel.y -= 13 * dt;
+      if (flyPos.y <= lake.y + 1.0 && flyVel.y < 0) {
+        phase = 'float'; phaseT = 0; flyVel.y = 0; flyPos.y = lake.y + 1.0;
+        startSplash(); sfxSplash(); mug.userData.bump = 1;
+        sparks.burst(flyPos.clone().addScaledVector(_v.set(lake.fx, 0, lake.fz), 2.5).setY(lake.y + 0.4), 90, ['#c8793a', '#fff1d6', '#a0562a', '#ffd9a8'], 5);
+        if (started) setTimeout(() => { yayEl.classList.remove('go'); void yayEl.offsetWidth; yayEl.classList.add('go'); sfxFanfare(); }, 350);
+      }
+    } else {
+      const k = Math.exp(-dt * 0.75); flyVel.x *= k; flyVel.z *= k;
+      flyPos.y = lake.y + 1.0 + Math.sin(phaseT * 2.2) * 0.07;
+      if (phaseT > 5.5) fadeEl.classList.add('on');
+      if (phaseT > 7.2) { newRide(false); fadeEl.classList.remove('on'); if (started) sfxWhee(); }
+    }
+    if (phase !== 'ride') {
+      eye.copy(flyPos);
+      camF.T.set(lake.fx, 0, lake.fz); camF.U.set(0, 1, 0); camF.R.copy(flyR);
+      look.copy(eye).addScaledVector(camF.T, 12); look.y -= phase === 'fly' ? 2.2 : 1.4;
+      camera.up.set(0, 1, 0);
+    }
+  }
+  camera.position.copy(eye); camera.lookAt(look);
   camera.rotateZ(-playerV * 0.03);
+
   warm.position.copy(eye).addScaledVector(camF.T, 6).addScaledVector(camF.U, 1.5);
   sky.position.copy(eye);
   ground.position.set(Math.round(eye.x / 30) * 30, 0, Math.round(eye.z / 30) * 30); ground.position.y = K * ground.position.z;
@@ -1004,6 +1185,12 @@ function tick(now) {
     if (started && Math.abs(ds) < 1.2 && Math.abs(u.x - playerX) < 1.0) collect(it);
   }
   for (const g of friends) { const [l, r] = g.userData.arms, p = time * 7 + g.userData.phase; r.rotation.z = 2.3 + Math.sin(p) * 0.5; l.rotation.z = -0.4 - Math.sin(p * 0.5) * 0.15; g.position.y += Math.sin(p * 2) * 0.003; }
+  for (const h of floaters) {
+    const u = h.userData, p = time * 1.6 + u.phase;
+    u.g.position.y = Math.sin(p) * 0.12 - (u.kind < 3 ? 0.25 : 0.1); u.g.rotation.z = Math.sin(p * 0.8) * 0.08; u.g.rotation.x = Math.cos(p * 0.7) * 0.06;
+    u.ring.scale.setScalar(0.8 + ((time * 0.5 + u.phase) % 1) * 1.4); u.ring.position.y = 0.03;
+  }
+  updateSplash(dt);
   sparks.update(dt);
   updateSnow(dt, time, camera.position);
   if (wind) wind.gain.value = 0.035 + Math.abs(playerV) * 0.01;
@@ -1030,9 +1217,9 @@ function tick(now) {
   renderer.render(fgScene, fgCam);
   requestAnimationFrame(tick);
 }
-window.cocoaDebug = { get dist() { return dist; }, set dist(v) { dist = v; }, get score() { return score; }, get items() { return items.map(i => [+i.userData.s.toFixed(1), +i.userData.x.toFixed(2), i.userData.taken]); }, get x() { return playerX; } };
+window.cocoaDebug = { get dist() { return dist; }, set dist(v) { dist = v; }, get score() { return score; }, get items() { return items.map(i => [+i.userData.s.toFixed(1), +i.userData.x.toFixed(2), i.userData.taken]); }, get x() { return playerX; }, get phase() { return phase; }, set phaseT(v) { phaseT = v; }, END };
 // warm up the first stretch before the first frame
-ensure(400); buildChunk(0); buildChunk(1);
+newRide(true);
 requestAnimationFrame(tick);
 </script>
 </body>
