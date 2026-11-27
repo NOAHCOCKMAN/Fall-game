@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adley</title>
+<style>
+@font-face { font-family: Lilita; src: url(data:font/ttf;base64,/*__LILITA__*/) format('truetype'); }
+@font-face { font-family: Fredoka; font-weight: 300 700; src: url(data:font/ttf;base64,/*__FREDOKA__*/) format('truetype'); }
+:root { --bg: #1b1410; --ink: #fff8e7; }
+html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; font-family: Fredoka, system-ui, sans-serif; }
+#stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+canvas { display: block; background: #000; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+#ui { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 10px; z-index: 5; }
+button { font: 600 16px Fredoka, system-ui, sans-serif; border: 2px solid #3a2614; background: var(--ink); color: #3a2614; border-radius: 999px; padding: 8px 16px; cursor: pointer; box-shadow: 0 3px 0 #3a2614; }
+button:active { transform: translateY(2px); box-shadow: 0 1px 0 #3a2614; }
+#prog { position: fixed; left: 0; right: 0; top: 0; height: 5px; background: rgba(255,255,255,.12); z-index: 5; }
+#bar { height: 100%; width: 0; background: #ffd23f; }
+#replay { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%) scale(.8); opacity: 0; pointer-events: none; transition: .3s; font-size: 28px; padding: 14px 30px; z-index: 6; }
+#replay.show { opacity: 1; pointer-events: auto; transform: translate(-50%,-50%) scale(1); top: 82%; }
+body.export #ui, body.export #prog, body.export #replay { display: none; }
+body.export canvas { box-shadow: none; }
+</style>
+</head>
+<body>
+<div id="prog"><div id="bar"></div></div>
+<div id="stage"><canvas id="c" width="1920" height="1080"></canvas></div>
+<div id="ui"><button id="restart">↺ Restart</button><button id="sound">🔇 Tap for sound</button></div>
+<button id="replay">↺ Watch again</button>
+<script>
+window.STORY_TL = /*__TL__*/;
+window.STORY_VOICE = /*__VOICE__*/;
+window.STORY_FACES = /*__FACES__*/;
+</script>
+<script>
+/*__SOURCES__*/
+</script>
+</body>
+</html>
