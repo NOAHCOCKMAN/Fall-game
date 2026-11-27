@@ -3,7 +3,7 @@ SCENES = [
  dict(id='morning', title='Good Morning', cues=[
   ('gap', 3.4, 'title'),
   ('mark', 'room'),
-  ('N', "This is Avaley. Noah's little sister.", 'm1', dict(pause=.4)),
+  ('N', "This is Avaley. Lilah's little sister... which makes her Noah's little sister too.", 'm1', dict(pause=.4)),
   ('N', "Officially, the cutest little girl in the entire world.", 'm2', dict(pause=.6)),
   ('mark', 'hair'),
   ('N', "This morning, she woke up with some truly... crazy hair.", 'm3', dict(pause=1.2)),
