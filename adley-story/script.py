@@ -3,7 +3,7 @@ SCENES = [
  dict(id='morning', title='Good Morning', cues=[
   ('gap', 3.4, 'title'),
   ('mark', 'room'),
-  ('N', "This is Adley. Noah's little sister.", 'm1', dict(pause=.4)),
+  ('N', "This is Avaley. Noah's little sister.", 'm1', dict(pause=.4)),
   ('N', "Officially, the cutest little girl in the entire world.", 'm2', dict(pause=.6)),
   ('mark', 'hair'),
   ('N', "This morning, she woke up with some truly... crazy hair.", 'm3', dict(pause=1.2)),
@@ -15,7 +15,7 @@ SCENES = [
   ('N', "She knocked. But the door was locked.", 'd2', dict(pause=.3)),
   ('adley', "Hello? Let me in!", 'd3', dict(pause=.6)),
   ('mark', 'sneak'),
-  ('N', "So Adley did what any brilliant little mastermind would do.", 'd4', dict(pause=.3)),
+  ('N', "So Avaley did what any brilliant little mastermind would do.", 'd4', dict(pause=.3)),
   ('N', "She snuck into Luke's bedroom...", 'd5', dict(pause=.3)),
   ('mark', 'key'),
   ('N', "and found the secret key.", 'd6', dict(pause=1.0)),
@@ -40,7 +40,7 @@ SCENES = [
   ('N', "Finally, they got up. Because today was a very important day.", 'r1', dict(pause=.3)),
   ('N', "Black Friday shopping.", 'r2', dict(pause=.7)),
   ('mark', 'bath'),
-  ('N', "Lilah went downstairs to get ready in her mom's bathroom. And Adley wanted to be just like Lilah.", 'r3', dict(pause=.4)),
+  ('N', "Lilah went downstairs to get ready in her mom's bathroom. And Avaley wanted to be just like Lilah.", 'r3', dict(pause=.4)),
   ('mark', 'gloss'),
   ('N', "Lip gloss. Check.", 'r4', dict(pause=.4)),
   ('mark', 'lash'),
@@ -56,10 +56,10 @@ SCENES = [
   ('mark', 'happy'),
   ('N', "and just like that, she was happy again.", 'r10', dict(pause=1.0)),
  ]),
- dict(id='sandwich', title='Chef Adley', cues=[
+ dict(id='sandwich', title='Chef Avaley', cues=[
   ('N', "Then it was lunchtime. Lilah made a sandwich.", 's1', dict(pause=.4)),
   ('mark', 'chef'),
-  ('N', "And Adley made one too. All by herself.", 's2', dict(pause=.3)),
+  ('N', "And Avaley made one too. All by herself.", 's2', dict(pause=.3)),
   ('adley', "I did it all by myself!", 's3', dict(pause=.4)),
   ('gap', 2.2, 'p1'),
   ('gap', 2.4, 'p2'),
@@ -69,7 +69,7 @@ SCENES = [
   ('crowd', 'laugh', 'l3', dict(at=-.8)),
  ]),
  dict(id='end', title='The End', cues=[
-  ('N', "Adley. Professional cutie. Master lock picker. Five-star chef.", 'e1', dict(pause=.5)),
+  ('N', "Avaley. Professional cutie. Master lock picker. Five-star chef.", 'e1', dict(pause=.5)),
   ('N', "And the best little alarm clock Noah and Lilah never asked for.", 'e2', dict(pause=1.0)),
   ('crowd', 'aww', 'aw2', dict(at=-.8)),
   ('gap', 5.0, 'card'),

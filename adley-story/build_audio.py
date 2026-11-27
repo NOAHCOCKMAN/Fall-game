@@ -94,7 +94,7 @@ def tts(text, mdl, spk, semis, scale, fx, tempo=1.0, tag=''):
     return a
 
 
-SPOKEN = []  # how names are said (subtitles keep the spelling)
+SPOKEN = [(r"\bAvaley's\b", "Ava-lee's"), (r"\bAvaley\b", "Ava-lee")]  # how names are said (subtitles keep the spelling)
 
 
 def spoken(text):

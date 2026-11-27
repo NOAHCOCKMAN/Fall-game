@@ -1,4 +1,4 @@
-// ---------- ADLEY'S BIG DAY: scenes ----------
+// ---------- AVALEY'S BIG DAY: scenes ----------
 function walkPose(ph, a = .13) { const s = Math.sin(ph * TAU), cc = Math.cos(ph * TAU); return { footL: [s * a, -Math.max(0, cc) * a * .5], footR: [-s * a, -Math.max(0, -cc) * a * .5] }; }
 function bigText(c, s, x, y, size, p, col = '#fff', o = {}) { if (p <= 0) return; const k = backOut(clamp(p * 2.5)); c.save(); c.translate(x, y); c.scale(k, k); if (o.rot) c.rotate(o.rot);
   text(c, s, 0, 0, size, col, { stroke: o.stroke || '#3a2614', sw: size * .14, shadow: 'rgba(0,0,0,.3)' }); c.restore(); }
@@ -44,12 +44,12 @@ const SC_MORNING = { id: 'morning',
   sfx: [[.3, 'sparkle'], ['room', 'chirp'], [['room', .8], 'chirp'], ['hair', 'boing'], [['m3', 2.4], 'boing']],
   draw(c, t) {
     if (!after('room')) { c.fillStyle = '#fff4f8'; c.fillRect(0, 0, W, H); for (let i = 0; i < 14; i++) sparkle(c, 960 + Math.cos(i / 14 * TAU + t * .4) * 700, 520 + Math.sin(i / 14 * TAU + t * .4) * 330, 16 + 8 * Math.sin(t * 4 + i), 1, t, '#ffd23f');
-      bigText(c, "ADLEY'S", 960, 360, 140, S('title', 0, .6), '#ff6a8a', { stroke: '#fff' }); bigText(c, 'BIG DAY', 960, 520, 170, S('title', .3, .9), '#ffb21a', { stroke: '#fff' });
+      bigText(c, "AVALEY'S", 960, 360, 140, S('title', 0, .6), '#ff6a8a', { stroke: '#fff' }); bigText(c, 'BIG DAY', 960, 520, 170, S('title', .3, .9), '#ffb21a', { stroke: '#fff' });
       c.save(); c.globalAlpha = S('title', 1, 1.6); text(c, 'A Black Friday Documentary', 960, 680, 44, '#8a5a7a', { font: FONT2, weight: 600 }); c.restore(); return; }
     kidRoom(c, t); const hair = S('hair', .3, 1.2), stretch = after('m2') ? easeOut(S('m2', 0, .6)) : 0;
     const j = adley(c, 960, 960, { handL: stretch ? [-.35, -.9] : [-.1, .4], handR: stretch ? [.35, -.9] : [.1, .4], headDy: Math.sin(t * 3) * 4, eyes: null });
     crazyHair(c, j, hair, t);
-    if (!after('m2')) bigText(c, 'ADLEY', 960, 180, 110, S('m1', 0, .5), '#ff6a8a', { stroke: '#fff' });
+    if (!after('m2')) bigText(c, 'AVALEY', 960, 180, 110, S('m1', 0, .5), '#ff6a8a', { stroke: '#fff' });
     stamp(c, 'BEDHEAD LEVEL: MAXIMUM', 1460, 640, 48, S('m3', 2.2, 2.7), '#d62839', .08);
   } };
 
@@ -131,7 +131,7 @@ const SC_SANDWICH = { id: 'sandwich',
     if (after('chef')) chefHat(c, j); if (!lick) { sandwichToon(c, 1400, 650, .8, after('s2', 1)); knife(c, 1500, 640, .9); }
     if (lick) { knife(c, j.handR.x + 6, j.handR.y + 20, -.2, 1); comic(c, 'SLURP!', 1450, 300, 44, S('lick', 0, 1.6), .1, '#fffbe8'); }
     fillRR(c, 1600, 560, 110, 150, 20, '#fffbe8', '#ccc', 4); text(c, 'MAYO', 1655, 630, 26, '#4a6b3a');
-    bigText(c, 'CHEF ADLEY', 1200, 160, 100, S('chef', 0, .5) * (1 - S('p1', -.3, 0)), '#ffb21a');
+    bigText(c, 'CHEF AVALEY', 1200, 160, 100, S('chef', 0, .5) * (1 - S('p1', -.3, 0)), '#ffb21a');
     if (after('s5')) stamp(c, "CHEF'S KISS", 700, 280, 80, S('s5', 0, .4), '#ff4d6d');
   } };
 
@@ -144,7 +144,7 @@ const SC_END = { id: 'end',
     c.save(); c.translate(560, 470); starPath(c, 0, 0, 330, 200); c.fillStyle = '#ffd23f'; c.fill(); c.save(); c.beginPath(); c.arc(0, 0, 200, 0, TAU); c.clip(); c.fillStyle = '#ffe3ec'; c.fillRect(-220, -220, 440, 440); drawFace(c, 'adley', 0, 20, 230); c.restore(); c.restore();
     [['PROFESSIONAL CUTIE', 'e1', 0], ['MASTER LOCK PICKER', 'e1', 1.3], ['FIVE-STAR CHEF', 'e1', 2.6], ['BEST LITTLE ALARM CLOCK', 'e2', 1.4]].forEach(([s, cue, d], i) => {
       const k = S(cue, d, d + .5); if (k <= 0) return; c.save(); c.globalAlpha = k; fillRR(c, 980, 220 + i * 120, 820, 92, 20, ['#ff6a8a', '#4d96ff', '#ffb21a', '#2a9d8f'][i]); text(c, '✓ ' + s, 1390, 266 + i * 120, 46, '#fff'); c.restore(); });
-    if (after('card')) { bigText(c, 'THE END', 960, 860, 130, S('card', 0, .6), '#ff6a8a', { stroke: '#fff' }); c.save(); c.globalAlpha = S('card', .8, 1.4); text(c, "Adley's Big Day · Black Friday 2026", 960, 970, 36, '#8a5a7a', { font: FONT2, weight: 600 }); c.restore(); confetti(c, t - cu('card'), 100, 4); }
+    if (after('card')) { bigText(c, 'THE END', 960, 860, 130, S('card', 0, .6), '#ff6a8a', { stroke: '#fff' }); c.save(); c.globalAlpha = S('card', .8, 1.4); text(c, "Avaley's Big Day · Black Friday 2026", 960, 970, 36, '#8a5a7a', { font: FONT2, weight: 600 }); c.restore(); confetti(c, t - cu('card'), 100, 4); }
   } };
 
 const SCENES = [SC_MORNING, SC_DOOR, SC_WAKE, SC_READY, SC_SANDWICH, SC_END];
