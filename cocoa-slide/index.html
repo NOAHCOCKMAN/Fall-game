@@ -97,6 +97,10 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night)
 .lv:disabled { opacity: .4; cursor: default; }
 .lv:disabled svg.lock { width: 45%; height: 45%; fill: none; stroke: var(--cream); stroke-width: 3; }
 .lv:focus-visible, .btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.topbar { width: min(100%, 520px); display: flex; justify-content: flex-start; gap: 8px; flex-wrap: wrap; }
+.pill { border-radius: 999px; border: 2px solid rgba(255, 228, 184, .5); background: rgba(42, 18, 8, .55); color: var(--cream); font: 700 14px/1 var(--font); padding: 9px 14px; cursor: pointer; }
+.pill.warn { background: #b3261e; border-color: #ffb4a8; }
+.pill:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 .world2 { width: min(100%, 520px); border-radius: 18px; border: 2px dashed rgba(255, 228, 184, .45); padding: 12px 16px; font-size: 15px; color: rgba(255, 246, 230, .85); }
 .world2 b { color: var(--gold); }
 .goals { display: grid; gap: 10px; width: min(100%, 340px); }
@@ -153,6 +157,10 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night)
 </div>
 
 <div id="menu" class="panel" hidden>
+  <div class="topbar">
+    <button class="pill" id="resetAsk" type="button">Reset progress</button>
+    <span id="resetConfirm" hidden><button class="pill warn" id="resetYes" type="button">Erase all stars</button> <button class="pill" id="resetNo" type="button">Cancel</button></span>
+  </div>
   <h2>Cocoa Village</h2>
   <p class="sub">World 1 · 15 levels</p>
   <div class="grid" id="grid"></div>
@@ -221,7 +229,7 @@ function levelCfg(L) {
 }
 // a fixed layout of treats for each level, so it can be learned; harder patterns as levels go up
 function planItems(cfg) {
-  const r = rng(cfg.seed * 3 + 11), lanes = [-W * 0.5, 0, W * 0.5], types = ['star', 'mallow', 'present', 'cane'];
+  const r = rng(cfg.seed * 3 + 11), lanes = [-W * 0.5, 0, W * 0.5], types = ['star', 'ginger', 'present', 'cane'];
   const out = []; let maxGet = 0;
   const pick = (a, b) => a + Math.floor(r() * (b - a + 1));
   const gap = 2.4 + cfg.speed * 0.04;              // spacing inside a tidy row
@@ -690,8 +698,18 @@ function makeMugFriend(scale) {    // a happy mug with a silver foil hat, floati
 // ---------------------------------------------------------------- collectibles
 const itemTemplates = (() => {
   const t = {};
-  { const g = new THREE.Group(); const b = new THREE.Mesh(puffProfile(0.34, 0.5, 0.1), mallowMat); b.position.y = -0.25; g.add(b);
-    g.add(new THREE.Mesh(faceGeo(0.345, 0.4, 0.0), faceMatSmile)); g.scale.setScalar(1.5); t.mallow = g; }
+  { // gingerbread man: brown cookie with white icing, easy to tell apart from the white snow blocks
+    const g = new THREE.Group(), cookie = new THREE.MeshStandardMaterial({ color: 0xb8692e, roughness: 0.75, emissive: 0x3a1806 });
+    const icing = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, emissive: 0x333333 });
+    const disc = (r, x, y, sx = 1, sy = 1) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.14, 24), cookie); m.rotation.x = Math.PI / 2; m.position.set(x, y, 0); m.scale.set(sx, 1, sy); g.add(m); };
+    disc(0.2, 0, 0.42); disc(0.2, 0, 0.04, 1.15, 1.5);
+    const limb = (x, y, rz, len) => { const m = new THREE.Mesh(new THREE.CapsuleGeometry(0.085, len, 4, 10), cookie); m.position.set(x, y, 0); m.rotation.z = rz; m.scale.z = 0.8; g.add(m); };
+    limb(-0.3, 0.17, Math.PI / 2 - 0.35, 0.26); limb(0.3, 0.17, -Math.PI / 2 + 0.35, 0.26); limb(-0.13, -0.33, 0.3, 0.24); limb(0.13, -0.33, -0.3, 0.24);
+    for (const sx of [-1, 1]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.032, 8, 6), icing); e.position.set(sx * 0.07, 0.46, 0.075); g.add(e); }
+    const smile = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.016, 6, 14, Math.PI), icing); smile.position.set(0, 0.39, 0.075); smile.rotation.z = Math.PI; g.add(smile);
+    [[0.14, 0xe0243b], [0.02, 0x2fae5a], [-0.1, 0xe0243b]].forEach(([y, c]) => { const b = new THREE.Mesh(new THREE.SphereGeometry(0.04, 10, 8), new THREE.MeshStandardMaterial({ color: c, roughness: 0.3, emissive: c, emissiveIntensity: 0.25 })); b.position.set(0, y, 0.085); g.add(b); });
+    for (const [x, y, rz] of [[-0.44, 0.08, 0.35], [0.44, 0.08, -0.35], [-0.22, -0.5, 0.3], [0.22, -0.5, -0.3]]) { const z = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.013, 6, 12, Math.PI), icing); z.position.set(x, y, 0.07); z.rotation.z = rz + Math.PI; g.add(z); }
+    g.scale.setScalar(1.6); t.ginger = g; }
   { const sh = new THREE.Shape();
     for (let i = 0; i < 10; i++) { const a = Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 0.2 : 0.46; i ? sh.lineTo(Math.cos(a) * r, Math.sin(a) * r) : sh.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
     const geo = new THREE.ExtrudeGeometry(sh, { depth: 0.12, bevelEnabled: true, bevelThickness: 0.07, bevelSize: 0.05, bevelSegments: 3 }); geo.center();
@@ -1654,6 +1672,10 @@ function showMenu() {
     : `World 2 opens when every level has 3 stars. <b>${total} / ${LEVELS * 3}</b> stars so far.`;
   menuEl.hidden = false;
 }
+const resetAsk = document.getElementById('resetAsk'), resetConfirm = document.getElementById('resetConfirm');
+resetAsk.addEventListener('click', () => { resetAsk.hidden = true; resetConfirm.hidden = false; document.getElementById('resetNo').focus(); });
+document.getElementById('resetNo').addEventListener('click', () => { resetConfirm.hidden = true; resetAsk.hidden = false; });
+document.getElementById('resetYes').addEventListener('click', () => { best = Array(LEVELS).fill(0); saveBest(); resetConfirm.hidden = true; resetAsk.hidden = false; showMenu(); });
 gridEl.addEventListener('click', e => { const b = e.target.closest('.lv'); if (b && !b.disabled) showIntro(+b.dataset.l); });
 function showIntro(L) {
   current = L; playing = false; hideAll(); clearCover(); hudEl.hidden = true;
