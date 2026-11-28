@@ -35,7 +35,7 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night)
 #fade { position: fixed; z-index: 4; inset: 0; background: #04050e; opacity: 0; pointer-events: none; transition: opacity 1.4s ease; }
 #fade.on { opacity: 1; }
 #yay { position: fixed; z-index: 2; left: 0; right: 0; top: 26%; text-align: center; pointer-events: none;
-  font-size: min(26vw, 190px); font-weight: 700; color: var(--gold); letter-spacing: .02em;
+  font-size: min(18vw, 120px); font-weight: 700; color: var(--gold); letter-spacing: .02em;
   text-shadow: 0 6px 0 #8a3b0e, 0 0 40px rgba(255, 190, 80, .8); opacity: 0; }
 #yay.go { animation: yay 1.6s cubic-bezier(.2, 1.6, .4, 1) forwards; }
 @keyframes yay { 0% { opacity: 0; transform: scale(.2) rotate(-8deg); } 25% { opacity: 1; transform: scale(1.1) rotate(3deg); }
@@ -67,13 +67,50 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night)
 #done .got { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: min(12vw, 64px); color: var(--gold); text-shadow: 0 4px 0 var(--cocoa-2);
   animation: popin .6s .15s cubic-bezier(.2, 1.6, .4, 1) both; font-variant-numeric: tabular-nums; }
 #done .got svg { width: 1.1em; height: 1.1em; }
-#again { width: min(46vmin, 230px); height: min(46vmin, 230px); border-radius: 50%; border: 8px solid var(--cream); cursor: pointer; padding: 0;
-  background: radial-gradient(circle at 35% 30%, #ffe08a, var(--gold) 45%, #e08a1e); box-shadow: 0 10px 0 #8a3b0e, 0 0 60px rgba(255, 200, 90, .6);
-  display: grid; place-items: center; animation: popin .6s .3s cubic-bezier(.2, 1.6, .4, 1) both, breathe 1.4s 1s ease-in-out infinite; }
-#again svg { width: 55%; height: 55%; }
-#again:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+/* levels: hud, menu, intro, results */
+.star { fill: var(--gold); stroke: #8a3b0e; stroke-width: 3; stroke-linejoin: round; }
+.star.off { fill: rgba(255, 246, 230, .18); stroke: rgba(255, 246, 230, .35); }
+#hud { gap: 14px; padding: 6px 16px; font-size: 30px; }
+#hud .lvl { font-size: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: rgba(255, 246, 230, .8); }
+#hud .count { display: flex; align-items: center; gap: 6px; }
+#hud .count svg { width: 30px; height: 30px; }
+#hud small { font-size: 18px; color: rgba(255, 246, 230, .7); }
+#hud .mini { display: flex; gap: 2px; }
+#hud .mini svg { width: 22px; height: 22px; transition: transform .3s; }
+#hud .mini svg:not(.off) { transform: scale(1.15); }
+.panel { position: fixed; z-index: 6; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.2vh; text-align: center; overflow-y: auto;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  background: radial-gradient(ellipse at 50% 45%, rgba(30, 14, 6, .55), rgba(12, 6, 2, .85)); }
+#done.panel { background: none; }
+.panel h2 { margin: 0; font-weight: 700; font-size: min(12vw, 76px); line-height: 1; color: var(--cream); text-wrap: balance; text-shadow: 0 5px 0 var(--cocoa-2), 0 0 40px rgba(255, 200, 120, .4); }
+.panel .sub { margin: 0; font-weight: 500; font-size: 17px; color: rgba(255, 246, 230, .85); max-width: 34ch; text-wrap: balance; }
+.grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; width: min(100%, 520px); }
+.tier { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 6px; font-size: 14px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: rgba(255, 246, 230, .75); }
+.tier svg { width: 16px; height: 16px; }
+.lv { aspect-ratio: 1; border-radius: 22%; border: 3px solid rgba(255, 228, 184, .6); background: linear-gradient(#7a3e1c, #4a2412); color: var(--cream); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0; font: 700 min(7vw, 30px)/1 var(--font); box-shadow: 0 4px 0 #2a1208; }
+.lv .s { display: flex; gap: 1px; } .lv .s svg { width: min(4vw, 16px); height: min(4vw, 16px); }
+.lv:disabled { opacity: .4; cursor: default; }
+.lv:disabled svg.lock { width: 45%; height: 45%; fill: none; stroke: var(--cream); stroke-width: 3; }
+.lv:focus-visible, .btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.world2 { width: min(100%, 520px); border-radius: 18px; border: 2px dashed rgba(255, 228, 184, .45); padding: 12px 16px; font-size: 15px; color: rgba(255, 246, 230, .85); }
+.world2 b { color: var(--gold); }
+.goals { display: grid; gap: 10px; width: min(100%, 340px); }
+.goal { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 18px; border-radius: 16px; background: rgba(255, 246, 230, .1); font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.goal .s { display: flex; gap: 3px; } .goal svg { width: 30px; height: 30px; }
+.goal.top { background: rgba(255, 201, 74, .22); border: 2px solid var(--gold); font-size: 34px; }
+.goal.need { outline: 2px solid rgba(255, 246, 230, .5); }
+.bigstars { display: flex; gap: 10px; align-items: flex-end; }
+.bigstars svg { width: min(22vw, 110px); height: min(22vw, 110px); animation: popin .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+.bigstars svg:nth-child(2) { width: min(28vw, 140px); height: min(28vw, 140px); animation-delay: .25s; }
+.bigstars svg:nth-child(3) { animation-delay: .5s; }
+.row { display: flex; gap: 16px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.btn { width: 84px; height: 84px; border-radius: 50%; border: 5px solid var(--cream); cursor: pointer; padding: 0; display: grid; place-items: center;
+  background: radial-gradient(circle at 35% 30%, #fff1d6, #e8d2b0); box-shadow: 0 6px 0 #6a3a1a; }
+.btn svg { width: 52%; height: 52%; }
+.btn.go { width: 130px; height: 130px; background: radial-gradient(circle at 35% 30%, #ffe08a, var(--gold) 45%, #e08a1e); box-shadow: 0 8px 0 #8a3b0e, 0 0 40px rgba(255, 200, 90, .5); animation: breathe 1.4s ease-in-out infinite; }
 @keyframes popin { from { opacity: 0; transform: scale(.3); } to { opacity: 1; transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { #play, #hint, #again { animation: none; } }
+@media (prefers-reduced-motion: reduce) { #play, #hint, .btn.go { animation: none; } }
 </style>
 <script type="importmap">{ "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
@@ -84,8 +121,9 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night)
 <canvas id="game"></canvas>
 
 <div id="hud" hidden aria-live="polite">
-  <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 3l6.2 13.2 14.3 1.7-10.6 9.9 2.8 14.2L24 34.9 11.3 42l2.8-14.2L3.5 17.9l14.3-1.7z" fill="#ffc94a" stroke="#8a3b0e" stroke-width="3" stroke-linejoin="round"/></svg>
-  <span id="score">0</span>
+  <span class="lvl">Level <span id="hudLevel">1</span></span>
+  <span class="count"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 14h24v18a10 10 0 0 1-10 10h-4a10 10 0 0 1-10-10z" fill="#fff6e6" stroke="#4a2412" stroke-width="3"/><path d="M34 18h3a5 5 0 0 1 0 10h-3" fill="none" stroke="#4a2412" stroke-width="3"/><rect x="13" y="6" width="8" height="8" rx="2" fill="#fff" stroke="#4a2412" stroke-width="2"/><rect x="22" y="4" width="8" height="8" rx="2" fill="#fff" stroke="#4a2412" stroke-width="2"/></svg><span id="score">0</span><small>/<span id="hudGoal">0</span></small></span>
+  <span class="mini" id="hudStars"></span>
 </div>
 
 <button id="mute" type="button" aria-label="Turn sound off" hidden>
@@ -94,15 +132,37 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night)
   </svg>
 </button>
 
-<div id="yay">Yay!</div>
+<div id="yay"></div>
 <div id="fade"></div>
 <canvas id="choc" hidden></canvas>
-<div id="done" hidden>
-  <h2>Good game!</h2>
-  <div class="got"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 3l6.2 13.2 14.3 1.7-10.6 9.9 2.8 14.2L24 34.9 11.3 42l2.8-14.2L3.5 17.9l14.3-1.7z" fill="#ffc94a" stroke="#8a3b0e" stroke-width="3" stroke-linejoin="round"/></svg><span id="rideStars">0</span></div>
-  <button id="again" type="button" aria-label="Play again">
-    <svg viewBox="0 0 48 48" fill="none" stroke="#4a2412" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M38 24a14 14 0 1 1-4.1-9.9"/><path d="M36 6v10H26" /></svg>
-  </button>
+<div id="done" class="panel" hidden>
+  <h2 id="doneTitle">Good game!</h2>
+  <div class="bigstars" id="doneStars"></div>
+  <p class="sub" id="doneGot"></p>
+  <p class="sub" id="doneMsg"></p>
+  <div class="row">
+    <button class="btn" id="toMenu" type="button" aria-label="All levels"><svg viewBox="0 0 48 48" fill="#4a2412" aria-hidden="true"><rect x="6" y="6" width="15" height="15" rx="4"/><rect x="27" y="6" width="15" height="15" rx="4"/><rect x="6" y="27" width="15" height="15" rx="4"/><rect x="27" y="27" width="15" height="15" rx="4"/></svg></button>
+    <button class="btn" id="again" type="button" aria-label="Try again"><svg viewBox="0 0 48 48" fill="none" stroke="#4a2412" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M38 24a14 14 0 1 1-4.1-9.9"/><path d="M36 6v10H26"/></svg></button>
+    <button class="btn go" id="next" type="button" aria-label="Next level"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M10 4l26 16-26 16z" fill="#4a2412" stroke="#4a2412" stroke-width="4" stroke-linejoin="round"/></svg></button>
+  </div>
+</div>
+
+<div id="menu" class="panel" hidden>
+  <h2>Cocoa Village</h2>
+  <p class="sub">World 1 · 15 levels</p>
+  <div class="grid" id="grid"></div>
+  <div class="world2" id="world2"></div>
+</div>
+
+<div id="intro" class="panel" hidden>
+  <h2 id="introTitle">Level 1</h2>
+  <p class="sub">Grab treats for stars!</p>
+  <div class="goals" id="goals"></div>
+  <p class="sub" id="introNeed"></p>
+  <div class="row">
+    <button class="btn" id="introMenu" type="button" aria-label="All levels"><svg viewBox="0 0 48 48" fill="#4a2412" aria-hidden="true"><rect x="6" y="6" width="15" height="15" rx="4"/><rect x="27" y="6" width="15" height="15" rx="4"/><rect x="6" y="27" width="15" height="15" rx="4"/><rect x="27" y="27" width="15" height="15" rx="4"/></svg></button>
+    <button class="btn go" id="go" type="button" aria-label="Start level"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M10 4l26 16-26 16z" fill="#4a2412" stroke="#4a2412" stroke-width="4" stroke-linejoin="round"/></svg></button>
+  </div>
 </div>
 
 <div id="hint" hidden><svg viewBox="0 0 100 100" aria-hidden="true">
@@ -116,7 +176,7 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night)
   <button id="play" type="button" aria-label="Play">
     <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 4l28 16L8 36z" fill="#4a2412" stroke="#4a2412" stroke-width="4" stroke-linejoin="round"/></svg>
   </button>
-  <p>Grown-ups: touch the screen and move left or right to steer. Grab the stars, marshmallows and presents. Every ride ends with a splash, then a new one starts.</p>
+  <p>Touch the screen and slide left or right to steer. Grab treats to earn up to three stars on each level and unlock the next one.</p>
 </div>
 
 <script type="module">
@@ -135,16 +195,53 @@ const K = 0.2;          // ground drops K units for every unit forward (world y 
 const BASE = 2.2;       // channel bottom sits this far above the snow
 const CH = 30;          // samples per chunk (1 sample = 1 unit)
 const AHEAD = 6;        // chunks built in front
-const SPEED = 12.5;
+let SPEED = 12.5;
 const MAXX = W * 0.74;
 const EYE = 2.5;
-const RIDE_CHUNKS = 6, END = RIDE_CHUNKS * CH;    // about 15 seconds of sliding, then the splash
+let RIDE_CHUNKS = 6, END = RIDE_CHUNKS * CH;      // set per level: longer rides later on
 
 const hProf = x => HC * Math.pow(Math.min(1, Math.abs(x) / W), CPOW);
 const yawAt = s => 0.42 * Math.sin(s / 61) + 0.30 * Math.sin(s / 37 + 1.3) + 0.16 * Math.sin(s / 23 + 4.1);
 const bumpAt = s => 0.9 * (0.5 + 0.5 * Math.sin(s / 27)) + 0.4 * (0.5 + 0.5 * Math.sin(s / 11 + 2));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 let rideOff = 0;
+
+// ---------------------------------------------------------------- levels: World 1, Cocoa Village
+const LEVELS = 15;
+const needStars = L => L <= 5 ? 1 : L <= 10 ? 2 : 3;        // stars needed on level L to open the next one
+function levelCfg(L) {
+  const d = (L - 1) / (LEVELS - 1);
+  return { L, d, chunks: 6 + Math.floor((L - 1) / 3), speed: 12 + (L - 1) * 0.5, magnet: Math.max(0, 1.5 - (L - 1) * 0.22),
+    seed: 1000 + L * 7919, ratios: [0.42 + d * 0.08, 0.62 + d * 0.1, 0.8 + d * 0.12] };
+}
+// a fixed layout of treats for each level, so it can be learned; harder patterns as levels go up
+function planItems(cfg) {
+  const r = rng(cfg.seed * 3 + 11), lanes = [-W * 0.5, 0, W * 0.5], types = ['star', 'mallow', 'present', 'cane'];
+  const out = []; let maxGet = 0;
+  const pick = (a, b) => a + Math.floor(r() * (b - a + 1));
+  const gap = 2.4 + cfg.speed * 0.04;
+  for (let c = 1; c < cfg.chunks - 1; c++) {
+    const groups = cfg.d > 0.45 ? 3 : 2, span = CH / groups;
+    for (let g = 0; g < groups; g++) {
+      const type = types[pick(0, 3)], s0 = c * CH + 2 + g * span + r() * 1.5;
+      const count = Math.max(3, Math.min(Math.floor((span - 3) / gap), pick(4, 6)));
+      const w = [0.55 - 0.35 * cfg.d, 0.3, 0.08 + 0.2 * cfg.d, 0.07 + 0.25 * cfg.d];   // lane, weave, switch, split
+      let roll = r() * w.reduce((a, b) => a + b), mode = 0; while (roll > w[mode]) roll -= w[mode++];
+      const a = pick(0, 2); let b = pick(0, 2); if (b === a) b = (a + 1 + pick(0, 1)) % 3;
+      const ph = r() * 6, freq = 0.6 + 0.7 * cfg.d;
+      for (let q = 0; q < count; q++) {
+        const sq = s0 + q * gap;
+        if (mode === 3) { out.push({ s: sq, x: lanes[a], type }, { s: sq, x: lanes[b], type }); maxGet++; continue; }
+        const x = mode === 0 ? lanes[a] : mode === 1 ? Math.sin(ph + q * freq) * W * 0.55 : (q < count / 2 ? lanes[a] : lanes[b]);
+        out.push({ s: sq, x, type }); maxGet++;
+      }
+    }
+  }
+  const goals = cfg.ratios.map(k => Math.max(1, Math.round(maxGet * k)));
+  goals[1] = Math.max(goals[1], goals[0] + 1); goals[2] = Math.max(goals[2], goals[1] + 1);
+  return { items: out, maxGet, goals };
+}
+let ride = null, plan = { items: [], goals: [1, 2, 3], maxGet: 0 };
 const settle = s => { const t = clamp((s - (END - 95)) / 55, 0, 1); return 1 - t * t * (3 - 2 * t); };
 const yawE = s => yawAt(s + rideOff) * settle(s);
 const bumpE = s => bumpAt(s + rideOff) * settle(s);
@@ -724,20 +821,11 @@ function buildChunk(c) {
       }
     }
   }
-  // things to grab
-  if (c > 0 && c < RIDE_CHUNKS - 1) {
-    const groups = n(1, 2), types = ['star', 'mallow', 'present', 'cane', 'star'];
-    for (let gIdx = 0; gIdx < groups; gIdx++) {
-      const type = types[n(0, types.length - 1)], count = n(3, 5), s0 = i0 + 3 + gIdx * 14 + r() * 4;
-      const mode = n(0, 2), lane = [-W * 0.45, 0, W * 0.45][n(0, 2)], ph = r() * 6;
-      for (let q = 0; q < count; q++) {
-        const s = s0 + q * 2.8;
-        const x = mode === 0 ? lane : mode === 1 ? Math.sin(ph + q * 0.8) * W * 0.5 : clamp(lane + (q - count / 2) * 0.6, -W * 0.65, W * 0.65);
-        const g = itemTemplates[type].clone(); g.userData = { s, x, type, taken: false, spin: r() * 6 };
-        const glow = new THREE.Sprite(itemGlowMat); glow.scale.setScalar(1.4); g.add(glow);
-        placeOnTrack(s, x, 1.0, g.position); scene.add(g); ch.items.push(g); items.push(g);
-      }
-    }
+  // things to grab, from the level's fixed plan
+  for (const it of plan.items) if (it.s >= i0 && it.s < i1) {
+    const g = itemTemplates[it.type].clone(); g.userData = { s: it.s, x: it.x, type: it.type, taken: false, spin: r() * 6 };
+    const glow = new THREE.Sprite(itemGlowMat); glow.scale.setScalar(1.4); g.add(glow);
+    placeOnTrack(it.s, it.x, 1.0, g.position); scene.add(g); ch.items.push(g); items.push(g);
   }
   ch.glows = [0, 1].map(k => {
     const gg = new THREE.BufferGeometry();
@@ -1303,14 +1391,14 @@ function sfxSanta() {        // sleigh bells shaking while he flies by, and a jo
 }
 
 // ---------------------------------------------------------------- input: one finger, left or right
-let targetX = 0, playerX = 0, playerV = 0, started = false, touched = false;
+let targetX = 0, playerX = 0, playerV = 0, started = false, playing = false, touched = false;
 const hint = document.getElementById('hint');
 function steerTo(clientX) {
   targetX = clamp(((clientX / window.innerWidth) * 2 - 1) * 1.25, -1, 1) * MAXX;
-  if (started && !touched) { touched = true; setTimeout(() => { hint.hidden = true; }, 2500); }
+  if (playing && !touched) { touched = true; setTimeout(() => { hint.hidden = true; }, 2500); }
 }
-canvas.addEventListener('pointerdown', e => { if (!started) return; canvas.setPointerCapture?.(e.pointerId); steerTo(e.clientX); });
-canvas.addEventListener('pointermove', e => { if (!started) return; if (e.pointerType === 'mouse' && !e.buttons) return; steerTo(e.clientX); });
+canvas.addEventListener('pointerdown', e => { if (!playing) return; canvas.setPointerCapture?.(e.pointerId); steerTo(e.clientX); });
+canvas.addEventListener('pointermove', e => { if (!playing) return; if (e.pointerType === 'mouse' && !e.buttons) return; steerTo(e.clientX); });
 const keys = {};
 addEventListener('keydown', e => { keys[e.key] = true; if (['ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault(); });
 addEventListener('keyup', e => { keys[e.key] = false; });
@@ -1322,7 +1410,7 @@ const fadeEl = document.getElementById('fade');
 const perf = { t: -1, n: 0, sum: 0, level: 0, lastNow: 0 };
 document.getElementById('play').addEventListener('click', () => {
   startAudio();
-  started = true; startEl.hidden = true; hudEl.hidden = false; muteEl.hidden = false; hint.hidden = false;
+  started = true; startEl.hidden = true; muteEl.hidden = false; showMenu();
   try { const el = document.documentElement; (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el)?.catch?.(() => {}); } catch (e) {}
   try { navigator.wakeLock?.request('screen').catch(() => {}); } catch (e) {}
   sfxWhee(); perf.t = 0; perf.n = 0; perf.sum = 0;
@@ -1348,12 +1436,14 @@ function resize() {
 }
 addEventListener('resize', resize); resize();
 
-function newRide(first) {
+function newRide(cfg) {
   for (const c of [...chunks.keys()]) dropChunk(c);
   S.length = 0;
-  rideOff = first ? 0 : 400 + Math.floor(Math.random() * 6000);
+  ride = cfg || { L: 0, d: 0.2, chunks: 7, speed: 11, magnet: 0, seed: 400 + Math.floor(Math.random() * 6000), ratios: [0.4, 0.6, 0.8] };
+  RIDE_CHUNKS = ride.chunks; END = RIDE_CHUNKS * CH; SPEED = ride.speed; rideOff = ride.seed;
+  plan = planItems(ride);
   lake = computeLake();
-  dist = 3; speed = first ? 4 : 6; phase = 'ride'; phaseT = 0;
+  dist = 3; speed = cfg ? 3 : 6; phase = 'ride'; phaseT = 0;
   if (santa && santa.t < 0) santa.next = 1.5 + Math.random() * 3;
   ensure(400); buildChunk(0); buildChunk(1);
 }
@@ -1363,11 +1453,14 @@ function collect(it) {
   sfxGrab(); flyToMug(it);
 }
 function addPoint() {
-  score++; rideScore++; scoreEl.textContent = score;
+  score++; rideScore++; scoreEl.textContent = rideScore;
   hudEl.classList.remove('pop'); void hudEl.offsetWidth; hudEl.classList.add('pop');
   sfxPlop();
   mug.userData.bump = 1;
-  if (score % 10 === 0) {
+  const k = plan.goals.indexOf(rideScore);
+  if (k >= 0) {
+    renderHudStars(k + 1);
+    yayEl.textContent = ['1 star!', '2 stars!', '3 stars!'][k];
     yayEl.classList.remove('go'); void yayEl.offsetWidth; yayEl.classList.add('go');
     sfxFanfare();
     const at = eye.clone().addScaledVector(camF.T, 9).addScaledVector(camF.U, 2);
@@ -1377,7 +1470,7 @@ function addPoint() {
 const _right = new THREE.Vector3(), _tp = new THREE.Vector3();
 // ---------------------------------------------------------------- the plunge: chocolate washes over the screen, then "Good game!"
 const chocCv = document.getElementById('choc'), cg = chocCv.getContext('2d');
-const doneEl = document.getElementById('done'), rideStarsEl = document.getElementById('rideStars');
+const doneEl = document.getElementById('done');
 let rideScore = 0;
 const cover = { t: -1, drops: [], spikes: [], shown: false };
 function startCover() {
@@ -1433,17 +1526,83 @@ function drawCover(dt) {
       cg.strokeStyle = 'rgba(180,110,60,.18)'; cg.lineWidth = 10 * dpr; cg.stroke();
     }
   }
-  if (t > 1.0 && !cover.shown && started) {
-    cover.shown = true; rideStarsEl.textContent = rideScore; doneEl.hidden = false; sfxFanfare();
-  }
+  if (t > 1.0 && !cover.shown && playing) { cover.shown = true; showResult(); }
 }
-function restartRide() {
-  doneEl.hidden = true;
+function clearCover() {
   if (cover.t >= 0) { chocCv.classList.add('out'); setTimeout(() => { cover.t = -1; chocCv.hidden = true; }, 700); }
-  newRide(false); rideScore = 0;
-  if (started) sfxWhee();
 }
-document.getElementById('again').addEventListener('click', () => { startAudio(); restartRide(); });
+
+// ---------------------------------------------------------------- progress, level map, intro and results
+const SAVE = 'cocoaSlide.world1';
+let best = (() => { try { const a = JSON.parse(localStorage.getItem(SAVE)); if (Array.isArray(a) && a.length === LEVELS) return a.map(v => Math.max(0, Math.min(3, v | 0))); } catch (e) {} return Array(LEVELS).fill(0); })();
+const saveBest = () => { try { localStorage.setItem(SAVE, JSON.stringify(best)); } catch (e) {} };
+const isOpen = L => L === 1 || best[L - 2] >= needStars(L - 1);
+const starSvg = (on, cls = '') => `<svg viewBox="0 0 48 48" class="star ${on ? '' : 'off'} ${cls}" aria-hidden="true"><path d="M24 3l6.2 13.2 14.3 1.7-10.6 9.9 2.8 14.2L24 34.9 11.3 42l2.8-14.2L3.5 17.9l14.3-1.7z"/></svg>`;
+const stars = n => [1, 2, 3].map(i => starSvg(i <= n)).join('');
+const filled = n => Array.from({ length: n }, () => starSvg(true)).join('');
+const menuEl = document.getElementById('menu'), introEl = document.getElementById('intro'), gridEl = document.getElementById('grid');
+let current = 1;
+function hideAll() { for (const el of [menuEl, introEl, doneEl]) el.hidden = true; }
+function showMenu() {
+  playing = false; hideAll(); clearCover(); hudEl.hidden = true; hint.hidden = true;
+  if (ride && ride.L) newRide(null);
+  let html = '';
+  for (let L = 1; L <= LEVELS; L++) {
+    if ((L - 1) % 5 === 0) html += `<div class="tier">Need ${filled(needStars(L))} to pass</div>`;
+    html += isOpen(L)
+      ? `<button class="lv" type="button" data-l="${L}" aria-label="Level ${L}, ${best[L - 1]} of 3 stars">${L}<span class="s">${stars(best[L - 1])}</span></button>`
+      : `<button class="lv" type="button" disabled aria-label="Level ${L}, locked"><svg class="lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>`;
+  }
+  gridEl.innerHTML = html;
+  const total = best.reduce((a, b) => a + b, 0), all3 = best.every(v => v === 3);
+  document.getElementById('world2').innerHTML = all3
+    ? '<b>World 2 is unlocked!</b> It is coming soon.'
+    : `World 2 opens when every level has 3 stars. <b>${total} / ${LEVELS * 3}</b> stars so far.`;
+  menuEl.hidden = false;
+}
+gridEl.addEventListener('click', e => { const b = e.target.closest('.lv'); if (b && !b.disabled) showIntro(+b.dataset.l); });
+function showIntro(L) {
+  current = L; playing = false; hideAll(); clearCover(); hudEl.hidden = true;
+  const g = planItems(levelCfg(L)).goals, need = needStars(L);
+  document.getElementById('introTitle').textContent = `Level ${L}`;
+  document.getElementById('goals').innerHTML = [3, 2, 1].map(k =>
+    `<div class="goal ${k === 3 ? 'top' : ''} ${k === need ? 'need' : ''}"><span class="s">${filled(k)}</span><span>${g[k - 1]}</span></div>`).join('');
+  document.getElementById('introNeed').textContent = L < LEVELS
+    ? `Get ${need === 1 ? '1 star' : need + ' stars'} to unlock level ${L + 1}.`
+    : 'Get 3 stars to finish Cocoa Village.';
+  introEl.hidden = false;
+}
+function renderHudStars(n) { document.getElementById('hudStars').innerHTML = stars(n); }
+function startLevel(L) {
+  current = L; hideAll(); clearCover();
+  newRide(levelCfg(L)); rideScore = 0; playing = true; playerX = targetX = 0;
+  document.getElementById('hudLevel').textContent = L; scoreEl.textContent = 0; document.getElementById('hudGoal').textContent = plan.goals[2];
+  renderHudStars(0); hudEl.hidden = false;
+  if (!touched) hint.hidden = false;
+  sfxWhee();
+}
+function showResult() {
+  playing = false; hudEl.hidden = true;
+  const L = current, got = plan.goals.filter(g => rideScore >= g).length, need = needStars(L), passed = got >= need;
+  if (got > best[L - 1]) { best[L - 1] = got; saveBest(); }
+  document.getElementById('doneTitle').textContent = got === 3 ? 'Perfect!' : passed ? 'Good game!' : 'So close!';
+  document.getElementById('doneStars').innerHTML = stars(got);
+  document.getElementById('doneGot').textContent = `You got ${rideScore} treats. 3 stars needs ${plan.goals[2]}.`;
+  let msg;
+  if (!passed) msg = `You need ${need === 1 ? '1 star' : need + ' stars'} to unlock level ${L + 1}. Try again!`;
+  else if (L < LEVELS) msg = `Level ${L + 1} is open!`;
+  else msg = best.every(v => v === 3) ? 'You got 3 stars on every level. World 2 is unlocked!' : 'Cocoa Village complete! Get 3 stars on every level to open World 2.';
+  document.getElementById('doneMsg').textContent = msg;
+  document.getElementById('next').hidden = !(passed && L < LEVELS);
+  document.getElementById('again').classList.toggle('go', !(passed && L < LEVELS));
+  doneEl.hidden = false;
+  if (passed) sfxFanfare();
+}
+document.getElementById('again').addEventListener('click', () => { startAudio(); showIntro(current); });
+document.getElementById('next').addEventListener('click', () => { startAudio(); showIntro(current + 1); });
+document.getElementById('toMenu').addEventListener('click', () => { startAudio(); showMenu(); });
+document.getElementById('introMenu').addEventListener('click', () => showMenu());
+document.getElementById('go').addEventListener('click', () => { startAudio(); startLevel(current); });
 
 function updateSanta(dt) {
   const s = santa;
@@ -1480,7 +1639,7 @@ function tick(now) {
   // steering
   if (keys.ArrowLeft || keys.a) { targetX = Math.max(-MAXX, targetX - 9 * dt); touched = true; }
   if (keys.ArrowRight || keys.d) { targetX = Math.min(MAXX, targetX + 9 * dt); touched = true; }
-  if (!started) targetX = Math.sin(time * 0.6) * W * 0.45;
+  if (!playing) targetX = Math.sin(time * 0.6) * W * 0.45;
   const prevX = playerX;
   playerX += (targetX - playerX) * Math.min(1, dt * 4);
   playerV = (playerX - prevX) / Math.max(dt, 1e-4);
@@ -1512,12 +1671,12 @@ function tick(now) {
       flyVel.y -= 13 * dt;
       if (flyPos.y <= lake.y + 1.3 && flyVel.y < 0) {
         phase = 'float'; phaseT = 0; flyVel.y = -3; flyPos.y = lake.y + 1.3;
-        sfxSplash(); startCover();
+        if (playing) { sfxSplash(); startCover(); }
       }
     } else {
       const k = Math.exp(-dt * 3); flyVel.x *= k; flyVel.z *= k; flyVel.y *= k;
       flyPos.y = Math.max(lake.y + 0.35, flyPos.y);
-      if (!started && phaseT > 2.5) restartRide();
+      if (!playing && phaseT > 2.5) newRide(null);
     }
     if (phase !== 'ride') {
       eye.copy(flyPos);
@@ -1541,10 +1700,10 @@ function tick(now) {
     const ds = u.s - dist;
     it.visible = ds > -3 && ds < 95;
     if (!it.visible) continue;
-    if (ds < 8 && Math.abs(u.x - playerX) < 2.2) { u.x += (playerX - u.x) * Math.min(1, dt * 3); }
+    if (playing && ride.magnet > 0 && ds < 6 && Math.abs(u.x - playerX) < ride.magnet) { u.x += (playerX - u.x) * Math.min(1, dt * 3); }
     if (ds < 35) placeOnTrack(u.s, u.x, 1.0 + Math.sin(time * 3 + u.spin) * 0.15, it.position);
     it.rotation.y = time * 2 + u.spin;
-    if (started && phase === 'ride' && Math.abs(ds) < 1.4 && Math.abs(u.x - playerX) < 1.5) collect(it);
+    if (playing && phase === 'ride' && Math.abs(ds) < 1.3 && Math.abs(u.x - playerX) < 1.0) collect(it);
   }
   for (const g of friends) { const [l, r] = g.userData.arms, p = time * 7 + g.userData.phase; r.rotation.z = 2.3 + Math.sin(p) * 0.5; l.rotation.z = -0.4 - Math.sin(p * 0.5) * 0.15; }
   for (const h of floaters) {
@@ -1582,8 +1741,8 @@ function tick(now) {
   renderer.render(fgScene, fgCam);
   requestAnimationFrame(tick);
 }
-window.cocoaDebug = { scene, get dist() { return dist; }, set dist(v) { dist = v; }, get score() { return score; }, get x() { return playerX; }, get phase() { return phase; }, set phaseT(v) { phaseT = v; }, END, santa(t) { if (t) { santa.t = t; santa.g.visible = true; } else santa.next = 0; } };
-newRide(true);
+window.cocoaDebug = { scene, get dist() { return dist; }, set dist(v) { dist = v; }, get score() { return score; }, get x() { return playerX; }, get phase() { return phase; }, set phaseT(v) { phaseT = v; }, get END() { return END; }, get plan() { return plan; }, get best() { return best; }, get rideScore() { return rideScore; }, levels() { return Array.from({ length: LEVELS }, (_, i) => { const c = levelCfg(i + 1), p = planItems(c); return [i + 1, c.chunks * CH / c.speed | 0, p.items.length, p.maxGet, p.goals.join("/"), c.magnet.toFixed(1)]; }); }, santa(t) { if (t) { santa.t = t; santa.g.visible = true; } else santa.next = 0; } };
+newRide(null);
 requestAnimationFrame(tick);
 </script>
 </body>
