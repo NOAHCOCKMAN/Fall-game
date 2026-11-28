@@ -162,6 +162,7 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night)
     <span id="resetConfirm" hidden><button class="pill warn" id="resetYes" type="button">Erase all stars</button> <button class="pill" id="resetNo" type="button">Cancel</button></span>
   </div>
   <h2>Cocoa Village</h2>
+  <p class="sub" id="saveNote" style="font-size:13px;opacity:.75">Loading your saved progress…</p>
   <p class="sub">World 1 · 15 levels</p>
   <div class="grid" id="grid"></div>
   <div class="world2" id="world2"></div>
@@ -1663,7 +1664,35 @@ function clearCover() {
 // ---------------------------------------------------------------- progress, level map, intro and results
 const SAVE = 'cocoaSlide.world1';
 let best = (() => { try { const a = JSON.parse(localStorage.getItem(SAVE)); if (Array.isArray(a) && a.length === LEVELS) return a.map(v => Math.max(0, Math.min(3, v | 0))); } catch (e) {} return Array(LEVELS).fill(0); })();
-const saveBest = () => { try { localStorage.setItem(SAVE, JSON.stringify(best)); } catch (e) {} };
+// progress lives in two places: this browser, and the player's own private record in their claude.ai account
+// (that copy survives updates, cleared browsers and other devices). On load the two are merged, best stars win.
+const cloud = { ref: null, state: 'checking' };
+const saveLocal = () => { try { localStorage.setItem(SAVE, JSON.stringify(best)); } catch (e) {} };
+const saveBest = () => { saveLocal(); if (cloud.ref) cloud.ref.set({ world1: best.slice(), updated: Date.now() }).catch(() => { cloud.state = 'device'; renderSaveNote(); }); };
+function renderSaveNote() {
+  const el = document.getElementById('saveNote'); if (!el) return;
+  el.textContent = cloud.state === 'cloud' ? 'Progress saves to your account automatically.' : cloud.state === 'checking' ? 'Loading your saved progress…' : 'Progress saves on this device. Sign in to claude.ai to keep it in your account too.';
+}
+(async () => {
+  try {
+    const use = window.claude && window.claude.use;
+    const [db, user] = use ? await Promise.all([use('db'), use('user')]) : [null, null];
+    const id = user ? await user.id() : null;
+    if (!db || !id) { cloud.state = 'device'; renderSaveNote(); return; }
+    const ref = db.doc('data/users/' + id + '/progress');
+    const snap = await ref.get();
+    const saved = snap.exists ? snap.data().world1 : null;
+    let changed = false, cloudBehind = !snap.exists;
+    if (Array.isArray(saved)) for (let i = 0; i < LEVELS; i++) {
+      const v = Math.max(0, Math.min(3, saved[i] | 0));
+      if (v > best[i]) { best[i] = v; changed = true; } else if (best[i] > v) cloudBehind = true;
+    }
+    cloud.ref = ref; cloud.state = 'cloud';
+    if (changed) { saveLocal(); if (!menuEl.hidden) showMenu(); }
+    if (cloudBehind) await ref.set({ world1: best.slice(), updated: Date.now() });
+  } catch (e) { cloud.ref = null; cloud.state = 'device'; }
+  renderSaveNote();
+})();
 const isOpen = L => L === 1 || best[L - 2] >= needStars(L - 1);
 const starSvg = (on, cls = '') => `<svg viewBox="0 0 48 48" class="star ${on ? '' : 'off'} ${cls}" aria-hidden="true"><path d="M24 3l6.2 13.2 14.3 1.7-10.6 9.9 2.8 14.2L24 34.9 11.3 42l2.8-14.2L3.5 17.9l14.3-1.7z"/></svg>`;
 const stars = n => [1, 2, 3].map(i => starSvg(i <= n)).join('');
@@ -1686,7 +1715,7 @@ function showMenu() {
   document.getElementById('world2').innerHTML = all3
     ? '<b>World 2 is unlocked!</b> It is coming soon.'
     : `World 2 opens when every level has 3 stars. <b>${total} / ${LEVELS * 3}</b> stars so far.`;
-  menuEl.hidden = false;
+  menuEl.hidden = false; renderSaveNote();
 }
 const resetAsk = document.getElementById('resetAsk'), resetConfirm = document.getElementById('resetConfirm');
 resetAsk.addEventListener('click', () => { resetAsk.hidden = true; resetConfirm.hidden = false; document.getElementById('resetNo').focus(); });
