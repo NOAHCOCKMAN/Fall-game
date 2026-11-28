@@ -37,6 +37,10 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night)
 #yay { position: fixed; z-index: 2; left: 0; right: 0; top: 26%; text-align: center; pointer-events: none;
   font-size: min(18vw, 120px); font-weight: 700; color: var(--gold); letter-spacing: .02em;
   text-shadow: 0 6px 0 #8a3b0e, 0 0 40px rgba(255, 190, 80, .8); opacity: 0; }
+#yay.bad { color: #ff6a6a; text-shadow: 0 6px 0 #5a0a0a, 0 0 40px rgba(255, 80, 80, .7); font-size: min(14vw, 90px); }
+#ouch { position: fixed; z-index: 2; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at 50% 50%, rgba(255, 0, 0, 0) 40%, rgba(220, 20, 20, .55)); }
+#ouch.go { animation: ouch .5s ease-out; }
+@keyframes ouch { 0% { opacity: 1; } 100% { opacity: 0; } }
 #yay.go { animation: yay 1.6s cubic-bezier(.2, 1.6, .4, 1) forwards; }
 @keyframes yay { 0% { opacity: 0; transform: scale(.2) rotate(-8deg); } 25% { opacity: 1; transform: scale(1.1) rotate(3deg); }
   45% { transform: scale(1) rotate(0); } 80% { opacity: 1; } 100% { opacity: 0; transform: scale(1.05) translateY(-30px); } }
@@ -133,6 +137,7 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night)
 </button>
 
 <div id="yay"></div>
+<div id="ouch"></div>
 <div id="fade"></div>
 <canvas id="choc" hidden></canvas>
 <div id="done" class="panel" hidden>
@@ -211,35 +216,82 @@ const LEVELS = 15;
 const needStars = L => L <= 5 ? 1 : L <= 10 ? 2 : 3;        // stars needed on level L to open the next one
 function levelCfg(L) {
   const d = (L - 1) / (LEVELS - 1);
-  return { L, d, chunks: 6 + Math.floor((L - 1) / 3), speed: 12 + (L - 1) * 0.5, magnet: Math.max(0, 1.5 - (L - 1) * 0.22),
-    seed: 1000 + L * 7919, ratios: [0.42 + d * 0.08, 0.62 + d * 0.1, 0.8 + d * 0.12] };
+  return { L, d, chunks: 6 + Math.floor((L - 1) / 2), speed: 12 + (L - 1) * 0.72, magnet: Math.max(0, 1.2 - (L - 1) * 0.3),
+    seed: 1000 + L * 7919, hazards: L >= 3, ratios: [0.4 + d * 0.05, 0.6 + d * 0.08, 0.82 + d * 0.08] };
 }
 // a fixed layout of treats for each level, so it can be learned; harder patterns as levels go up
 function planItems(cfg) {
   const r = rng(cfg.seed * 3 + 11), lanes = [-W * 0.5, 0, W * 0.5], types = ['star', 'mallow', 'present', 'cane'];
   const out = []; let maxGet = 0;
   const pick = (a, b) => a + Math.floor(r() * (b - a + 1));
-  const gap = 2.4 + cfg.speed * 0.04;
+  const gap = 2.4 + cfg.speed * 0.04;              // spacing inside a tidy row
+  const reach = cfg.speed * 0.42;                  // distance covered in the time it takes to swing across the slide
+  const edge = W * (0.55 + 0.15 * cfg.d);          // how far toward the walls treats may sit
+  const busy = [];                                 // where treats are, so snow blocks never sit on top of one
+  const add = (s, x, type) => { out.push({ s, x, type }); busy.push([s, x]); };
   for (let c = 1; c < cfg.chunks - 1; c++) {
-    const groups = cfg.d > 0.45 ? 3 : 2, span = CH / groups;
-    for (let g = 0; g < groups; g++) {
-      const type = types[pick(0, 3)], s0 = c * CH + 2 + g * span + r() * 1.5;
-      const count = Math.max(3, Math.min(Math.floor((span - 3) / gap), pick(4, 6)));
-      const w = [0.55 - 0.35 * cfg.d, 0.3, 0.08 + 0.2 * cfg.d, 0.07 + 0.25 * cfg.d];   // lane, weave, switch, split
+    let sCur = c * CH + 2 + r() * 2;
+    const cEnd = (c + 1) * CH;
+    while (sCur < cEnd - 4) {
+      const type = types[pick(0, 3)];
+      // pattern weights: lane, weave, switch, split, scatter
+      const w = [0.5 - 0.4 * cfg.d, 0.25, 0.1 + 0.1 * cfg.d, 0.05 + 0.2 * cfg.d, 0.1 + 0.45 * cfg.d];
       let roll = r() * w.reduce((a, b) => a + b), mode = 0; while (roll > w[mode]) roll -= w[mode++];
       const a = pick(0, 2); let b = pick(0, 2); if (b === a) b = (a + 1 + pick(0, 1)) % 3;
-      const ph = r() * 6, freq = 0.6 + 0.7 * cfg.d;
-      for (let q = 0; q < count; q++) {
-        const sq = s0 + q * gap;
-        if (mode === 3) { out.push({ s: sq, x: lanes[a], type }, { s: sq, x: lanes[b], type }); maxGet++; continue; }
-        const x = mode === 0 ? lanes[a] : mode === 1 ? Math.sin(ph + q * freq) * W * 0.55 : (q < count / 2 ? lanes[a] : lanes[b]);
-        out.push({ s: sq, x, type }); maxGet++;
+      const ph = r() * 6, freq = 0.6 + 0.9 * cfg.d, count = pick(4, 5 + Math.round(cfg.d * 2));
+      let x = lanes[a];
+      for (let q = 0; q < count && sCur < cEnd - 2; q++) {
+        if (mode === 3) { add(sCur, lanes[a], type); add(sCur, lanes[b], type); maxGet++; sCur += gap; continue; }
+        if (mode === 4) {           // scattered: hop to a new spot each time, sometimes right up by the walls
+          const jump = (0.4 + r() * 0.6) * (r() < 0.5 ? -1 : 1) * W * (0.5 + 0.5 * cfg.d);
+          x = clamp(x + jump, -edge, edge); if (Math.abs(x) < 0.3) x = edge * Math.sign(jump || 1);
+          add(sCur, x, type); maxGet++; sCur += Math.max(gap, reach * Math.abs(jump) / (W * 1.1)); continue;
+        }
+        x = mode === 0 ? lanes[a] : mode === 1 ? Math.sin(ph + q * freq) * edge : (q < count / 2 ? lanes[a] : lanes[b]);
+        if (mode === 2 && q === Math.ceil(count / 2)) sCur += reach * 0.5;
+        add(sCur, x, type); maxGet++; sCur += gap;
       }
+      sCur += Math.max(4, reach * (0.7 - 0.3 * cfg.d));
     }
   }
-  const goals = cfg.ratios.map(k => Math.max(1, Math.round(maxGet * k)));
+  // one golden star per level, worth 3, in a risky spot near a wall
+  { const c = 1 + pick(0, Math.max(0, cfg.chunks - 4)), sg = c * CH + 15, xg = (r() < 0.5 ? -1 : 1) * W * 0.68; out.push({ s: sg, x: xg, type: 'gold' }); busy.push([sg, xg]); maxGet += 3; }
+  // grumpy snow blocks: more of them, and closer to the treats, as levels go up
+  if (cfg.hazards) {
+    const n = Math.round((cfg.chunks - 2) * (1.0 + 1.9 * cfg.d)), near = 3.4 - 1.4 * cfg.d;
+    for (let k = 0, tries = 0; k < n && tries < n * 20; tries++) {
+      const sh = CH + 6 + r() * ((cfg.chunks - 2) * CH - 12), xh = (r() * 2 - 1) * W * 0.62;
+      if (busy.some(([bs, bx]) => Math.abs(bs - sh) < near && Math.abs(bx - xh) < 1.5)) continue;
+      if (out.some(o => o.type === 'snow' && Math.abs(o.s - sh) < reach * 0.6)) continue;
+      out.push({ s: sh, x: xh, type: 'snow' }); k++;
+    }
+  }
+  const best = bestRun(out, cfg);
+  const goals = cfg.ratios.map(k => Math.max(1, Math.floor(best * k)));
   goals[1] = Math.max(goals[1], goals[0] + 1); goals[2] = Math.max(goals[2], goals[1] + 1);
-  return { items: out, maxGet, goals };
+  return { items: out, maxGet: best, goals };
+}
+// the best score a perfect rider could get (steering speed is limited), so every star target is reachable
+function bestRun(list, cfg) {
+  const NX = 25, xs = Array.from({ length: NX }, (_, i) => -MAXX + (2 * MAXX * i) / (NX - 1)), step = (2 * MAXX) / (NX - 1);
+  const end = cfg.chunks * CH, dt = 1 / 30, vmax = 8;
+  const sorted = list.slice().sort((a, b) => a.s - b.s);
+  let score = new Float32Array(NX), sPrev = 3, sp = 3, k = 0;
+  while (sPrev < end && k < sorted.length) {
+    sp += (cfg.speed * (1 + 0.18 * Math.min(1, sPrev / end)) - sp) * Math.min(1, dt * 0.8);
+    const sNow = sPrev + sp * dt, reachN = Math.max(1, Math.floor(vmax * dt / step));
+    const next = new Float32Array(NX);
+    for (let j = 0; j < NX; j++) { let m = -1e9; for (let i = Math.max(0, j - reachN); i <= Math.min(NX - 1, j + reachN); i++) if (score[i] > m) m = score[i]; next[j] = m; }
+    while (k < sorted.length && sorted[k].s <= sNow) {
+      const o = sorted[k++];
+      for (let j = 0; j < NX; j++) {
+        if (o.type === 'snow') { if (Math.abs(xs[j] - o.x) < 1.35) next[j] -= 3; }
+        else if (Math.abs(xs[j] - o.x) < 0.9) next[j] += o.type === 'gold' ? 3 : 1;
+      }
+    }
+    score = next; sPrev = sNow;
+  }
+  return Math.max(...score);
 }
 let ride = null, plan = { items: [], goals: [1, 2, 3], maxGet: 0 };
 const settle = s => { const t = clamp((s - (END - 95)) / 55, 0, 1); return 1 - t * t * (3 - 2 * t); };
@@ -394,6 +446,14 @@ function faceTex(open) {
   });
 }
 const faceOpen = faceTex(true), faceSmile = faceTex(false);
+const grumpyTex = canvasTex(256, 256, (g, w) => {
+  g.clearRect(0, 0, w, w); g.fillStyle = '#1a0c08';
+  for (const x of [88, 168]) { g.beginPath(); g.ellipse(x, 120, 14, 18, 0, 0, 7); g.fill(); }
+  g.fillStyle = '#fff'; for (const x of [92, 172]) { g.beginPath(); g.arc(x, 114, 5, 0, 7); g.fill(); }
+  g.strokeStyle = '#1a0c08'; g.lineWidth = 11; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(62, 84); g.lineTo(112, 100); g.stroke(); g.beginPath(); g.moveTo(194, 84); g.lineTo(144, 100); g.stroke();
+  g.lineWidth = 8; g.beginPath(); g.arc(128, 196, 30, 1.2 * Math.PI, 1.8 * Math.PI); g.stroke();
+});
 
 // warm night environment for reflections on chocolate, snow and foil
 const envTex = (() => {
@@ -643,6 +703,12 @@ const itemTemplates = (() => {
     for (const sx of [-1, 1]) { const b = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.04, 6, 12), rib); b.position.set(sx * 0.09, 0.32, 0); b.rotation.z = sx * -0.6; g.add(b); }
     g.scale.setScalar(1.5); t.present = g; }
   { const g = new THREE.Group(); const cane = new THREE.Mesh(kinds.cane.meshes[0].geometry, shinyVC); cane.scale.setScalar(0.24); cane.position.set(-0.15, -0.55, 0); g.add(cane); g.scale.setScalar(1.3); t.cane = g; }
+  { const g = t.star.clone(); g.children[0].material = new THREE.MeshStandardMaterial({ color: 0xffe066, emissive: 0xffa000, emissiveIntensity: 1.6, metalness: 0.8, roughness: 0.15 }); g.scale.setScalar(2.6); t.gold = g; }
+  { const g = new THREE.Group();
+    const block = new THREE.Mesh(new RoundedBoxGeometry(1.5, 1.4, 1.3, 3, 0.35), new THREE.MeshStandardMaterial({ color: 0xf4f6ff, roughness: 0.8, map: snowTex })); g.add(block);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.2), new THREE.MeshStandardMaterial({ map: grumpyTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })); face.position.z = 0.66; g.add(face);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.75, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, map: snowTex })); cap.position.y = 0.55; cap.scale.set(1, 0.35, 0.9); g.add(cap);
+    t.snow = g; }
   return t;
 })();
 const itemGlowMat = new THREE.SpriteMaterial({ map: glowTex, color: 0xffc070, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.35 });
@@ -823,9 +889,15 @@ function buildChunk(c) {
   }
   // things to grab, from the level's fixed plan
   for (const it of plan.items) if (it.s >= i0 && it.s < i1) {
-    const g = itemTemplates[it.type].clone(); g.userData = { s: it.s, x: it.x, type: it.type, taken: false, spin: r() * 6 };
-    const glow = new THREE.Sprite(itemGlowMat); glow.scale.setScalar(1.4); g.add(glow);
-    placeOnTrack(it.s, it.x, 1.0, g.position); scene.add(g); ch.items.push(g); items.push(g);
+    const g = itemTemplates[it.type].clone(); g.userData = { s: it.s, x: it.x, type: it.type, taken: false, spin: r() * 6, hazard: it.type === 'snow' };
+    if (g.userData.hazard) {
+      frameAt(it.s, tmpF); const m = new THREE.Matrix4().makeBasis(tmpF.R, tmpF.U, tmpF.T.clone().negate()); g.quaternion.setFromRotationMatrix(m);
+      placeOnTrack(it.s, it.x, 0.6, g.position);
+    } else {
+      const glow = new THREE.Sprite(itemGlowMat); glow.scale.setScalar(it.type === 'gold' ? 2.6 : 1.4); g.add(glow);
+      placeOnTrack(it.s, it.x, 1.0, g.position);
+    }
+    scene.add(g); ch.items.push(g); items.push(g);
   }
   ch.glows = [0, 1].map(k => {
     const gg = new THREE.BufferGeometry();
@@ -1245,12 +1317,12 @@ function updateSplash(dt) {
 }
 // little items that fly into the cocoa
 const flyers = [];
-function flyToMug(item) {
+function flyToMug(item, value = 1) {
   const g = itemTemplates[item.userData.type].clone();
   const ndc = item.getWorldPosition(new THREE.Vector3()).project(camera);
   const start = new THREE.Vector3(ndc.x, ndc.y, 0.5).unproject(fgCam).sub(fgCam.position).normalize().multiplyScalar(2.2);
   g.position.copy(start); g.scale.setScalar(0.3); fgScene.add(g);
-  flyers.push({ g, start, t: 0 });
+  flyers.push({ g, start, t: 0, value });
 }
 
 // ---------------------------------------------------------------- audio: synthesized Christmas songs + sound effects
@@ -1351,6 +1423,14 @@ function sfxGrab() {
   if (!ctx) return; const t = ctx.currentTime;
   chime(PENTA[pentaI % PENTA.length], t, 0.22, 0.6, sfxBus); chime(PENTA[(pentaI + 2) % PENTA.length], t + 0.07, 0.12, 0.5, sfxBus); pentaI++;
 }
+function sfxBonk() {
+  if (!ctx) return; const t = ctx.currentTime;
+  const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'square'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(70, t + 0.25);
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900;
+  env(g, t, 0.35, 0.005, 0.3); o.connect(lp).connect(g).connect(sfxBus); o.start(t); o.stop(t + 0.35);
+  const src = ctx.createBufferSource(); src.buffer = noiseBuf; const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800;
+  const ng = ctx.createGain(); env(ng, t, 0.3, 0.003, 0.18); src.connect(bp).connect(ng).connect(sfxBus); src.start(t, 0, 0.25);
+}
 function sfxPlop() {
   if (!ctx) return; const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
   o.type = 'sine'; o.frequency.setValueAtTime(380, t); o.frequency.exponentialRampToValueAtTime(900, t + 0.09); env(g, t, 0.16, 0.005, 0.12); o.connect(g).connect(sfxBus); o.start(t); o.stop(t + 0.2);
@@ -1406,7 +1486,7 @@ for (const ev of ['gesturestart', 'gesturechange', 'dblclick', 'contextmenu']) d
 document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 
 const startEl = document.getElementById('start'), hudEl = document.getElementById('hud'), scoreEl = document.getElementById('score'), muteEl = document.getElementById('mute'), yayEl = document.getElementById('yay');
-const fadeEl = document.getElementById('fade');
+const fadeEl = document.getElementById('fade'), ouchEl = document.getElementById('ouch');
 const perf = { t: -1, n: 0, sum: 0, level: 0, lastNow: 0 };
 document.getElementById('play').addEventListener('click', () => {
   startAudio();
@@ -1447,19 +1527,33 @@ function newRide(cfg) {
   if (santa && santa.t < 0) santa.next = 1.5 + Math.random() * 3;
   ensure(400); buildChunk(0); buildChunk(1);
 }
+function bonk(it) {
+  it.userData.taken = true; it.visible = false;
+  sparks.burst(it.position, 50, ['#ffffff', '#e8f0ff', '#cfe0ff'], 5);
+  const lose = Math.min(3, rideScore); rideScore -= lose; scoreEl.textContent = rideScore;
+  renderHudStars(plan.goals.filter(g => rideScore >= g).length);
+  shake = 0.45; targetX = playerX; mug.userData.bump = 1;
+  yayEl.classList.add('bad'); yayEl.textContent = lose ? `Oops! -${lose}` : 'Oops!';
+  yayEl.classList.remove('go'); void yayEl.offsetWidth; yayEl.classList.add('go');
+  ouchEl.classList.remove('go'); void ouchEl.offsetWidth; ouchEl.classList.add('go');
+  sfxBonk();
+}
 function collect(it) {
   it.userData.taken = true; it.visible = false;
   sparks.burst(it.position, 26, ['#ffd24a', '#ffffff', '#ff9de0', '#8fd0ff'], 3.5);
-  sfxGrab(); flyToMug(it);
+  sfxGrab(); flyToMug(it, it.userData.type === 'gold' ? 3 : 1);
 }
-function addPoint() {
-  score++; rideScore++; scoreEl.textContent = rideScore;
+let starsShown = 0, shake = 0;
+function addPoint(v = 1) {
+  score += v; rideScore += v; scoreEl.textContent = rideScore;
   hudEl.classList.remove('pop'); void hudEl.offsetWidth; hudEl.classList.add('pop');
   sfxPlop();
   mug.userData.bump = 1;
-  const k = plan.goals.indexOf(rideScore);
-  if (k >= 0) {
-    renderHudStars(k + 1);
+  const n = plan.goals.filter(g => rideScore >= g).length;
+  renderHudStars(n);
+  if (n > starsShown) {
+    const k = n - 1; starsShown = n;
+    yayEl.classList.remove('bad');
     yayEl.textContent = ['1 star!', '2 stars!', '3 stars!'][k];
     yayEl.classList.remove('go'); void yayEl.offsetWidth; yayEl.classList.add('go');
     sfxFanfare();
@@ -1577,7 +1671,7 @@ function startLevel(L) {
   current = L; hideAll(); clearCover();
   newRide(levelCfg(L)); rideScore = 0; playing = true; playerX = targetX = 0;
   document.getElementById('hudLevel').textContent = L; scoreEl.textContent = 0; document.getElementById('hudGoal').textContent = plan.goals[2];
-  renderHudStars(0); hudEl.hidden = false;
+  renderHudStars(0); hudEl.hidden = false; starsShown = 0; shake = 0; for (const f of flyers) fgScene.remove(f.g); flyers.length = 0;
   if (!touched) hint.hidden = false;
   sfxWhee();
 }
@@ -1641,9 +1735,9 @@ function tick(now) {
   if (keys.ArrowRight || keys.d) { targetX = Math.min(MAXX, targetX + 9 * dt); touched = true; }
   if (!playing) targetX = Math.sin(time * 0.6) * W * 0.45;
   const prevX = playerX;
-  playerX += (targetX - playerX) * Math.min(1, dt * 4);
+  playerX += (targetX - playerX) * Math.min(1, dt * (playing ? 7 : 4));
   playerV = (playerX - prevX) / Math.max(dt, 1e-4);
-  speed += (SPEED - speed) * Math.min(1, dt * 0.8);
+  speed += (SPEED * (1 + 0.18 * clamp(dist / END, 0, 1)) - speed) * Math.min(1, dt * 0.8);
   if (phase === 'ride') dist += speed * dt;
 
   // keep chunks around us
@@ -1686,7 +1780,8 @@ function tick(now) {
     }
   }
   camera.position.copy(eye); camera.lookAt(look);
-  camera.rotateZ(-playerV * 0.015);
+  camera.rotateZ(-playerV * 0.01);
+  if (shake > 0) { shake = Math.max(0, shake - dt); camera.position.x += (Math.random() - 0.5) * shake * 0.6; camera.position.y += (Math.random() - 0.5) * shake * 0.6; rig.position.x = (Math.random() - 0.5) * shake * 0.08; } else rig.position.x = 0;
   camFwd.set(camF.T.x, 0, camF.T.z).normalize();
   warm.position.copy(eye).addScaledVector(camF.T, 15).addScaledVector(camF.U, 5);
   warm2.position.copy(eye).addScaledVector(camF.T, 26).addScaledVector(camF.U, 4);
@@ -1700,6 +1795,11 @@ function tick(now) {
     const ds = u.s - dist;
     it.visible = ds > -3 && ds < 95;
     if (!it.visible) continue;
+    if (u.hazard) {
+      it.scale.set(1 + Math.sin(time * 6 + u.spin) * 0.04, 1 - Math.sin(time * 6 + u.spin) * 0.04, 1);
+      if (playing && phase === 'ride' && Math.abs(ds) < 1.0 && Math.abs(u.x - playerX) < 1.25) bonk(it);
+      continue;
+    }
     if (playing && ride.magnet > 0 && ds < 6 && Math.abs(u.x - playerX) < ride.magnet) { u.x += (playerX - u.x) * Math.min(1, dt * 3); }
     if (ds < 35) placeOnTrack(u.s, u.x, 1.0 + Math.sin(time * 3 + u.spin) * 0.15, it.position);
     it.rotation.y = time * 2 + u.spin;
@@ -1732,7 +1832,7 @@ function tick(now) {
     const f = flyers[i]; f.t += dt * 1.7; const t = Math.min(1, f.t), e = t * t * (3 - 2 * t);
     f.g.position.lerpVectors(f.start, mugTarget, e); f.g.position.y += Math.sin(t * Math.PI) * 0.35;
     f.g.scale.setScalar(0.2 * (1 - t * 0.6)); f.g.rotation.y += dt * 8;
-    if (t >= 1) { fgScene.remove(f.g); flyers.splice(i, 1); addPoint(); }
+    if (t >= 1) { fgScene.remove(f.g); flyers.splice(i, 1); if (playing) addPoint(f.value); }
   }
 
   renderer.clear();
@@ -1741,7 +1841,7 @@ function tick(now) {
   renderer.render(fgScene, fgCam);
   requestAnimationFrame(tick);
 }
-window.cocoaDebug = { scene, get dist() { return dist; }, set dist(v) { dist = v; }, get score() { return score; }, get x() { return playerX; }, get phase() { return phase; }, set phaseT(v) { phaseT = v; }, get END() { return END; }, get plan() { return plan; }, get best() { return best; }, get rideScore() { return rideScore; }, levels() { return Array.from({ length: LEVELS }, (_, i) => { const c = levelCfg(i + 1), p = planItems(c); return [i + 1, c.chunks * CH / c.speed | 0, p.items.length, p.maxGet, p.goals.join("/"), c.magnet.toFixed(1)]; }); }, santa(t) { if (t) { santa.t = t; santa.g.visible = true; } else santa.next = 0; } };
+window.cocoaDebug = { scene, get dist() { return dist; }, set dist(v) { dist = v; }, get score() { return score; }, get x() { return playerX; }, get phase() { return phase; }, set phaseT(v) { phaseT = v; }, get END() { return END; }, get plan() { return plan; }, get best() { return best; }, get rideScore() { return rideScore; }, planFor(L) { const c = levelCfg(L); return { cfg: c, plan: planItems(c), CH }; }, levels() { return Array.from({ length: LEVELS }, (_, i) => { const c = levelCfg(i + 1), p = planItems(c); return [i + 1, c.chunks * CH / c.speed | 0, p.items.length, p.maxGet, p.goals.join("/"), c.magnet.toFixed(1)]; }); }, santa(t) { if (t) { santa.t = t; santa.g.visible = true; } else santa.next = 0; } };
 newRide(null);
 requestAnimationFrame(tick);
 </script>
