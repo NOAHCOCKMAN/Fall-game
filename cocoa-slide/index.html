@@ -270,7 +270,12 @@ function planItems(cfg) {
     for (let k = 0, tries = 0; k < n && tries < n * 20; tries++) {
       const sh = CH + 6 + r() * ((cfg.chunks - 2) * CH - 12), xh = (r() * 2 - 1) * W * 0.62;
       if (busy.some(([bs, bx]) => Math.abs(bs - sh) < near && Math.abs(bx - xh) < 1.5)) continue;
-      if (out.some(o => o.type === 'snow' && Math.abs(o.s - sh) < reach * 0.6)) continue;
+      if (out.some(o => o.type === 'snow' && Math.abs(o.s - sh) < reach * 0.9)) continue;
+      // blocks close together must always leave one clear lane through all of them, so no split-second zigzags
+      const nearby = out.filter(o => o.type === 'snow' && Math.abs(o.s - sh) < reach * 1.8).map(o => o.x).concat(xh);
+      let clear = false;
+      for (let gx = -MAXX + 0.5; gx <= MAXX - 0.5 && !clear; gx += 0.1) clear = nearby.every(bx => Math.abs(gx - bx) >= SNOW_HIT + 0.45);
+      if (!clear) continue;
       out.push({ s: sh, x: xh, type: 'snow' }); k++;
     }
   }
@@ -279,6 +284,7 @@ function planItems(cfg) {
   goals[1] = Math.max(goals[1], goals[0] + 1); goals[2] = Math.max(goals[2], goals[1] + 1);
   return { items: out, maxGet: best, goals };
 }
+const SNOW_HIT = 0.95;   // how close to a snow block counts as a bump (matches the block's size)
 // the best score a perfect rider could get (steering speed is limited), so every star target is reachable
 function bestRun(list, cfg) {
   const NX = 25, xs = Array.from({ length: NX }, (_, i) => -MAXX + (2 * MAXX * i) / (NX - 1)), step = (2 * MAXX) / (NX - 1);
@@ -293,7 +299,7 @@ function bestRun(list, cfg) {
     while (k < sorted.length && sorted[k].s <= sNow) {
       const o = sorted[k++];
       for (let j = 0; j < NX; j++) {
-        if (o.type === 'snow') { if (Math.abs(xs[j] - o.x) < 1.35) next[j] -= 3; }
+        if (o.type === 'snow') { if (Math.abs(xs[j] - o.x) < SNOW_HIT + 0.1) next[j] -= 3; }
         else if (Math.abs(xs[j] - o.x) < 0.9) next[j] += o.type === 'gold' ? 3 : 1;
       }
     }
@@ -1819,7 +1825,7 @@ function tick(now) {
     if (!it.visible) continue;
     if (u.hazard) {
       it.scale.set(1 + Math.sin(time * 6 + u.spin) * 0.04, 1 - Math.sin(time * 6 + u.spin) * 0.04, 1);
-      if (playing && phase === 'ride' && Math.abs(ds) < 1.0 && Math.abs(u.x - playerX) < 1.25) bonk(it);
+      if (playing && phase === 'ride' && Math.abs(ds) < 0.8 && Math.abs(u.x - playerX) < SNOW_HIT) bonk(it);
       continue;
     }
     if (playing && ride.magnet > 0 && ds < 6 && Math.abs(u.x - playerX) < ride.magnet) { u.x += (playerX - u.x) * Math.min(1, dt * 3); }
